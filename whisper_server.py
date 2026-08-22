@@ -178,6 +178,8 @@ async def ai_correct_text(text: str):
 # 模型配置：针对 GTX 1660 Ti 6GB，优先保证稳定
 MODEL_SIZE = os.environ.get("WHISPER_MODEL", "medium")
 COMPUTE_TYPE = os.environ.get("WHISPER_COMPUTE_TYPE", "float16")
+# モデル保存先（Dashboard が設定画面で指定）。設定されていれば download_root として使用
+MODEL_DIR = os.environ.get("WHISPER_MODEL_DIR", "").strip()
 
 # 高速化参数（由 Dashboard 启动时注入）
 BEAM_SIZE = int(os.environ.get("WHISPER_BEAM_SIZE", "5"))
@@ -199,7 +201,11 @@ print(
     f"Loading Whisper model: {MODEL_SIZE} (compute_type={COMPUTE_TYPE}, "
     f"beam_size={BEAM_SIZE}, temperature={TEMPERATURE_LIST}, vad_ms={VAD_MIN_SILENCE_MS})..."
 )
-model = WhisperModel(MODEL_SIZE, device="cuda", compute_type=COMPUTE_TYPE)
+_model_kwargs = {}
+if MODEL_DIR:
+    _model_kwargs["download_root"] = MODEL_DIR
+    print(f"Model download_root: {MODEL_DIR}")
+model = WhisperModel(MODEL_SIZE, device="cuda", compute_type=COMPUTE_TYPE, **_model_kwargs)
 print("Model loaded successfully.")
 
 

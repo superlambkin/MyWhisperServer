@@ -216,6 +216,8 @@ def init_db():
             "deepseek_base_url": "https://api.deepseek.com/v1",
             "active_llm_profile": "",
             "dashboard_token": "",  # 接続トークン（初回アクセス時に自動生成）
+            # Whisper モデル保存先（空なら <プロジェクト>/models）
+            "whisper_model_dir": "",
             # Whisper 高速化設定
             "whisper_mode": "balanced",
             "whisper_compute_type": "int8_float16",
@@ -512,6 +514,8 @@ def start_whisper_process() -> subprocess.Popen:
     env["DASHBOARD_URL"] = f"http://127.0.0.1:{DASHBOARD_PORT}"
     env["PYTHONUNBUFFERED"] = "1"  # 让子进程日志实时写入文件
     env["WHISPER_MODEL"] = get_config_sync("whisper_model", "medium")
+    # モデル保存先（download_root）を注入：切替時・起動時にここから読み込み/保存
+    env["WHISPER_MODEL_DIR"] = str(get_model_dir_sync())
     # 高速化設定（启动 Whisper 时注入，重启后生效）
     env["WHISPER_COMPUTE_TYPE"] = get_config_sync("whisper_compute_type", "int8_float16")
     env["WHISPER_BEAM_SIZE"] = get_config_sync("whisper_beam_size", "3")
@@ -1024,10 +1028,99 @@ MODEL_CATALOG = {
 ALLOWED_MODELS = list(MODEL_CATALOG)
 
 
+def _resolve_model_dir(raw: str) -> Path:
+    """設定値（空なら既定）からモデル保存先を解決して作成する。"""
+    p = Path(raw.strip()).expanduser() if raw and raw.strip() else (BASE_DIR / "models")
+    try:
+        p.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+    return p
+
+
+def get_model_dir_sync() -> Path:
+    return _resolve_model_dir(get_config_sync("whisper_model_dir"))
+
+
+async def get_model_dir() -> Path:
+    return _resolve_model_dir(await get_config("whisper_model_dir"))
+
+
+def _model_repo_dir(name: str) -> str:
+    """HuggingFace キャッシュ形式のリポジトリディレクトリ名（faster_whisper._MODELS から導出）。
+    large-v3-turbo は mobiuslabsgmbh、distil-* は faster-distil-whisper-* 等、Systran 以外も存在する。"""
+    try:
+        from faster_whisper.utils import _MODELS
+        repo = _MODELS.get(name, f"Systran/faster-whisper-{name}")
+    except Exception:
+        repo = f"Systran/faster-whisper-{name}"
+    return f"models--{repo.replace('/', '--')}"
+
+
+def _is_model_downloaded(name: str) -> bool:
+    """モデルが保存先にダウンロード済みか（snapshots/<hash>/model.bin の存在で判定）。"""
+    snap = get_model_dir_sync() / _model_repo_dir(name) / "snapshots"
+    if not snap.is_dir():
+        return False
+    try:
+        for s in snap.iterdir():
+            if (s / "model.bin").is_file():
+                return True
+    except Exception:
+        pass
+    return False
+
+
+# ダウンロード状態（プロセス内保持）: name -> "none" / "downloading" / "done" / "error"
+_download_state: Dict[str, str] = {}
+
+
+def _download_model_sync(name: str, model_dir: Path):
+    from faster_whisper.utils import download_model
+    download_model(name, cache_dir=str(model_dir))
+
+
+async def download_model_task(name: str):
+    """バックグラウンドでモデルを保存先へダウンロード（HF キャッシュ形式）。"""
+    if _download_state.get(name) == "downloading":
+        return
+    _download_state[name] = "downloading"
+    try:
+        print(f"[model] ダウンロード開始: {name}")
+        await asyncio.to_thread(_download_model_sync, name, get_model_dir_sync())
+        _download_state[name] = "done"
+        print(f"[model] ダウンロード完了: {name}")
+    except Exception as e:
+        _download_state[name] = "error"
+        print(f"[model] ダウンロード失敗 {name}: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 @app.get("/api/v1/whisper/models")
 async def api_whisper_models():
-    """FasterWhisper 対応モデル一覧（VRAM 目安・DL サイズ・説明）を返す。"""
-    return {"models": MODEL_CATALOG}
+    """FasterWhisper 対応モデル一覧（VRAM 目安・DL サイズ・説明・DL状態）を返す。"""
+    catalog = {}
+    for name, info in MODEL_CATALOG.items():
+        downloaded = _is_model_downloaded(name)
+        state = _download_state.get(name)
+        if state in (None, "none") and downloaded:
+            state = "done"
+        if state in (None, "none"):
+            state = "none"
+        catalog[name] = {**info, "downloaded": downloaded, "download_state": state}
+    return {"models": catalog}
+
+
+@app.post("/api/v1/whisper/models/{model_name}/download", dependencies=[Depends(require_auth)])
+async def api_download_model(model_name: str):
+    """指定モデルをバックグラウンドで保存先へダウンロードする。"""
+    if model_name not in MODEL_CATALOG:
+        return {"success": False, "message": f"unknown model: {model_name}"}
+    if _is_model_downloaded(model_name):
+        return {"success": False, "message": f"already downloaded: {model_name}"}
+    asyncio.create_task(download_model_task(model_name))
+    return {"success": True, "message": f"downloading {model_name}"}
 
 
 @app.post("/api/v1/whisper/model", dependencies=[Depends(require_auth)])
@@ -1178,6 +1271,8 @@ async def api_get_config():
     result = {}
     for k in keys:
         result[k] = await get_config(k)
+    # モデル保存先（空なら既定の <プロジェクト>/models を解決して返す）
+    result["whisper_model_dir"] = (await get_config("whisper_model_dir")) or str(BASE_DIR / "models")
     # #5: API キーは平文で返さず has_key / 末尾4文字 のみ返す
     key_val = await get_config("deepseek_api_key")
     result["deepseek_has_key"] = bool(key_val)
@@ -1213,6 +1308,13 @@ async def api_set_config(data: dict):
             continue  # トークンは env / 自動生成 / 専用エンドポイントでのみ管理
         if k == "deepseek_base_url":
             v = validate_base_url(v)
+        if k == "whisper_model_dir":
+            v = str(v).strip()
+            if v:
+                try:
+                    _resolve_model_dir(v)  # 作成可能なパスかを検証
+                except Exception as e:
+                    return {"success": False, "error": f"invalid model dir: {e}"}
         await set_config(k, str(v))
     return {"success": True}
 

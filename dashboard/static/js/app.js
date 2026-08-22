@@ -87,6 +87,16 @@ const I18N = {
         "model.vram_label": "VRAM 参考",
         "model.dl_label": "下载",
         "model.confirm_danger": "该模型可能超出 6GB 显卡 VRAM，仍要切换吗？",
+        "model.manage": "模型管理",
+        "model.dir": "模型保存位置",
+        "model.dir_hint": "模型切换・新下载时的保存位置（空=默认）",
+        "model.downloaded": "✓ 已下载",
+        "model.not_downloaded": "未下载",
+        "model.downloading": "下载中...",
+        "model.downloading_short": "中...",
+        "model.use": "使用",
+        "model.download": "下载",
+        "model.download_start": "开始下载",
         "records.title": "转换履历",
         "records.search": "搜索文件名或结果...",
         "records.refresh": "刷新",
@@ -279,6 +289,16 @@ const I18N = {
         "model.vram_label": "VRAM 目安",
         "model.dl_label": "DL",
         "model.confirm_danger": "このモデルは 6GB カードの VRAM に収まらない恐れがあります。それでも切替えますか？",
+        "model.manage": "モデル管理",
+        "model.dir": "モデル保存先",
+        "model.dir_hint": "モデル切替・新規ダウンロード時の保存先（空欄=既定）",
+        "model.downloaded": "✓ DL済",
+        "model.not_downloaded": "未DL",
+        "model.downloading": "ダウンロード中...",
+        "model.downloading_short": "中...",
+        "model.use": "使用",
+        "model.download": "DL",
+        "model.download_start": "ダウンロードを開始しました",
         "records.title": "変換履歴",
         "records.search": "ファイル名や結果を検索...",
         "records.refresh": "更新",
@@ -471,6 +491,16 @@ const I18N = {
         "model.vram_label": "VRAM",
         "model.dl_label": "Download",
         "model.confirm_danger": "This model may not fit in 6GB VRAM. Switch anyway?",
+        "model.manage": "Model Management",
+        "model.dir": "Model directory",
+        "model.dir_hint": "Save location for downloads (blank = default)",
+        "model.downloaded": "✓ Downloaded",
+        "model.not_downloaded": "Not downloaded",
+        "model.downloading": "Downloading...",
+        "model.downloading_short": "...",
+        "model.use": "Use",
+        "model.download": "Download",
+        "model.download_start": "Download started",
         "records.title": "Transcription History",
         "records.search": "Search filename or result...",
         "records.refresh": "Refresh",
@@ -1347,36 +1377,147 @@ function selectedModelVram() {
         : (parseFloat(opt.dataset.vramFp16) || 0);
 }
 
-// モデルカタログから選択肢を生成（VRAM 目安・DL サイズ・説明付き）
+// モデルカタログ（DL 状態含む）を保持。選択肢生成と設定画面の管理リストで共用
+let modelCatalog = null;
+
+async function fetchModelCatalog() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/whisper/models`);
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        modelCatalog = data.models || {};
+        return modelCatalog;
+    } catch (e) {
+        console.error('Failed to fetch model catalog:', e);
+        return null;
+    }
+}
+
+// モデルカタログから選択肢を生成（DL 済みモデルのみ表示）
 async function populateModelSelect() {
     const sel = $('#select-model');
     if (!sel) return;
-    try {
-        const resp = await apiFetch(`${API_BASE}/whisper/models`);
-        if (!resp.ok) return;
-        const data = await resp.json();
-        const models = data.models || {};
-        sel.innerHTML = '';
-        Object.keys(models).forEach((name) => {
-            const info = models[name];
-            const opt = document.createElement('option');
-            opt.value = name;
-            opt.textContent = name;
-            opt.dataset.vramFp16 = info.vram_fp16;
-            opt.dataset.vramInt8 = info.vram_int8;
-            opt.dataset.diskGb = info.disk_gb;
-            opt.dataset.lang = info.lang;
-            opt.dataset.desc = info.desc;
-            sel.appendChild(opt);
-        });
-        // 現在の設定モデルを反映（カタログに存在する場合のみ）
-        if (config.whisper_model && Array.from(sel.options).some(o => o.value === config.whisper_model)) {
-            sel.value = config.whisper_model;
-        }
-        updateModelInfo();
-    } catch (e) {
-        console.error('Failed to load model list:', e);
+    const models = await fetchModelCatalog();
+    if (!models) return;
+    sel.innerHTML = '';
+    Object.keys(models).forEach((name) => {
+        const info = models[name];
+        if (!info.downloaded) return;  // DL 済みのみドロップダウンに表示
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        opt.dataset.vramFp16 = info.vram_fp16;
+        opt.dataset.vramInt8 = info.vram_int8;
+        opt.dataset.diskGb = info.disk_gb;
+        opt.dataset.lang = info.lang;
+        opt.dataset.desc = info.desc;
+        sel.appendChild(opt);
+    });
+    // 現在の設定モデルを反映（DL 済みリストに存在する場合のみ）
+    if (config.whisper_model && Array.from(sel.options).some(o => o.value === config.whisper_model)) {
+        sel.value = config.whisper_model;
     }
+    updateModelInfo();
+    renderModelManageList();
+}
+
+// カタログ（DL 状態・サイズ等）からモデルの VRAM 目安を返す（管理リストからの切替用）
+function modelVramFromCatalog(name) {
+    if (!modelCatalog || !modelCatalog[name]) return 0;
+    const info = modelCatalog[name];
+    const ct = (config.whisper_compute_type || 'int8_float16').toLowerCase();
+    return ct.includes('int8')
+        ? (parseFloat(info.vram_int8) || 0)
+        : (parseFloat(info.vram_fp16) || 0);
+}
+
+// 設定画面「模型管理」カードのモデルリストを描画
+function renderModelManageList() {
+    const list = $('#model-manage-list');
+    if (!list || !modelCatalog) return;
+    list.innerHTML = '';
+    Object.keys(modelCatalog).forEach((name) => {
+        const info = modelCatalog[name];
+        const downloading = info.download_state === 'downloading';
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-2 p-2 rounded-lg bg-stone-900/50 text-sm';
+        const left = document.createElement('div');
+        left.className = 'flex items-center gap-2 min-w-0';
+        left.innerHTML = `<span class="font-mono text-xs">${escapeHtml(name)}</span><span class="text-xs text-stone-500">DL ${info.disk_gb}GB</span>`;
+        const right = document.createElement('div');
+        right.className = 'flex items-center gap-2 shrink-0';
+        const status = document.createElement('span');
+        status.className = 'text-xs';
+        let btn;
+        if (downloading) {
+            status.textContent = t('model.downloading');
+            status.className += ' text-amber-400';
+            btn = document.createElement('button');
+            btn.disabled = true;
+            btn.className = 'px-3 py-1 rounded-lg bg-stone-800 text-stone-400 text-xs';
+            btn.textContent = t('model.downloading_short');
+        } else if (info.downloaded) {
+            status.textContent = t('model.downloaded');
+            status.className += ' text-emerald-400';
+            btn = document.createElement('button');
+            btn.className = 'px-3 py-1 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-xs font-medium transition-all';
+            btn.textContent = t('model.use');
+            btn.addEventListener('click', () => switchToModel(name));
+        } else {
+            status.textContent = t('model.not_downloaded');
+            status.className += ' text-stone-500';
+            btn = document.createElement('button');
+            btn.className = 'px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs font-medium transition-all';
+            btn.textContent = t('model.download');
+            btn.addEventListener('click', () => downloadModel(name));
+        }
+        right.appendChild(status);
+        right.appendChild(btn);
+        row.appendChild(left);
+        row.appendChild(right);
+        list.appendChild(row);
+    });
+}
+
+// モデルのダウンロードを開始し、進行中は 4 秒ごとに状態をポーリング
+let _pollDownload = null;
+async function downloadModel(name) {
+    try {
+        const resp = await apiFetch(`${API_BASE}/whisper/models/${encodeURIComponent(name)}/download`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) {
+            showToast(t('model.download_start') + ': ' + name, 'success');
+            await fetchModelCatalog();
+            renderModelManageList();
+            if (!_pollDownload) {
+                _pollDownload = setInterval(async () => {
+                    const models = await fetchModelCatalog();
+                    if (!models) return;
+                    renderModelManageList();
+                    populateModelSelect();  // DL 完了で選択肢に追加
+                    const anyDl = Object.values(models).some(m => m.download_state === 'downloading');
+                    if (!anyDl) {
+                        clearInterval(_pollDownload);
+                        _pollDownload = null;
+                    }
+                }, 4000);
+            }
+        } else {
+            showToast(data.message || t('toast.action_failed'), 'error');
+        }
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+}
+
+// 管理リストの「使用」からモデル切替（ドロップダウン選択を伴う）
+async function switchToModel(name) {
+    const sel = $('#select-model');
+    if (sel) {
+        sel.value = name;
+        updateModelInfo();
+    }
+    await switchModel(name);
 }
 
 // 選択中モデルの VRAM 目安と 6GB カードでの警告を表示
@@ -1416,11 +1557,12 @@ function updateModelInfo() {
     ].join('<br>');
 }
 
-async function switchModel() {
-    const model = $('#select-model').value;
+async function switchModel(modelName) {
+    const model = modelName || $('#select-model').value;
     if (!model) return;
     // 危険モデルは切替前に確認（未キャッシュなら大容量 DL + VRAM 不足で OOM の恐れ）
-    if (selectedModelVram() > 5.5 && !window.confirm(t('model.confirm_danger'))) {
+    const vram = modelName ? modelVramFromCatalog(modelName) : selectedModelVram();
+    if (vram > 5.5 && !window.confirm(t('model.confirm_danger'))) {
         return;
     }
     try {
@@ -1880,6 +2022,9 @@ async function loadSettings() {
         if (config.whisper_model && $('#select-model')) {
             $('#select-model').value = config.whisper_model;
         }
+        if ($('#setting-model-dir')) {
+            $('#setting-model-dir').value = config.whisper_model_dir || '';
+        }
         // Whisper 高速化设置（設定画面の速度モードとダッシュボードのモード選択を双方向同期）
         const mode = WHISPER_MODES[config.whisper_mode] ? config.whisper_mode : 'custom';
         if ($('#setting-speed-mode')) $('#setting-speed-mode').value = mode;
@@ -1952,6 +2097,8 @@ async function saveSettings() {
         whisper_beam_size: $('#setting-beam-size').value,
         whisper_temperature: $('#setting-temperature').value,
         whisper_vad_min_silence_ms: $('#setting-vad-ms').value,
+        // モデル保存先（次回の切替・起動時に反映）
+        whisper_model_dir: $('#setting-model-dir').value.trim(),
     };
     // #5: キー欄が空なら送信しない（既存キーを維持）
     const newKey = $('#setting-deepseek-key').value.trim();
