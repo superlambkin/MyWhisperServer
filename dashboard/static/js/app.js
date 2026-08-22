@@ -1344,16 +1344,31 @@ function updateWhisperStatus(data) {
 
     const proc = data.process;
     const memModel = $('#gpu-mem-model'); // GPU モニタ「显存」下の搭載モデル表示
+    const memSize = $('#gpu-mem-size');
     if (data.health && data.health.model) {
         currentModel = data.health.model;
         $('#stat-model').textContent = data.health.model;
         if (memModel) memModel.textContent = data.health.model;
+        if (memSize) {
+            const info = modelCatalog && modelCatalog[data.health.model];
+            if (info) {
+                const ct = (config.whisper_compute_type || 'int8_float16').toLowerCase();
+                const vram = (parseFloat(ct.includes('int8') ? info.vram_int8 : info.vram_fp16) || 0).toFixed(1);
+                const text = `DL ${info.disk_gb}GB · VRAM ${vram}GB`;
+                memSize.textContent = text;
+                memSize.title = text;
+            } else {
+                memSize.textContent = '';
+                memSize.title = '';
+            }
+        }
         const sel = $('#select-model');
         if (sel && sel.value !== data.health.model) {
             sel.value = data.health.model;
         }
-    } else if (memModel) {
-        memModel.textContent = '--';
+    } else {
+        if (memModel) memModel.textContent = '--';
+        if (memSize) { memSize.textContent = '--'; memSize.title = ''; }
     }
     if (proc) {
         pid.textContent = proc.pid;

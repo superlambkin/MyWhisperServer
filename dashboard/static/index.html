@@ -306,7 +306,10 @@
                                 <div class="bg-stone-900/50 rounded-xl p-3 text-center">
                                     <div id="gpu-mem-text" class="text-xl font-bold text-pink-400">-- / -- MB</div>
                                     <div class="text-xs text-stone-400" data-i18n="gpu.mem">显存</div>
-                                    <div id="gpu-mem-model" class="text-xs font-mono text-cyan-300 mt-1 truncate" title="Whisper model">--</div>
+                                    <div class="mt-1">
+                                        <div id="gpu-mem-model" class="text-base font-mono text-cyan-300 font-semibold truncate" title="Whisper model">--</div>
+                                        <div id="gpu-mem-size" class="text-[10px] text-stone-400 mt-0.5 truncate" title="">--</div>
+                                    </div>
                                 </div>
                                 <div id="gpu-temp-box" class="bg-stone-900/50 rounded-xl p-3 text-center">
                                     <div id="gpu-temp" class="text-xl font-bold text-emerald-400">-- W</div>
@@ -840,6 +843,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=36"></script>
+    <script src="/static/js/app.js?v=37"></script>
 </body>
 </html>
