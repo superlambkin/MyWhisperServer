@@ -1343,13 +1343,17 @@ function updateWhisperStatus(data) {
     }
 
     const proc = data.process;
+    const memModel = $('#gpu-mem-model'); // GPU モニタ「显存」下の搭載モデル表示
     if (data.health && data.health.model) {
         currentModel = data.health.model;
         $('#stat-model').textContent = data.health.model;
+        if (memModel) memModel.textContent = data.health.model;
         const sel = $('#select-model');
         if (sel && sel.value !== data.health.model) {
             sel.value = data.health.model;
         }
+    } else if (memModel) {
+        memModel.textContent = '--';
     }
     if (proc) {
         pid.textContent = proc.pid;
