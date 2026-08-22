@@ -1259,7 +1259,7 @@ async def api_logs(lines: int = Query(100, ge=1, le=1000), source: str = Query("
 
 
 @app.get("/api/v1/config")
-async def api_get_config():
+async def api_get_config(request: Request):
     keys = [
         "default_language", "default_output", "refresh_interval", "gpu_temp_threshold",
         "theme", "ui_language", "whisper_model",
@@ -1275,6 +1275,9 @@ async def api_get_config():
     result["whisper_model_dir"] = (await get_config("whisper_model_dir")) or str(BASE_DIR / "models")
     # #5: API キーは平文で返さず has_key / 末尾4文字 のみ返す
     key_val = await get_config("deepseek_api_key")
+    # whisper_server はループバック経由で校正のためキーを読む → ループバック限定で平文を返す
+    if _is_loopback(request.client.host if request.client else ""):
+        result["deepseek_api_key"] = key_val
     result["deepseek_has_key"] = bool(key_val)
     result["deepseek_key_masked"] = "..." + key_val[-4:] if key_val else ""
     return result
