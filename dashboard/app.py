@@ -1122,11 +1122,66 @@ def _is_model_downloaded(name: str) -> bool:
 
 # ダウンロード状態（プロセス内保持）: name -> "none" / "downloading" / "done" / "error"
 _download_state: Dict[str, str] = {}
+# ダウンロード進捗（%）: name -> 0.0-100.0
+_download_progress: Dict[str, float] = {}
 
 
 def _download_model_sync(name: str, model_dir: Path):
-    from faster_whisper.utils import download_model
-    download_model(name, cache_dir=str(model_dir))
+    """モデルを保存先へダウンロード（HF キャッシュ形式）し、バイト進捗を記録する。
+
+    huggingface_hub のファイルDL進捗バー（.utils.tqdm.tqdm）を一時パッチして
+    `_download_progress[name]` に 0-100% を書き込む。ファイルは逐次 DL し、
+    「完了済みファイルの合計バイト + 進行中ファイルの現在バイト」÷ 全体バイト
+    で全体 % を計算する（snapshot_download のバーはファイル数のみでバイト精度が無いため）。
+    """
+    from faster_whisper.utils import _MODELS
+    from huggingface_hub import HfApi, hf_hub_download
+    import importlib
+    # huggingface_hub.utils は同名クラスを再バインドするため importlib で実モジュールを取得
+    _tqdm_mod = importlib.import_module("huggingface_hub.utils.tqdm")
+    import fnmatch
+
+    repo = _MODELS.get(name, f"Systran/faster-whisper-{name}")
+    allow_patterns = ["config.json", "preprocessor_config.json", "model.bin", "tokenizer.json", "vocabulary.*"]
+
+    # リポジトリの対象ファイル一覧と合計サイズを取得
+    files = []
+    for f in HfApi().list_repo_tree(repo, recursive=True):
+        sz = getattr(f, "size", None)
+        if sz is None:  # ディレクトリ等は除外
+            continue
+        if any(fnmatch.fnmatch(getattr(f, "path", ""), p) for p in allow_patterns):
+            files.append((getattr(f, "path", ""), sz))
+    grand_total = sum(sz for _, sz in files) or 1
+
+    real_tqdm = _tqdm_mod.tqdm
+    done = [0.0]  # 完了済みバイト（クロージャで共有）
+
+    class _ByteBar(real_tqdm):
+        def __init__(self, *args, **kwargs):
+            # ヘッドレス実行では tqdm が自動無効化され self.n が進まないため強制有効化
+            kwargs["disable"] = False
+            super().__init__(*args, **kwargs)
+
+        def display(self, *a, **k):
+            pass  # レンダリングは行わず進捗捕捉のみ（ログを汚さない）
+
+        def update(self, n=1):
+            super().update(n)
+            total = self.total or 0
+            if total and grand_total:
+                pct = min(99.0, (done[0] + self.n) / grand_total * 100)
+                _download_progress[name] = round(pct, 1)
+
+    _tqdm_mod.tqdm = _ByteBar
+    try:
+        _download_progress[name] = 0.0
+        for path, _sz in files:
+            hf_hub_download(repo, filename=path, cache_dir=str(model_dir))
+            done[0] += _sz
+    finally:
+        _tqdm_mod.tqdm = real_tqdm
+    _download_progress[name] = 100.0
 
 
 async def download_model_task(name: str):
@@ -1134,9 +1189,11 @@ async def download_model_task(name: str):
     if _download_state.get(name) == "downloading":
         return
     _download_state[name] = "downloading"
+    _download_progress[name] = 0.0
     try:
         print(f"[model] ダウンロード開始: {name}")
         await asyncio.to_thread(_download_model_sync, name, get_model_dir_sync())
+        _download_progress[name] = 100.0
         _download_state[name] = "done"
         print(f"[model] ダウンロード完了: {name}")
     except Exception as e:
@@ -1157,7 +1214,12 @@ async def api_whisper_models():
             state = "done"
         if state in (None, "none"):
             state = "none"
-        catalog[name] = {**info, "downloaded": downloaded, "download_state": state}
+        catalog[name] = {
+            **info,
+            "downloaded": downloaded,
+            "download_state": state,
+            "download_progress": round(_download_progress.get(name, 0.0), 1),
+        }
     return {"models": catalog}
 
 

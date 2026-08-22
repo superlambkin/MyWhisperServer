@@ -93,8 +93,10 @@ const I18N = {
         "model.dir_hint": "模型切换・新下载时的保存位置（空=默认）",
         "model.downloaded": "✓ 已下载",
         "model.not_downloaded": "未下载",
-        "model.downloading": "下载中...",
+        "model.downloading": "下载中",
         "model.downloading_short": "中...",
+        "model.download_failed": "下载失败",
+        "model.retry_download": "重新下载",
         "model.use": "使用",
         "model.download": "下载",
         "model.download_start": "开始下载",
@@ -301,8 +303,10 @@ const I18N = {
         "model.dir_hint": "モデル切替・新規ダウンロード時の保存先（空欄=既定）",
         "model.downloaded": "✓ DL済",
         "model.not_downloaded": "未DL",
-        "model.downloading": "ダウンロード中...",
+        "model.downloading": "ダウンロード中",
         "model.downloading_short": "中...",
+        "model.download_failed": "ダウンロード失敗",
+        "model.retry_download": "再DL",
         "model.use": "使用",
         "model.download": "DL",
         "model.download_start": "ダウンロードを開始しました",
@@ -509,8 +513,10 @@ const I18N = {
         "model.dir_hint": "Save location for downloads (blank = default)",
         "model.downloaded": "✓ Downloaded",
         "model.not_downloaded": "Not downloaded",
-        "model.downloading": "Downloading...",
+        "model.downloading": "Downloading",
         "model.downloading_short": "...",
+        "model.download_failed": "Download failed",
+        "model.retry_download": "Retry",
         "model.use": "Use",
         "model.download": "Download",
         "model.download_start": "Download started",
@@ -1498,42 +1504,77 @@ function renderModelManageList() {
     Object.keys(modelCatalog).forEach((name) => {
         const info = modelCatalog[name];
         const downloading = info.download_state === 'downloading';
+        const failed = info.download_state === 'error';
+
         const row = document.createElement('div');
-        row.className = 'flex items-center justify-between gap-2 p-2 rounded-lg bg-stone-900/50 text-sm';
+        row.className = 'p-2 rounded-lg bg-stone-900/50 text-sm';
+        const top = document.createElement('div');
+        top.className = 'flex items-center justify-between gap-2';
+
+        // 左: モデル名 + DL 容量 + 状態（モデル名の後ろに表示）
         const left = document.createElement('div');
-        left.className = 'flex items-center gap-2 min-w-0';
+        left.className = 'flex items-center gap-2 min-w-0 flex-wrap';
         left.innerHTML = `<span class="font-mono text-xs">${escapeHtml(name)}</span><span class="text-xs text-stone-500">DL ${info.disk_gb}GB</span>`;
+
+        // 右: ボタン
         const right = document.createElement('div');
         right.className = 'flex items-center gap-2 shrink-0';
-        const status = document.createElement('span');
-        status.className = 'text-xs';
         let btn;
+
         if (downloading) {
-            status.textContent = t('model.downloading');
-            status.className += ' text-amber-400';
+            const pct = Math.min(100, Math.max(0, info.download_progress || 0));
+            const state = document.createElement('span');
+            state.className = 'text-xs text-amber-400';
+            state.textContent = `${t('model.downloading')} ${pct}%`;
+            left.appendChild(state);
             btn = document.createElement('button');
             btn.disabled = true;
             btn.className = 'px-3 py-1 rounded-lg bg-stone-800 text-stone-400 text-xs';
             btn.textContent = t('model.downloading_short');
+            // プログレスバー
+            const bar = document.createElement('div');
+            bar.className = 'w-full h-1.5 bg-stone-800 rounded-full overflow-hidden mt-1.5';
+            const fill = document.createElement('div');
+            fill.className = 'h-full bg-amber-500 rounded-full transition-all duration-500';
+            fill.style.width = pct + '%';
+            bar.appendChild(fill);
+            row.appendChild(top);
+            row.appendChild(bar);
         } else if (info.downloaded) {
-            status.textContent = t('model.downloaded');
-            status.className += ' text-emerald-400';
+            const state = document.createElement('span');
+            state.className = 'text-xs text-emerald-400';
+            state.textContent = t('model.downloaded');
+            left.appendChild(state);
             btn = document.createElement('button');
             btn.className = 'px-3 py-1 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-xs font-medium transition-all';
             btn.textContent = t('model.use');
             btn.addEventListener('click', () => switchToModel(name));
+            row.appendChild(top);
+        } else if (failed) {
+            const state = document.createElement('span');
+            state.className = 'text-xs text-rose-400';
+            state.textContent = t('model.download_failed');
+            left.appendChild(state);
+            btn = document.createElement('button');
+            btn.className = 'px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs font-medium transition-all';
+            btn.textContent = t('model.retry_download');
+            btn.addEventListener('click', () => downloadModel(name));
+            row.appendChild(top);
         } else {
-            status.textContent = t('model.not_downloaded');
-            status.className += ' text-stone-500';
+            const state = document.createElement('span');
+            state.className = 'text-xs text-stone-500';
+            state.textContent = t('model.not_downloaded');
+            left.appendChild(state);
             btn = document.createElement('button');
             btn.className = 'px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs font-medium transition-all';
             btn.textContent = t('model.download');
             btn.addEventListener('click', () => downloadModel(name));
+            row.appendChild(top);
         }
-        right.appendChild(status);
+
         right.appendChild(btn);
-        row.appendChild(left);
-        row.appendChild(right);
+        top.appendChild(left);
+        top.appendChild(right);
         list.appendChild(row);
     });
 }
@@ -1559,7 +1600,7 @@ async function downloadModel(name) {
                         clearInterval(_pollDownload);
                         _pollDownload = null;
                     }
-                }, 4000);
+                }, 2000);
             }
         } else {
             showToast(data.message || t('toast.action_failed'), 'error');
