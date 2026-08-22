@@ -1302,6 +1302,15 @@ function updateSystemDisplay(data, history) {
 // ---------------------------------------------------------------------------
 // Whisper 状态
 // ---------------------------------------------------------------------------
+// 同一モデルへのエイリアス（turbo ⇔ large-v3-turbo / large ⇔ large-v3）。
+// WS 同期時に相互を同一視し、選択中を勝手に書き換えない。
+const MODEL_ALIASES = { 'turbo': 'large-v3-turbo', 'large': 'large-v3' };
+function sameModel(a, b) {
+    if (!a || !b) return false;
+    if (a === b) return true;
+    return MODEL_ALIASES[a] === b || MODEL_ALIASES[b] === a;
+}
+
 function updateWhisperStatus(data) {
     lastWhisperStatus = data;
     const running = data.running;
@@ -1363,7 +1372,8 @@ function updateWhisperStatus(data) {
             }
         }
         const sel = $('#select-model');
-        if (sel && sel.value !== data.health.model) {
+        // エイリアス（turbo ⇔ large-v3-turbo）は同一モデルなので選択中を書き換えない
+        if (sel && !sameModel(sel.value, data.health.model)) {
             sel.value = data.health.model;
         }
     } else {
