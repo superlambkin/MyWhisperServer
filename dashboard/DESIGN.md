@@ -298,6 +298,32 @@ WebSocket 再接続で `converting` / `progress` イベントが欠落しても�
 2026-08-22 実施のコードレビュー結果は **`docs/REVIEW.md`** に記録済み。
 
 - ✅ 修正済み: LLM プロファイル部分更新での api_key 消失 / `/asr` 一時ファイルリーク / アップロード 1GB 上限
-- ⚠️ 推奨（未対応）: 無認証 + 0.0.0.0 バインド、API キー平文暴露、並行 `/asr` の共有状態、SSRF 経路、CDN 依存
+- ✅ 修正済み（推奨 10 件）: トークン認証（書き込み・制御系）/ API キーマスク化 / `/asr` 直列化 / base_url 検証 / LIKE エスケープ / ログ時系列ソート / シャットダウン解放 / history スナップショット / CDN ローカル化 / language エスケープ
 
-本設計（snapshot 同期・リアルタイム監視・タイミングモデル）はレビュー指摘 4〜7 の「認証・SSRF・並行制御」を除き、現行のまま妥当とする。
+本設計（snapshot 同期・リアルタイム監視・タイミングモデル）は上記修正後も現行のまま妥当とする。
+
+## 14. FasterWhisper モデル選択機能（2026-08-22 追加）
+
+参考: [Qiita「faster-whisper で文字起こし」](https://qiita.com/taiki_i/items/3d2d0d0b2dd79059f30e)
+
+### 14.1 モデルカタログ（`MODEL_CATALOG` / `GET /api/v1/whisper/models`）
+
+faster-whisper 1.2.1 が受け付ける全モデル（18 種）を定義し、モデルごとに **VRAM 目安（fp16 / int8）・ダウンロードサイズ・対応言語・説明** を持たせる。`ALLOWED_MODELS` はカタログのキーから導出（選択肢の追加時はカタログ 1 箇所の変更で済む）。
+
+- `GET /api/v1/whisper/models` → `{"models": {...}}`（閲覧用、認証不要）
+- `POST /api/v1/whisper/model` → カタログ外モデルは `unsupported model` で拒否。保存 → 停止 → 再起動（env `WHISPER_MODEL` 注入）。
+
+### 14.2 フロントの VRAM 警告（GTX 1660 Ti 6GB 前提）
+
+- `populateModelSelect()`: カタログから `<option>` を動的生成（`data-vram-fp16 / vram-int8 / disk-gb / lang / desc`）。
+- `updateModelInfo()`: 選択中モデル + 現在の `whisper_compute_type`（int8 系か fp16 か）で VRAM 目安を算出し、制御カード下に 1 行で表示。
+  - `vram > 5.5GB` → 🔴 非推奨（6GB カードに収まらない恐れ）
+  - `vram > 4.5GB` → ⚠️ VRAM に注意
+  - それ以下 → ✓ 収まる
+- `switchModel()`: 危険モデル（`> 5.5GB`）への切替は `confirm()` で再確認（未キャッシュモデルは大容量 DL + VRAM 不足で OOM の恐れ）。
+
+### 14.3 実測メモ
+
+- GTX 1660 Ti 6GB / `medium` + `int8_float16` 稼働時、nvidia-smi で **~4.7GB** 使用（他プロセス含む）。`large-v2/v3` は int8 でも 5.0GB 目安のため⚠️、fp16 では 🔴 判定。
+- `large-v3-turbo` / `distil-large-v3` は int8 で 2.5〜2.8GB と 6GB カードに十分収まり、精度と速度のバランスが良い推奨候補。
+- 未キャッシュモデルへの切替時は HuggingFace から自動ダウンロード（`~/.cache/huggingface/hub/models--Systran--faster-whisper-*`）。

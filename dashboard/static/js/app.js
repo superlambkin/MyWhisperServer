@@ -79,6 +79,14 @@ const I18N = {
         "whisper.switch_model": "切换模型",
         "whisper.switching": "模型切换中，服务重启...",
         "whisper.switch_done": "模型已切换",
+        "model.vram_ok": "✓ VRAM 充足",
+        "model.vram_warn": "⚠️ VRAM 偏紧",
+        "model.vram_danger": "🔴 不推荐（6GB VRAM 可能不足）",
+        "model.lang_multi": "多语言",
+        "model.lang_en": "英语专用",
+        "model.vram_label": "VRAM 参考",
+        "model.dl_label": "下载",
+        "model.confirm_danger": "该模型可能超出 6GB 显卡 VRAM，仍要切换吗？",
         "records.title": "转换履历",
         "records.search": "搜索文件名或结果...",
         "records.refresh": "刷新",
@@ -263,6 +271,14 @@ const I18N = {
         "whisper.switch_model": "モデル切替",
         "whisper.switching": "モデル切替中、サービス再起動...",
         "whisper.switch_done": "モデルを切り替えました",
+        "model.vram_ok": "✓ VRAM に収まる",
+        "model.vram_warn": "⚠️ VRAM に注意",
+        "model.vram_danger": "🔴 非推奨（6GB VRAM に収まらない恐れ）",
+        "model.lang_multi": "多言語",
+        "model.lang_en": "英語専用",
+        "model.vram_label": "VRAM 目安",
+        "model.dl_label": "DL",
+        "model.confirm_danger": "このモデルは 6GB カードの VRAM に収まらない恐れがあります。それでも切替えますか？",
         "records.title": "変換履歴",
         "records.search": "ファイル名や結果を検索...",
         "records.refresh": "更新",
@@ -447,6 +463,14 @@ const I18N = {
         "whisper.switch_model": "Switch Model",
         "whisper.switching": "Switching model, restarting service...",
         "whisper.switch_done": "Model switched",
+        "model.vram_ok": "✓ Fits in VRAM",
+        "model.vram_warn": "⚠️ Tight VRAM",
+        "model.vram_danger": "🔴 Not recommended (may exceed 6GB VRAM)",
+        "model.lang_multi": "Multilingual",
+        "model.lang_en": "English only",
+        "model.vram_label": "VRAM",
+        "model.dl_label": "Download",
+        "model.confirm_danger": "This model may not fit in 6GB VRAM. Switch anyway?",
         "records.title": "Transcription History",
         "records.search": "Search filename or result...",
         "records.refresh": "Refresh",
@@ -1311,9 +1335,94 @@ async function controlWhisper(action) {
     }
 }
 
+// 選択中モデルの compute_type 連動 VRAM 目安を返す（GB）
+function selectedModelVram() {
+    const sel = $('#select-model');
+    if (!sel || !sel.selectedIndex) return 0;
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt) return 0;
+    const ct = (config.whisper_compute_type || 'int8_float16').toLowerCase();
+    return ct.includes('int8')
+        ? (parseFloat(opt.dataset.vramInt8) || 0)
+        : (parseFloat(opt.dataset.vramFp16) || 0);
+}
+
+// モデルカタログから選択肢を生成（VRAM 目安・DL サイズ・説明付き）
+async function populateModelSelect() {
+    const sel = $('#select-model');
+    if (!sel) return;
+    try {
+        const resp = await apiFetch(`${API_BASE}/whisper/models`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const models = data.models || {};
+        sel.innerHTML = '';
+        Object.keys(models).forEach((name) => {
+            const info = models[name];
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            opt.dataset.vramFp16 = info.vram_fp16;
+            opt.dataset.vramInt8 = info.vram_int8;
+            opt.dataset.diskGb = info.disk_gb;
+            opt.dataset.lang = info.lang;
+            opt.dataset.desc = info.desc;
+            sel.appendChild(opt);
+        });
+        // 現在の設定モデルを反映（カタログに存在する場合のみ）
+        if (config.whisper_model && Array.from(sel.options).some(o => o.value === config.whisper_model)) {
+            sel.value = config.whisper_model;
+        }
+        updateModelInfo();
+    } catch (e) {
+        console.error('Failed to load model list:', e);
+    }
+}
+
+// 選択中モデルの VRAM 目安と 6GB カードでの警告を表示
+function updateModelInfo() {
+    const sel = $('#select-model');
+    const info = $('#model-info');
+    if (!sel || !info) return;
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt) return;
+    const ct = (config.whisper_compute_type || 'int8_float16').toLowerCase();
+    const useInt8 = ct.includes('int8');
+    const vram = useInt8 ? (parseFloat(opt.dataset.vramInt8) || 0) : (parseFloat(opt.dataset.vramFp16) || 0);
+    const disk = parseFloat(opt.dataset.diskGb) || 0;
+    const lang = opt.dataset.lang === 'en' ? t('model.lang_en') : t('model.lang_multi');
+    // 6GB カード基準: CUDA コンテキスト等 ~1.2GB を控除した実利用上限 ~4.8GB
+    const WARN_GB = 4.5;
+    const DANGER_GB = 5.5;
+    let status, cls;
+    if (vram > DANGER_GB) {
+        status = t('model.vram_danger');
+        cls = 'text-rose-400';
+    } else if (vram > WARN_GB) {
+        status = t('model.vram_warn') + ` (${vram.toFixed(1)}GB)`;
+        cls = 'text-amber-400';
+    } else {
+        status = t('model.vram_ok');
+        cls = 'text-emerald-400';
+    }
+    const vramLine = useInt8
+        ? `${t('model.vram_label')}: int8 ${opt.dataset.vramInt8}GB / fp16 ${opt.dataset.vramFp16}GB`
+        : `${t('model.vram_label')}: fp16 ${opt.dataset.vramFp16}GB`;
+    info.innerHTML = [
+        `<span class="${cls}">${status}</span>`,
+        `<span>・${lang}・${vramLine}</span>`,
+        `<span>・${t('model.dl_label')}: ${disk}GB</span>`,
+        `<span>・${escapeHtml(opt.dataset.desc || '')}</span>`,
+    ].join('<br>');
+}
+
 async function switchModel() {
     const model = $('#select-model').value;
     if (!model) return;
+    // 危険モデルは切替前に確認（未キャッシュなら大容量 DL + VRAM 不足で OOM の恐れ）
+    if (selectedModelVram() > 5.5 && !window.confirm(t('model.confirm_danger'))) {
+        return;
+    }
     try {
         showToast(t('whisper.switching'), 'info');
         const resp = await apiFetch(`${API_BASE}/whisper/model`, {
@@ -1807,6 +1916,7 @@ async function loadSettings() {
         updateActiveProfileLabel();
         await loadLLMProfiles();
         await loadAuthTokenDisplay();
+        updateModelInfo();
     } catch (e) {
         console.error('Failed to load settings:', e);
     }
@@ -2177,6 +2287,8 @@ function initEventListeners() {
     $('#btn-stop-whisper').addEventListener('click', () => controlWhisper('stop'));
     $('#btn-restart-whisper').addEventListener('click', () => controlWhisper('restart'));
     $('#btn-switch-model').addEventListener('click', switchModel);
+    const modelSel = $('#select-model');
+    if (modelSel) modelSel.addEventListener('change', updateModelInfo);
 
     $('#records-search').addEventListener('input', (e) => {
         loadRecords(e.target.value);
@@ -2314,6 +2426,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTrendResize();
     initAuth();
     setupAuthUI();
+    populateModelSelect();
     connectWebSocket();
     loadStats();
     loadRecords();

@@ -964,7 +964,36 @@ async def api_whisper_restart():
     return {"success": True, "message": "Whisper restarted", "pid": p.pid}
 
 
-ALLOWED_MODELS = ["tiny", "base", "small", "medium", "large-v2", "large-v3"]
+# faster-whisper 1.2.1 対応モデルカタログ（Qiita: https://qiita.com/taiki_i/items/3d2d0d0b2dd79059f30e を参考）
+# vram_fp16 / vram_int8: CTranslate2 推論時の VRAM 目安（GB、CUDA コンテキスト等は除く）
+# disk_gb: HuggingFace からのダウンロードサイズ目安。lang: multi=多言語 / en=英語専用
+MODEL_CATALOG = {
+    "tiny":             {"vram_fp16": 0.4, "vram_int8": 0.2, "disk_gb": 0.1,  "lang": "multi", "desc": "最速・最低精度"},
+    "tiny.en":          {"vram_fp16": 0.4, "vram_int8": 0.2, "disk_gb": 0.1,  "lang": "en",    "desc": "英語専用・最速"},
+    "base":             {"vram_fp16": 0.7, "vram_int8": 0.4, "disk_gb": 0.1,  "lang": "multi", "desc": "高速・軽量"},
+    "base.en":          {"vram_fp16": 0.7, "vram_int8": 0.4, "disk_gb": 0.1,  "lang": "en",    "desc": "英語専用・軽量"},
+    "small":            {"vram_fp16": 1.5, "vram_int8": 0.8, "disk_gb": 0.5,  "lang": "multi", "desc": "バランス型"},
+    "small.en":         {"vram_fp16": 1.5, "vram_int8": 0.8, "disk_gb": 0.5,  "lang": "en",    "desc": "英語専用・バランス"},
+    "distil-small.en":  {"vram_fp16": 0.9, "vram_int8": 0.5, "disk_gb": 0.3,  "lang": "en",    "desc": "蒸留・高速（英語）"},
+    "medium":           {"vram_fp16": 5.0, "vram_int8": 2.5, "disk_gb": 1.5,  "lang": "multi", "desc": "高精度（標準）"},
+    "medium.en":        {"vram_fp16": 5.0, "vram_int8": 2.5, "disk_gb": 1.5,  "lang": "en",    "desc": "英語専用・高精度"},
+    "distil-medium.en": {"vram_fp16": 2.5, "vram_int8": 1.3, "disk_gb": 0.8,  "lang": "en",    "desc": "蒸留・高速（英語）"},
+    "large-v1":         {"vram_fp16": 9.5, "vram_int8": 5.0, "disk_gb": 3.0,  "lang": "multi", "desc": "旧世代・最大規模"},
+    "large-v2":         {"vram_fp16": 9.5, "vram_int8": 5.0, "disk_gb": 3.0,  "lang": "multi", "desc": "高精度（記事掲載の定番）"},
+    "large-v3":         {"vram_fp16": 9.5, "vram_int8": 5.0, "disk_gb": 3.0,  "lang": "multi", "desc": "最新・最高精度（Qiita 推奨）"},
+    "large":            {"vram_fp16": 9.5, "vram_int8": 5.0, "disk_gb": 3.0,  "lang": "multi", "desc": "large-v3 へのエイリアス"},
+    "distil-large-v2":  {"vram_fp16": 4.9, "vram_int8": 2.5, "disk_gb": 1.5,  "lang": "multi", "desc": "蒸留・高速（精度-1%）"},
+    "distil-large-v3":  {"vram_fp16": 4.9, "vram_int8": 2.5, "disk_gb": 1.5,  "lang": "multi", "desc": "蒸留・高速（精度-1%）"},
+    "large-v3-turbo":   {"vram_fp16": 5.2, "vram_int8": 2.8, "disk_gb": 1.6,  "lang": "multi", "desc": "turbo 高速・高精度"},
+    "turbo":            {"vram_fp16": 5.2, "vram_int8": 2.8, "disk_gb": 1.6,  "lang": "multi", "desc": "large-v3-turbo のエイリアス"},
+}
+ALLOWED_MODELS = list(MODEL_CATALOG)
+
+
+@app.get("/api/v1/whisper/models")
+async def api_whisper_models():
+    """FasterWhisper 対応モデル一覧（VRAM 目安・DL サイズ・説明）を返す。"""
+    return {"models": MODEL_CATALOG}
 
 
 @app.post("/api/v1/whisper/model", dependencies=[Depends(require_auth)])
