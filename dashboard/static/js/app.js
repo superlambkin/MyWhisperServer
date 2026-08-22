@@ -181,7 +181,12 @@ const I18N = {
         "llm.delete": "删除",
         "llm.name": "名称",
         "llm.base_url": "Base URL",
+        "llm.provider": "服务商",
+        "llm.provider_custom": "自定义",
         "llm.model": "模型",
+        "llm.model_custom": "自定义…",
+        "llm.model_loading": "读取中...",
+        "llm.model_load_failed": "模型列表读取失败（请确认 Ollama 已启动）",
         "llm.api_key": "API Key（可选）",
         "llm.save": "保存",
         "llm.cancel": "取消",
@@ -383,7 +388,12 @@ const I18N = {
         "llm.delete": "削除",
         "llm.name": "名前",
         "llm.base_url": "Base URL",
+        "llm.provider": "プロバイダ",
+        "llm.provider_custom": "カスタム",
         "llm.model": "モデル",
+        "llm.model_custom": "カスタム…",
+        "llm.model_loading": "読み込み中...",
+        "llm.model_load_failed": "モデル一覧を取得できませんでした（Ollama の起動を確認）",
         "llm.api_key": "API キー（任意）",
         "llm.save": "保存",
         "llm.cancel": "キャンセル",
@@ -585,7 +595,12 @@ const I18N = {
         "llm.delete": "Delete",
         "llm.name": "Name",
         "llm.base_url": "Base URL",
+        "llm.provider": "Provider",
+        "llm.provider_custom": "Custom",
         "llm.model": "Model",
+        "llm.model_custom": "Custom...",
+        "llm.model_loading": "Loading...",
+        "llm.model_load_failed": "Failed to load models (check Ollama is running)",
         "llm.api_key": "API Key (optional)",
         "llm.save": "Save",
         "llm.cancel": "Cancel",
@@ -2208,6 +2223,122 @@ async function saveAICorrectEnabled() {
 // ---------------------------------------------------------------------------
 // LLM プロファイル管理
 // ---------------------------------------------------------------------------
+// プロバイダ定義（Deepseek / MiniMax / Ollama / 自定义）
+const LLM_PROVIDERS = {
+    deepseek: {
+        label: 'Deepseek',
+        base_url: 'https://api.deepseek.com/v1',
+        models: ['deepseek-chat', 'deepseek-reasoner', 'deepseek-v4-flash'],
+    },
+    minimax: {
+        label: 'MiniMax',
+        base_url: 'https://api.minimaxi.com/v1',
+        models: ['MiniMax-M3', 'MiniMax-Text-01', 'MiniMax-M2', 'MiniMax-M1'],
+    },
+    ollama: {
+        label: 'Ollama',
+        base_url: 'http://localhost:11434/v1',
+        models: null,   // 動的取得（/api/tags をバックエンド経由で）
+    },
+    custom: {
+        label: 'Custom',
+        base_url: '',
+        models: [],
+    },
+};
+
+// base_url からプロバイダを推定（旧データは provider 未設定のため）
+function providerFromBaseUrl(base_url) {
+    const u = (base_url || '').toLowerCase();
+    if (u.includes('api.deepseek.com')) return 'deepseek';
+    if (u.includes('minimax')) return 'minimax';
+    if (u.includes(':11434') || u.includes('ollama')) return 'ollama';
+    return 'custom';
+}
+
+// モデルプルダウンを描画（保存済みモデルが一覧に無ければ先頭に追加）
+function renderModelOptions(provider, savedModel) {
+    const sel = $('#llm-f-model');
+    const list = [...(LLM_PROVIDERS[provider]?.models || [])];
+    if (savedModel && !list.includes(savedModel)) list.unshift(savedModel);
+    const opts = list.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`);
+    opts.push(`<option value="__custom__">${t('llm.model_custom')}</option>`);
+    sel.innerHTML = opts.join('');
+    if (savedModel && list.includes(savedModel)) {
+        sel.value = savedModel;
+        $('#llm-f-model-custom').value = '';
+    } else if (savedModel) {
+        sel.value = '__custom__';
+        $('#llm-f-model-custom').value = savedModel;
+    } else {
+        sel.value = list[0] || '__custom__';
+    }
+    toggleModelCustom();
+}
+
+// カスタム入力欄の表示切り替え（__custom__ 選択時のみ表示）
+function toggleModelCustom() {
+    const customInput = $('#llm-f-model-custom');
+    customInput.classList.toggle('hidden', $('#llm-f-model').value !== '__custom__');
+}
+
+// プロバイダ変更時: base_url 自動入力 + モデル一覧取得
+function setProfileProvider(provider, savedModel) {
+    $('#llm-f-provider').value = provider;
+    const base = LLM_PROVIDERS[provider]?.base_url || '';
+    if (base && !$('#llm-f-base').value.trim()) $('#llm-f-base').value = base;
+    if (provider === 'ollama') {
+        loadOllamaModels($('#llm-f-base').value || base, savedModel);
+    } else {
+        renderModelOptions(provider, savedModel);
+    }
+}
+
+// フォーム内プロバイダ変更ハンドラ（index.html onchange）
+function onProfileProviderChange() {
+    const savedModel = editingProfileId
+        ? (llmProfiles.find(p => p.id === editingProfileId)?.model || '')
+        : '';
+    setProfileProvider($('#llm-f-provider').value, savedModel);
+}
+
+// Ollama のモデル一覧をバックエンド経由で取得
+async function loadOllamaModels(base_url, savedModel) {
+    const sel = $('#llm-f-model');
+    sel.innerHTML = `<option value="">${t('llm.model_loading')}</option>`;
+    let failed = false;
+    try {
+        const resp = await apiFetch(`${API_BASE}/llm/ollama/models?base_url=${encodeURIComponent(base_url || '')}`);
+        const data = await resp.json();
+        if (data.success && data.models.length) {
+            const list = data.models;
+            const opts = list.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`);
+            opts.push(`<option value="__custom__">${t('llm.model_custom')}</option>`);
+            sel.innerHTML = opts.join('');
+            if (savedModel && list.includes(savedModel)) {
+                sel.value = savedModel;
+                $('#llm-f-model-custom').value = '';
+            } else if (savedModel) {
+                sel.value = '__custom__';
+                $('#llm-f-model-custom').value = savedModel;
+            } else {
+                sel.value = list[0];
+            }
+        } else {
+            failed = true;
+            sel.innerHTML = `<option value="__custom__">${t('llm.model_custom')}</option>`;
+            if (savedModel) { sel.value = '__custom__'; $('#llm-f-model-custom').value = savedModel; }
+            showToast(t('llm.model_load_failed') + (data.error ? ': ' + data.error : ''), 'error');
+        }
+    } catch (e) {
+        failed = true;
+        sel.innerHTML = `<option value="__custom__">${t('llm.model_custom')}</option>`;
+        if (savedModel) { sel.value = '__custom__'; $('#llm-f-model-custom').value = savedModel; }
+        showToast(t('llm.model_load_failed'), 'error');
+    }
+    if (!failed) toggleModelCustom();
+}
+
 function renderLLMProfiles(profiles) {
     llmProfiles = profiles || [];
     // アクティブ profile のモデル名を記録（AI 校正プログレスバーで使用）
@@ -2226,7 +2357,7 @@ function renderLLMProfiles(profiles) {
                     ${escapeHtml(p.name)}
                     ${p.active ? `<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-xs">${t('llm.active')}</span>` : ''}
                 </div>
-                <div class="text-xs text-stone-400 truncate">${escapeHtml(p.base_url)} · ${escapeHtml(p.model)}</div>
+                <div class="text-xs text-stone-400 truncate">${escapeHtml(p.provider ? p.provider + ' · ' : '')}${escapeHtml(p.base_url)} · ${escapeHtml(p.model)}</div>
             </div>
             <div class="flex gap-3 text-xs shrink-0">
                 ${p.active ? '' : `<button class="text-amber-400 hover:text-amber-300" onclick="activateLLMProfile(${p.id})">${t('llm.activate')}</button>`}
@@ -2258,7 +2389,14 @@ function openProfileForm(profile) {
     $('#llm-f-key').placeholder = profile && profile.has_key
         ? `保存済み ${profile.key_masked || ''}（未入力なら維持）`
         : '';
-    $('#llm-f-model').value = profile ? (profile.model || '') : '';
+    // プロバイダ: 保存値があればそれ、なければ base_url から推定
+    const provider = profile && profile.provider
+        ? profile.provider
+        : providerFromBaseUrl(profile ? profile.base_url : '');
+    $('#llm-f-provider').value = provider;
+    $('#llm-f-model-custom').value = '';
+    $('#llm-f-model-custom').classList.add('hidden');
+    setProfileProvider(provider, profile ? (profile.model || '') : '');
     $('#llm-profile-form').classList.remove('hidden');
     $('#llm-f-name').focus();
 }
@@ -2269,10 +2407,13 @@ function closeProfileForm() {
 }
 
 async function saveProfile() {
+    let model = $('#llm-f-model').value;
+    if (model === '__custom__') model = $('#llm-f-model-custom').value.trim();
     const payload = {
         name: $('#llm-f-name').value.trim(),
         base_url: $('#llm-f-base').value.trim(),
-        model: $('#llm-f-model').value.trim(),
+        model: model,
+        provider: $('#llm-f-provider').value,
     };
     // #5: キー欄が空なら送信しない（既存キーを維持）。空文字での明示クリアは不可
     const newKey = $('#llm-f-key').value.trim();

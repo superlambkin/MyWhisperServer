@@ -190,7 +190,7 @@ def init_db():
                 value TEXT
             )
         """)
-        # LLM プロファイル（Deepseek / Ollama など OpenAI 互換エンドポイントの登録）
+        # LLM プロファイル（Deepseek / MiniMax / Ollama など OpenAI 互換エンドポイントの登録）
         conn.execute("""
             CREATE TABLE IF NOT EXISTS llm_profiles (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -198,8 +198,22 @@ def init_db():
                 base_url TEXT,
                 api_key TEXT,
                 model TEXT,
+                provider TEXT,
                 created_at TEXT
             )
+        """)
+        # provider カラム追加（旧 DB からの移行）
+        llm_cols = [r[1] for r in conn.execute("PRAGMA table_info(llm_profiles)").fetchall()]
+        if "provider" not in llm_cols:
+            conn.execute("ALTER TABLE llm_profiles ADD COLUMN provider TEXT")
+        # provider 未設定の既存プロファイルを base_url から補完（冪等）
+        conn.execute("""
+            UPDATE llm_profiles SET provider='deepseek'
+            WHERE (provider IS NULL OR provider='') AND base_url LIKE '%api.deepseek.com%'
+        """)
+        conn.execute("""
+            UPDATE llm_profiles SET provider='minimax'
+            WHERE (provider IS NULL OR provider='') AND base_url LIKE '%minimax%'
         """)
         # 默认配置
         defaults = {
@@ -235,12 +249,13 @@ def init_db():
                 row = conn.execute("SELECT value FROM config WHERE key=?", (key,)).fetchone()
                 return row[0] if row else default
             cur = conn.execute(
-                "INSERT INTO llm_profiles (name, base_url, api_key, model, created_at) VALUES (?,?,?,?,?)",
+                "INSERT INTO llm_profiles (name, base_url, api_key, model, provider, created_at) VALUES (?,?,?,?,?,?)",
                 (
                     "Deepseek",
                     cfg_val("deepseek_base_url", "https://api.deepseek.com/v1").strip(),
                     cfg_val("deepseek_api_key", "").strip(),
                     cfg_val("deepseek_model", "deepseek-chat").strip(),
+                    "deepseek",
                     datetime.now().isoformat(),
                 ),
             )
@@ -889,12 +904,13 @@ async def api_create_llm_profile(data: dict):
     base_url = validate_base_url(str(data.get("base_url", "")).strip())
     api_key = str(data.get("api_key", "")).strip()
     model = str(data.get("model", "")).strip() or "deepseek-chat"
+    provider = str(data.get("provider", "")).strip()
     if not name or not base_url:
         return {"success": False, "error": "name and base_url are required"}
     async with aiosqlite.connect(str(DB_PATH)) as db:
         async with db.execute(
-            "INSERT INTO llm_profiles (name, base_url, api_key, model, created_at) VALUES (?,?,?,?,?)",
-            (name, base_url, api_key, model, datetime.now().isoformat()),
+            "INSERT INTO llm_profiles (name, base_url, api_key, model, provider, created_at) VALUES (?,?,?,?,?,?)",
+            (name, base_url, api_key, model, provider, datetime.now().isoformat()),
         ) as cur:
             new_id = cur.lastrowid
         await db.commit()
@@ -918,11 +934,12 @@ async def api_update_llm_profile(profile_id: int, data: dict):
         else:
             api_key = row["api_key"]
         model = str(data.get("model", "")).strip() or row["model"] or "deepseek-chat"
+        provider = str(data.get("provider", "")).strip() or row["provider"]
         if not name or not base_url:
             return {"success": False, "error": "name and base_url are required"}
         await db.execute(
-            "UPDATE llm_profiles SET name=?, base_url=?, api_key=?, model=? WHERE id=?",
-            (name, base_url, api_key, model, profile_id),
+            "UPDATE llm_profiles SET name=?, base_url=?, api_key=?, model=?, provider=? WHERE id=?",
+            (name, base_url, api_key, model, provider, profile_id),
         )
         await db.commit()
     # アクティブ中なら config スナップショットを再同期
@@ -963,6 +980,38 @@ async def api_activate_llm_profile(profile_id: int):
         return {"success": False, "error": "profile not found"}
     profile = {**profile, **mask_api_key(profile.pop("api_key", ""))}
     return {"success": True, "profile": profile}
+
+
+@app.get("/api/v1/llm/ollama/models")
+async def api_ollama_models(base_url: str = "http://localhost:11434/v1"):
+    """Ollama のモデル一覧を取得（/api/tags をバックエンド経由でプロキシ）。
+
+    ブラウザ（LAN 側）から NAS 上の localhost:11434 へは届かないため、
+    Dashboard バックエンドが Ollama へ直接問い合わせてモデル名のリストを返す。
+    """
+    import aiohttp
+    try:
+        base_url = validate_base_url(base_url)
+    except HTTPException:
+        base_url = ""
+    if not base_url:
+        return {"success": False, "error": "invalid base_url"}
+    root = base_url.rstrip("/")
+    if root.endswith("/v1"):
+        root = root[:-3]
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{root}/api/tags",
+                timeout=aiohttp.ClientTimeout(total=8),
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    models = sorted(m.get("name", "") for m in data.get("models", []) if m.get("name"))
+                    return {"success": True, "models": models}
+                return {"success": False, "error": f"Ollama HTTP {resp.status}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)[:120]}
 
 
 async def reset_conversion_state():

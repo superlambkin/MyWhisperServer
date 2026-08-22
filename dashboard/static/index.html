@@ -727,6 +727,15 @@
                                         <input id="llm-f-name" type="text" placeholder="Ollama" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
                                     </div>
                                     <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="llm.provider">服务商</label>
+                                        <select id="llm-f-provider" onchange="onProfileProviderChange()" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                            <option value="deepseek">Deepseek</option>
+                                            <option value="minimax">MiniMax</option>
+                                            <option value="ollama">Ollama</option>
+                                            <option value="custom" data-i18n="llm.provider_custom">自定义</option>
+                                        </select>
+                                    </div>
+                                    <div>
                                         <label class="block text-sm text-stone-400 mb-2" data-i18n="llm.base_url">Base URL</label>
                                         <input id="llm-f-base" type="text" placeholder="http://localhost:11434/v1" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
                                     </div>
@@ -736,7 +745,8 @@
                                     </div>
                                     <div>
                                         <label class="block text-sm text-stone-400 mb-2" data-i18n="llm.model">模型</label>
-                                        <input id="llm-f-model" type="text" placeholder="qwen2.5:7b" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                        <select id="llm-f-model" onchange="toggleModelCustom()" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none"></select>
+                                        <input id="llm-f-model-custom" type="text" placeholder="qwen2.5:7b" class="hidden mt-2 w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
                                     </div>
                                     <div class="flex gap-2">
                                         <button id="btn-llm-save" class="flex-1 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-sm font-medium transition-all" data-i18n="llm.save">保存</button>
@@ -787,6 +797,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=32"></script>
+    <script src="/static/js/app.js?v=33"></script>
 </body>
 </html>

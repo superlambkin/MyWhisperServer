@@ -176,7 +176,7 @@ SQLite（`aiosqlite` 非同期アクセス）。テーブルは 3 つ。
 | `base_url` | TEXT | OpenAI 互換エンドポイント（例: `https://api.deepseek.com/v1`） |
 | `api_key` | TEXT | API キー（Ollama 等は空） |
 | `model` | TEXT | モデル名 |
-| `created_at` | TEXT | 作成日時 |
+| `provider` | TEXT | プロバイダ種別（`deepseek` / `minimax` / `ollama` / `custom`）。旧データは base_url から補完 |
 
 ## 9. LLM プロファイル設計（snapshot 同期トリック）
 
@@ -202,6 +202,15 @@ whisper_server は **プロファイルの存在を知らず、常に 3 つの�
 
 - 接続テスト（`POST /api/v1/ai/test`）は base_url/model/api_key で `/chat/completions` を試行。**成功時は自動で有効化**。
 - キーレス動作（Ollama）対応のため、api_key は任意。
+
+### 9.4 プロバイダ選択とモデルプルダウン（UI）
+
+- フォームに**プロバイダ**ドロップダウン（Deepseek / MiniMax / Ollama / 自定义）を設置。選択で base_url を自動入力する。
+- **モデル**はテキスト入力ではなくプルダウンで表示:
+  - Deepseek: `deepseek-chat` / `deepseek-reasoner` / `deepseek-v4-flash`
+  - MiniMax: `MiniMax-M3` / `MiniMax-Text-01` / `MiniMax-M2` / `MiniMax-M1`
+  - Ollama: `GET /api/v1/llm/ollama/models?base_url=...` で **バックエンドが `/api/tags` をプロキシ**して動的取得（ブラウザから NAS 上の localhost:11434 へは届かないため）。base_url 末尾の `/v1` を剥がしてルートへ問い合わせる。
+  - 一覧に無いモデルは「自定义…」で自由入力。
 
 ### 9.3 前方互換シード
 
