@@ -1924,6 +1924,51 @@ const README_CONTENT = {
     },
 };
 
+// モデル比較表のソート状態（key: name / speed / wer, dir: 1=昇順, -1=降順）
+let readmeSort = { key: null, dir: 1 };
+
+// 表示文字列から数値ソートキーを取り出す（例: '約22分'→22, '約2.4'→2.4, '1.00'→1）
+function readmeSortValue(name, key) {
+    if (key === 'name') return name;
+    const bench = MODEL_BENCH[name] || {};
+    const raw = key === 'speed' ? bench.speed : bench.wer;
+    return parseFloat(String(raw || '').replace(/[^0-9.]/g, '')) || 0;
+}
+
+// ソート矢印（▲/▼）をヘッダーに反映
+function updateReadmeSortArrows() {
+    const c = README_CONTENT[uiLanguage] || README_CONTENT['zh'];
+    const keyToTh = { name: 'th_model', speed: 'th_speed', wer: 'th_acc' };
+    [['#th-model', 'name'], ['#th-speed', 'speed'], ['#th-acc', 'wer']].forEach(([id, key]) => {
+        const el = $(id);
+        if (!el) return;
+        const base = c[keyToTh[key]] || '';
+        el.textContent = base + (readmeSort.key === key ? (readmeSort.dir > 0 ? ' ▲' : ' ▼') : '');
+    });
+}
+
+// ソートクリックのバインド（初回のみ）
+function initReadmeSort() {
+    const bind = (id, key) => {
+        const el = $(id);
+        if (!el) return;
+        el.classList.add('cursor-pointer', 'select-none', 'hover:text-amber-300');
+        el.addEventListener('click', () => {
+            if (readmeSort.key === key) {
+                readmeSort.dir = -readmeSort.dir; // 同じ列は昇順⇔降順トグル
+            } else {
+                readmeSort.key = key;
+                readmeSort.dir = 1; // 初回は昇順（速い/正確 が先頭）
+            }
+            updateReadmeSortArrows();
+            renderReadmeModels();
+        });
+    };
+    bind('#th-model', 'name');
+    bind('#th-speed', 'speed');
+    bind('#th-acc', 'wer');
+}
+
 function renderReadmeModels() {
     const tbody = $('#readme-model-tbody');
     if (!tbody || !modelCatalog) return;
@@ -1932,7 +1977,15 @@ function renderReadmeModels() {
         if (info.lang === 'multi') return uiLanguage === 'ja' ? '多言語' : uiLanguage === 'zh' ? '多语言' : 'Multilingual';
         return info.lang || '';
     };
-    const rows = Object.keys(modelCatalog).map(name => {
+    let names = Object.keys(modelCatalog);
+    if (readmeSort.key) {
+        const { key, dir } = readmeSort;
+        names = names.slice().sort((a, b) => {
+            if (key === 'name') return a.localeCompare(b) * dir;
+            return (readmeSortValue(a, key) - readmeSortValue(b, key)) * dir;
+        });
+    }
+    const rows = names.map(name => {
         const info = modelCatalog[name] || {};
         const bench = MODEL_BENCH[name] || {};
         const w = parseFloat(bench.wer);
@@ -1965,6 +2018,7 @@ function renderReadme() {
     set('#th-speed', c.th_speed);
     set('#th-acc', c.th_acc);
     set('#th-feat', c.th_feat);
+    updateReadmeSortArrows(); // ソート矢印を反映（言語切替後も保持）
 
     const ov = $('#readme-overview');
     if (ov) ov.innerHTML = c.overview.map(x =>
@@ -2971,6 +3025,7 @@ function initEventListeners() {
 document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.lang = uiLanguage === 'zh' ? 'zh-CN' : uiLanguage;
     initNavigation();
+    initReadmeSort();
     initChart();
     initEventListeners();
     initTrendResize();
