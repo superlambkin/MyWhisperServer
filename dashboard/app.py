@@ -534,6 +534,33 @@ def start_whisper_process() -> subprocess.Popen:
     return whisper_process
 
 
+def _is_port_listening(port: int) -> bool:
+    """指定ポートを LISTEN している接続があるか（孤児 whisper の検出用）。"""
+    try:
+        for conn in psutil.net_connections(kind="tcp"):
+            if conn.status == psutil.CONN_LISTEN and conn.laddr.port == port:
+                return True
+    except Exception:
+        pass
+    return False
+
+
+def _kill_port_owner(port: int):
+    """指定ポートを LISTEN しているプロセスを強制終了（未追跡の孤児 whisper 対策）。"""
+    try:
+        for conn in psutil.net_connections(kind="tcp"):
+            if conn.status == psutil.CONN_LISTEN and conn.laddr.port == port:
+                try:
+                    p = psutil.Process(conn.pid)
+                    for child in p.children(recursive=True):
+                        child.kill()
+                    p.kill()
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+
 def stop_whisper_process():
     global whisper_process, whisper_start_time, whisper_log_handle
     # 优先停止我们启动的进程
@@ -554,6 +581,13 @@ def stop_whisper_process():
                 pass
     whisper_process = None
     whisper_start_time = None
+    # 孤児プロセス対策: dashboard 再起動で追跡を失った場合も port 占有者を強制終了
+    _kill_port_owner(WHISPER_PORT)
+    # 次の start が bind 失敗しないよう、ポート解放を待つ（最大 5 秒）
+    for _ in range(50):
+        if not _is_port_listening(WHISPER_PORT):
+            break
+        time.sleep(0.1)
     if whisper_log_handle is not None:
         try:
             whisper_log_handle.close()
