@@ -1311,6 +1311,31 @@ function sameModel(a, b) {
     return MODEL_ALIASES[a] === b || MODEL_ALIASES[b] === a;
 }
 
+// GPU モニタ「显存」下の搭載モデル名 + 容量を更新（model 無し/不明なら '--'）
+function updateGpuModelDisplay(model) {
+    const memModel = $('#gpu-mem-model');
+    const memSize = $('#gpu-mem-size');
+    if (!model) {
+        if (memModel) memModel.textContent = '--';
+        if (memSize) { memSize.textContent = '--'; memSize.title = ''; }
+        return;
+    }
+    if (memModel) memModel.textContent = model;
+    if (memSize) {
+        const info = modelCatalog && modelCatalog[model];
+        if (info) {
+            const ct = (config.whisper_compute_type || 'int8_float16').toLowerCase();
+            const vram = (parseFloat(ct.includes('int8') ? info.vram_int8 : info.vram_fp16) || 0).toFixed(1);
+            const text = `DL ${info.disk_gb}GB · VRAM ${vram}GB`;
+            memSize.textContent = text;
+            memSize.title = text;
+        } else {
+            memSize.textContent = '';
+            memSize.title = '';
+        }
+    }
+}
+
 function updateWhisperStatus(data) {
     lastWhisperStatus = data;
     const running = data.running;
@@ -1352,33 +1377,18 @@ function updateWhisperStatus(data) {
     }
 
     const proc = data.process;
-    const memModel = $('#gpu-mem-model'); // GPU モニタ「显存」下の搭載モデル表示
-    const memSize = $('#gpu-mem-size');
     if (data.health && data.health.model) {
         currentModel = data.health.model;
         $('#stat-model').textContent = data.health.model;
-        if (memModel) memModel.textContent = data.health.model;
-        if (memSize) {
-            const info = modelCatalog && modelCatalog[data.health.model];
-            if (info) {
-                const ct = (config.whisper_compute_type || 'int8_float16').toLowerCase();
-                const vram = (parseFloat(ct.includes('int8') ? info.vram_int8 : info.vram_fp16) || 0).toFixed(1);
-                const text = `DL ${info.disk_gb}GB · VRAM ${vram}GB`;
-                memSize.textContent = text;
-                memSize.title = text;
-            } else {
-                memSize.textContent = '';
-                memSize.title = '';
-            }
-        }
+        updateGpuModelDisplay(data.health.model);
         const sel = $('#select-model');
         // エイリアス（turbo ⇔ large-v3-turbo）は同一モデルなので選択中を書き換えない
         if (sel && !sameModel(sel.value, data.health.model)) {
             sel.value = data.health.model;
         }
-    } else {
-        if (memModel) memModel.textContent = '--';
-        if (memSize) { memSize.textContent = '--'; memSize.title = ''; }
+    } else if (!starting) {
+        // 完全停止時のみクリア（起動中はモデル情報を維持し、切替後にチラつかせない）
+        updateGpuModelDisplay(null);
     }
     if (proc) {
         pid.textContent = proc.pid;
@@ -1625,6 +1635,7 @@ async function switchModel(modelName) {
         const data = await resp.json();
         if (data.success) {
             $('#stat-model').textContent = model;
+            updateGpuModelDisplay(model); // GPU モニタのモデル情報を即時反映
             showToast(t('whisper.switch_done') + ': ' + model, 'success');
         } else {
             showToast(data.message || t('toast.action_failed'), 'error');
