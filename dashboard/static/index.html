@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>MyWhisperServer Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css?v=25">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body class="text-stone-100 font-manrope overflow-hidden">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 glass-sidebar flex flex-col border-r border-white/10">
+            <div class="p-6">
+                <div class="flex items-center gap-3 mb-1">
+                    <div class="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center shadow-lg shadow-amber-500/30">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tight gradient-text">MyWhisper</h1>
+                        <p class="text-xs text-stone-400">Server Dashboard</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 px-3 space-y-1">
+                <a href="#dashboard" class="nav-link active" data-section="dashboard">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    <span data-i18n="nav.dashboard">仪表盘</span>
+                </a>
+                <a href="#records" class="nav-link" data-section="records">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span data-i18n="nav.records">转换履历</span>
+                    <span id="records-badge" class="ml-auto text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full hidden">0</span>
+                </a>
+                <a href="#logs" class="nav-link" data-section="logs">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span data-i18n="nav.logs">实时日志</span>
+                </a>
+                <a href="#settings" class="nav-link" data-section="settings">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <span data-i18n="nav.settings">设置</span>
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-white/10">
+                <div class="glass-card p-4 rounded-xl">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-stone-400" data-i18n="sidebar.whisper_service">Whisper 服务</span>
+                        <span id="sidebar-status-dot" class="w-2 h-2 rounded-full bg-stone-500"></span>
+                    </div>
+                    <div id="sidebar-status-text" class="text-sm font-medium" data-i18n="status.checking">检查中...</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-hidden flex flex-col">
+            <!-- Header -->
+            <header class="h-16 glass-header border-b border-white/10 flex items-center justify-between px-6">
+                <div class="flex items-center gap-4">
+                    <h2 id="page-title" class="text-xl font-semibold" data-i18n="nav.dashboard">仪表盘</h2>
+                    <span id="connection-status" class="text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" data-i18n="connection.connecting">连接中</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <div id="clock-time" class="text-lg font-mono font-semibold leading-none">--:--:--</div>
+                        <div id="clock-date" class="text-xs text-stone-400">----/--/--</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="section active h-full flex flex-col gap-4">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 shrink-0">
+                        <div class="glass-card p-5 rounded-2xl stat-card">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-stone-400" data-i18n="stats.today">今日转写</span>
+                                <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                </div>
+                            </div>
+                            <div id="stat-today" class="text-3xl font-bold">0</div>
+                            <div class="text-xs text-stone-400 mt-1" data-i18n="stats.times">次</div>
+                        </div>
+                        <div class="glass-card p-5 rounded-2xl stat-card">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-stone-400" data-i18n="stats.total">总计转写</span>
+                                <div class="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                </div>
+                            </div>
+                            <div id="stat-total" class="text-3xl font-bold">0</div>
+                            <div class="text-xs text-stone-400 mt-1" data-i18n="stats.times">次</div>
+                        </div>
+                        <div class="glass-card p-5 rounded-2xl stat-card">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-stone-400" data-i18n="stats.avg">平均耗时</span>
+                                <div class="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </div>
+                            </div>
+                            <div id="stat-avg" class="text-3xl font-bold">0.0</div>
+                            <div class="text-xs text-stone-400 mt-1" data-i18n="stats.seconds">秒</div>
+                        </div>
+                        <div class="glass-card p-5 rounded-2xl stat-card">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-stone-400" data-i18n="stats.speed">平均速度</span>
+                                <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                </div>
+                            </div>
+                            <div id="stat-speed" class="text-3xl font-bold">--</div>
+                            <div class="text-xs text-stone-400 mt-1" data-i18n="stats.speed_unit">耗时/长度</div>
+                        </div>
+                        <div class="glass-card p-5 rounded-2xl stat-card">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-stone-400" data-i18n="stats.last_speed">上次速度</span>
+                                <div class="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </div>
+                            </div>
+                            <div id="stat-last-speed" class="text-3xl font-bold">--</div>
+                            <div class="text-xs text-stone-400 mt-1" data-i18n="stats.speed_unit">耗时/长度</div>
+                        </div>
+                        <div class="glass-card p-5 rounded-2xl stat-card">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-stone-400" data-i18n="stats.model">模型</span>
+                                <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                </div>
+                            </div>
+                            <div id="stat-model" class="text-2xl font-bold">medium</div>
+                            <div class="text-xs text-stone-400 mt-1">CUDA</div>
+                        </div>
+                    </div>
+
+                    <!-- Hardware Monitoring -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 shrink-0">
+                        <div id="cpu-card" class="glass-card p-6 rounded-2xl">
+                            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
+                                <span data-i18n="hardware.cpu_mem">CPU & メモリモニタ</span>
+                            </h3>
+                            <div id="cpu-info" class="mb-4">
+                                <div class="text-sm text-stone-400 mb-1" data-i18n="cpu.name">CPU 名称</div>
+                                <div id="cpu-name" class="font-medium min-h-[2.5rem]" data-i18n="cpu.detecting">检测中...</div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4 mb-4">
+                                <div class="text-center">
+                                    <div class="relative w-24 h-24 mx-auto">
+                                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+                                            <circle id="cpu-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-cpu)" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                            <defs>
+                                                <linearGradient id="gradient-cpu" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#ffb020"></stop>
+                                                    <stop offset="100%" stop-color="#ff5e1a"></stop>
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span id="cpu-value" class="text-2xl font-bold">0%</span>
+                                            <span class="text-xs text-stone-400" data-i18n="hardware.cpu">CPU</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="relative w-24 h-24 mx-auto">
+                                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+                                            <circle id="mem-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-mem)" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                            <defs>
+                                                <linearGradient id="gradient-mem" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#ff3d81"></stop>
+                                                    <stop offset="100%" stop-color="#c084fc"></stop>
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span id="mem-value" class="text-2xl font-bold">0%</span>
+                                            <span class="text-xs text-stone-400" data-i18n="hardware.memory">内存</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- ストレージリング（メモリの右）：リング内に使用率%、下の四角に使用容量 / 全容量 -->
+                                <div class="text-center">
+                                    <div class="relative w-24 h-24 mx-auto">
+                                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+                                            <circle id="disk-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-disk)" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                            <defs>
+                                                <linearGradient id="gradient-disk" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#22d3ee"></stop>
+                                                    <stop offset="100%" stop-color="#0891b2"></stop>
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span id="disk-ring-value" class="text-2xl font-bold">0%</span>
+                                            <span class="text-xs text-stone-400" data-i18n="storage.title">ストレージ</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3 mb-4">
+                                <div class="bg-stone-900/50 rounded-xl p-3 text-center">
+                                    <div id="cpu-freq" class="text-xl font-bold text-amber-400">-- MHz</div>
+                                    <div class="text-xs text-stone-400" data-i18n="hardware.cpu_freq">CPU 周波数</div>
+                                </div>
+                                <div class="bg-stone-900/50 rounded-xl p-3 text-center">
+                                    <div id="mem-used" class="text-xl font-bold text-pink-400">-- / -- GB</div>
+                                    <div class="text-xs text-stone-400" data-i18n="hardware.mem_used">使用メモリ</div>
+                                </div>
+                                <a href="ms-settings:storage" title="Open Windows Storage settings" class="bg-stone-900/50 rounded-xl p-3 text-center block hover:bg-stone-800/60 border border-transparent hover:border-amber-500/40 transition-all">
+                                    <div id="disk-percent" class="text-base font-bold text-cyan-400">-- / -- GB</div>
+                                    <div class="text-xs text-stone-400"><span data-i18n="storage.title">ストレージ</span> ↗</div>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div id="gpu-card" class="glass-card p-6 rounded-2xl">
+                            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                <span data-i18n="hardware.gpu">GPU 监控</span>
+                            </h3>
+                            <div id="gpu-info" class="mb-4">
+                                <div class="text-sm text-stone-400 mb-1" data-i18n="gpu.name">GPU 名称</div>
+                                <div id="gpu-name" class="font-medium min-h-[2.5rem]" data-i18n="gpu.detecting">检测中...</div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4 mb-4">
+                                <div class="text-center">
+                                    <div class="relative w-24 h-24 mx-auto">
+                                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+                                            <circle id="gpu-util-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-gpu-util)" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                            <defs>
+                                                <linearGradient id="gradient-gpu-util" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#10b981"></stop>
+                                                    <stop offset="100%" stop-color="#06b6d4"></stop>
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span id="gpu-util-value" class="text-2xl font-bold">0%</span>
+                                            <span class="text-xs text-stone-400">GPU</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="relative w-24 h-24 mx-auto">
+                                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+                                            <circle id="gpu-mem-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-gpu-mem)" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                            <defs>
+                                                <linearGradient id="gradient-gpu-mem" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#f472b6"></stop>
+                                                    <stop offset="100%" stop-color="#f59e0b"></stop>
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span id="gpu-mem-value" class="text-2xl font-bold">0%</span>
+                                            <span class="text-xs text-stone-400" data-i18n="gpu.mem">显存</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="gpu-temp-ring-wrap" class="text-center">
+                                    <div class="relative w-24 h-24 mx-auto">
+                                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+                                            <circle id="gpu-temp-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-gpu-temp)" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                            <defs>
+                                                <linearGradient id="gradient-gpu-temp" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#34d399"></stop>
+                                                    <stop offset="100%" stop-color="#fbbf24"></stop>
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span id="gpu-temp-ring-value" class="text-2xl font-bold">0°C</span>
+                                            <span class="text-xs text-stone-400" data-i18n="gpu.temp">温度</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3 mb-4">
+                                <div class="bg-stone-900/50 rounded-xl p-3 text-center">
+                                    <div id="gpu-util-text" class="text-xl font-bold text-amber-400">-- MHz</div>
+                                    <div class="text-xs text-stone-400" data-i18n="gpu.clock">时钟</div>
+                                </div>
+                                <div class="bg-stone-900/50 rounded-xl p-3 text-center">
+                                    <div id="gpu-mem-text" class="text-xl font-bold text-pink-400">-- / -- MB</div>
+                                    <div class="text-xs text-stone-400" data-i18n="gpu.mem">显存</div>
+                                </div>
+                                <div id="gpu-temp-box" class="bg-stone-900/50 rounded-xl p-3 text-center">
+                                    <div id="gpu-temp" class="text-xl font-bold text-emerald-400">-- W</div>
+                                    <div class="text-xs text-stone-400" data-i18n="gpu.power">功耗</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 底部：实时趋势 + Whisper 控制（并排，填满剩余高度） -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+                        <div id="trend-card" class="glass-card p-6 rounded-2xl flex flex-col min-h-0">
+                            <div class="flex items-center justify-between mb-4 shrink-0">
+                                <h3 class="text-lg font-semibold" data-i18n="realtime.trend">实时趋势</h3>
+                                <div class="flex items-center gap-2">
+                                    <button id="btn-trend-shrink" class="px-2 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-xs text-stone-300 transition-all" data-i18n="realtime.shrink">缩小</button>
+                                    <button id="btn-trend-expand" class="px-2 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-xs text-stone-300 transition-all" data-i18n="realtime.expand">放大</button>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-h-0">
+                                <canvas id="main-chart"></canvas>
+                            </div>
+                        </div>
+
+                        <div id="whisper-control-card" class="glass-card p-6 rounded-2xl flex flex-col">
+                            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                                <span data-i18n="whisper.control">Whisper 服务控制</span>
+                            </h3>
+                            <div class="flex flex-wrap items-center gap-4 mb-4 shrink-0">
+                                <button id="btn-start-whisper" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-medium transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span data-i18n="whisper.start">启动服务</span>
+                                </button>
+                                <button id="btn-stop-whisper" class="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-medium transition-all shadow-lg shadow-rose-500/20 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>
+                                    <span data-i18n="whisper.stop">停止服务</span>
+                                </button>
+                                <button id="btn-restart-whisper" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-medium transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                    <span data-i18n="whisper.restart">重启服务</span>
+                                </button>
+                                <div class="flex items-center gap-2 ml-auto">
+                                    <!-- モード切替（設定画面 speed.mode と双方向同期） -->
+                                    <label class="text-sm text-stone-400" data-i18n="speed.mode">模式</label>
+                                    <select id="select-speed-mode" class="px-3 py-2 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                        <option value="fast" data-i18n="speed.mode.fast">速度优先</option>
+                                        <option value="balanced" data-i18n="speed.mode.balanced">平衡</option>
+                                        <option value="accurate" data-i18n="speed.mode.accurate">精度优先</option>
+                                        <option value="custom" data-i18n="speed.mode.custom">自定义</option>
+                                    </select>
+                                    <label class="text-sm text-stone-400" data-i18n="whisper.model">模型</label>
+                                    <select id="select-model" class="px-3 py-2 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                        <option value="tiny">tiny</option>
+                                        <option value="base">base</option>
+                                        <option value="small">small</option>
+                                        <option value="medium">medium</option>
+                                        <option value="large-v2">large-v2</option>
+                                        <option value="large-v3">large-v3</option>
+                                    </select>
+                                    <button id="btn-switch-model" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-sm font-medium transition-all shadow-lg shadow-amber-500/20">
+                                        <span data-i18n="whisper.switch_model">切换模型</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                <div class="bg-stone-900/50 rounded-xl p-3">
+                                    <span class="text-stone-400 block" data-i18n="whisper.status">状态</span>
+                                    <span id="whisper-status" class="font-medium">--</span>
+                                    <span id="whisper-managed" class="text-xs mt-1 block"></span>
+                                </div>
+                                <div class="bg-stone-900/50 rounded-xl p-3">
+                                    <span class="text-stone-400 block" data-i18n="whisper.pid">进程 ID</span>
+                                    <span id="whisper-pid" class="font-mono">--</span>
+                                </div>
+                                <div class="bg-stone-900/50 rounded-xl p-3">
+                                    <span class="text-stone-400 block" data-i18n="whisper.uptime">启动时间</span>
+                                    <span id="whisper-uptime" class="font-mono">--</span>
+                                </div>
+                            </div>
+
+                            <!-- 实时转换监控（转换中显示）：音声時間 / 変換時間 / AI校正時間 / 処理時間 をリアルタイムに増加表示 -->
+                            <div id="live-monitor" class="hidden mt-4 space-y-3 shrink-0">
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                                    <div class="bg-stone-900/50 rounded-xl p-3 border border-white/10">
+                                        <div class="text-stone-400 text-xs mb-1" data-i18n="live.duration">音声時間</div>
+                                        <div id="live-duration" class="font-mono text-xl font-bold text-amber-300">--s</div>
+                                    </div>
+                                    <div class="bg-stone-900/50 rounded-xl p-3 border border-white/10">
+                                        <div class="text-stone-400 text-xs mb-1" data-i18n="live.convert">変換時間</div>
+                                        <div id="live-convert" class="font-mono text-xl font-bold text-emerald-300">0.0s</div>
+                                    </div>
+                                    <div class="bg-stone-900/50 rounded-xl p-3 border border-white/10">
+                                        <div class="text-stone-400 text-xs mb-1" data-i18n="live.correct">AI 校正</div>
+                                        <div id="live-correct" class="font-mono text-xl font-bold text-fuchsia-300">0.0s</div>
+                                    </div>
+                                    <div class="bg-stone-900/50 rounded-xl p-3 border border-white/10">
+                                        <div class="text-stone-400 text-xs mb-1" data-i18n="live.elapsed">処理時間</div>
+                                        <div id="live-elapsed" class="font-mono text-xl font-bold text-cyan-300">0.0s</div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-stone-400">
+                                    <span class="flex items-center gap-1 min-w-0">
+                                        <span data-i18n="live.file">ファイル</span>
+                                        <span id="live-file" class="font-mono text-stone-300 truncate max-w-[200px]">--</span>
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <span data-i18n="live.phase">段階</span>
+                                        <span id="live-phase" class="font-medium text-amber-300">--</span>
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <span data-i18n="live.model">モデル</span>
+                                        <span id="live-model" class="font-mono text-stone-300">--</span>
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <span data-i18n="live.speed">倍速</span>
+                                        <span id="live-speed" class="font-mono text-emerald-300">--</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- 转换 + AI 校正 两段进度条（Whisper 服务控制卡片） -->
+                            <div id="progress-bar-wrap" class="hidden mt-4 space-y-3 shrink-0">
+                                <!-- 第一段：转换进度 -->
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-sm text-stone-400 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-amber-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                            <span data-i18n="progress.label">转换进度</span>
+                                        </span>
+                                        <span id="progress-percent" class="text-sm font-semibold text-amber-300">0%</span>
+                                    </div>
+                                    <div class="w-full h-2.5 rounded-full bg-stone-900/50 border border-white/10 overflow-hidden">
+                                        <div id="progress-bar-fill" class="h-full rounded-full gradient-bg transition-all duration-500" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <!-- 第二段：AI 校正 -->
+                                <div id="correct-stage" class="hidden">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-sm text-stone-400 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-fuchsia-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                            <span data-i18n="progress.correct_stage">AI 校正</span>
+                                            <span id="correct-stage-model" class="text-xs text-fuchsia-300/80 font-mono"></span>
+                                        </span>
+                                        <span id="correct-percent" class="text-sm font-semibold text-fuchsia-300">0%</span>
+                                    </div>
+                                    <div class="w-full h-2.5 rounded-full bg-stone-900/50 border border-white/10 overflow-hidden">
+                                        <div id="correct-bar-fill" class="h-full rounded-full bg-fuchsia-500 transition-all duration-500" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Records Section：上方列表 + 下方转换内容 -->
+                <section id="records" class="section hidden">
+                    <div class="glass-card p-6 rounded-2xl">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                            <h3 class="text-lg font-semibold" data-i18n="records.title">转换履历</h3>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <label class="flex items-center gap-2 px-3 py-2 rounded-xl bg-stone-900/50 border border-white/10 cursor-pointer select-none" title="時間単位">
+                                    <span class="text-xs text-stone-400" data-i18n="records.time_sec">秒</span>
+                                    <input id="toggle-time-unit" type="checkbox" class="sr-only peer">
+                                    <div class="relative w-10 h-5 bg-stone-700 peer-checked:bg-amber-500 rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
+                                    <span class="text-xs text-stone-400" data-i18n="records.time_minsec">分秒</span>
+                                </label>
+                                <input id="records-search" type="text" data-i18n-placeholder="records.search" placeholder="搜索文件名或结果..." class="px-4 py-2 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm w-64">
+                                <button id="btn-refresh-records" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-sm font-medium transition-all">
+                                    <span data-i18n="records.refresh">刷新</span>
+                                </button>
+                                <button id="btn-clear-records" class="px-4 py-2 rounded-xl bg-rose-500/80 hover:bg-rose-400 text-white text-sm font-medium transition-all">
+                                    <span data-i18n="records.clear_all">清空全部</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-left text-stone-400 border-b border-white/10">
+                                        <th class="pb-3 font-medium" data-i18n="records.time">时间</th>
+                                        <th class="pb-3 font-medium" data-i18n="records.filename">文件名</th>
+                                        <th class="pb-3 font-medium" data-i18n="records.language">语言</th>
+                                        <th class="pb-3 font-medium" data-i18n="records.model">模型</th>
+                                        <th class="pb-3 font-medium" data-i18n="records.duration">音声時間</th>
+                                        <th class="pb-3 font-medium" data-i18n="records.convert_time">変換時間</th>
+                                        <th class="pb-3 font-medium" data-i18n="records.correct_time">AI 校正</th>
+                                        <th class="pb-3 font-medium" data-i18n="records.elapsed">処理時間</th>
+                                        <th class="pb-3 font-medium" data-i18n="records.speed">转换速度</th>
+                                        <th class="pb-3 font-medium" data-i18n="records.summary">结果摘要</th>
+                                        <th class="pb-3 font-medium" data-i18n="records.action">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="records-table-body" class="divide-y divide-white/5">
+                                    <tr><td colspan="11" class="py-8 text-center text-stone-500" data-i18n="records.empty">暂无记录</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 转换内容显示区（列表下方） -->
+                    <div id="record-content-panel" class="glass-card p-6 rounded-2xl mt-6 hidden">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold" data-i18n="records.detail">完整结果</h4>
+                            <div class="flex items-center gap-3">
+                                <span id="record-content-meta" class="text-xs text-stone-400"></span>
+                                <button id="btn-copy-content" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 text-sm hover:bg-cyan-500/30 transition-all">
+                                    <span data-i18n="records.copy">复制文本</span>
+                                </button>
+                                <button id="btn-close-content" class="px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-sm transition-all" data-i18n="records.close">关闭</button>
+                            </div>
+                        </div>
+                        <div class="overflow-y-auto custom-scrollbar max-h-[50vh]">
+                            <pre id="record-content" class="font-mono text-sm whitespace-pre-wrap text-stone-300 bg-stone-900/50 p-4 rounded-xl"></pre>
+                        </div>
+                    </div>
+
+                    <!-- 底部快捷查看弹窗（底部履历栏使用） -->
+                    <div id="record-detail-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+                        <div class="glass-card max-w-3xl w-full max-h-[55vh] overflow-hidden rounded-2xl flex flex-col">
+                            <div class="p-4 border-b border-white/10 flex items-center justify-between">
+                                <h4 class="font-semibold" data-i18n="records.detail">完整结果</h4>
+                                <div class="flex items-center gap-2">
+                                    <button id="btn-copy-modal" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 text-sm hover:bg-cyan-500/30 transition-all">
+                                        <span data-i18n="records.copy">复制文本</span>
+                                    </button>
+                                    <button id="btn-close-modal" class="text-stone-400 hover:text-white">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="p-4 overflow-y-auto flex-1">
+                                <pre id="record-detail-content" class="font-mono text-sm whitespace-pre-wrap text-stone-300 bg-stone-900/50 p-4 rounded-xl"></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Logs Section -->
+                <section id="logs" class="section hidden">
+                    <div class="glass-card p-6 rounded-2xl h-[calc(100vh-180px)] flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold" data-i18n="logs.title">实时日志</h3>
+                            <div class="flex items-center gap-3">
+                                <select id="log-source" class="px-3 py-1.5 rounded-lg bg-stone-900/50 border border-white/10 text-sm">
+                                    <option value="all" data-i18n="logs.all">全部</option>
+                                    <option value="whisper">Whisper</option>
+                                    <option value="dashboard">Dashboard</option>
+                                </select>
+                                <button id="btn-clear-logs" class="px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-sm transition-all" data-i18n="logs.clear">清空显示</button>
+                            </div>
+                        </div>
+                        <div id="log-terminal" class="flex-1 bg-stone-950 rounded-xl p-4 font-mono text-xs overflow-y-auto custom-scrollbar border border-white/10">
+                            <div class="text-stone-500" data-i18n="logs.waiting">等待日志...</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Settings Section -->
+                <section id="settings" class="section hidden">
+                    <!-- 设置头部：说明 + 保存按钮 -->
+                    <div class="flex items-center justify-between gap-4 mb-6">
+                        <p class="text-sm text-stone-400" data-i18n="settings.hint">更改后点击保存。Whisper 高速化・模型相关设置需重启 Whisper 服务生效。</p>
+                        <button id="btn-save-settings" class="px-6 py-2.5 rounded-xl gradient-bg text-white font-medium transition-all hover:opacity-90 shrink-0">
+                            <span data-i18n="settings.save">保存设置</span>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-6">
+                            <div class="glass-card p-6 rounded-2xl">
+                                <h3 class="text-lg font-semibold mb-4" data-i18n="settings.transcription">转写默认设置</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm text-stone-400 mb-2" data-i18n="settings.language">默认语言</label>
+                                    <select id="setting-language" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                        <option value="auto" data-i18n="settings.language.auto">自动检测</option>
+                                        <option value="zh" data-i18n="settings.language.zh">中文</option>
+                                        <option value="en" data-i18n="settings.language.en">English</option>
+                                        <option value="ja" data-i18n="settings.language.ja">日本語</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-stone-400 mb-2" data-i18n="settings.output">默认输出格式</label>
+                                    <select id="setting-output" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                        <option value="txt" data-i18n="settings.output.txt">纯文本 (txt)</option>
+                                        <option value="srt" data-i18n="settings.output.srt">字幕 (srt)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-stone-400 mb-2" data-i18n="settings.refresh">刷新间隔 (毫秒)</label>
+                                    <input id="setting-refresh" type="number" min="500" max="10000" step="100" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-stone-400 mb-2" data-i18n="settings.temp">GPU 温度告警阈值 (°C)</label>
+                                    <input id="setting-temp" type="number" min="50" max="100" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                </div>
+                            </div>
+                            </div>
+
+                            <div class="glass-card p-6 rounded-2xl">
+                                <h3 class="text-lg font-semibold mb-4" data-i18n="speed.title">Whisper 高速化</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="speed.mode">模式</label>
+                                        <select id="setting-speed-mode" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                            <option value="fast" data-i18n="speed.mode.fast">速度优先</option>
+                                            <option value="balanced" data-i18n="speed.mode.balanced">平衡</option>
+                                            <option value="accurate" data-i18n="speed.mode.accurate">精度优先</option>
+                                            <option value="custom" data-i18n="speed.mode.custom">自定义</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="speed.compute_type">计算类型</label>
+                                        <select id="setting-compute-type" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                            <option value="float16">float16</option>
+                                            <option value="int8_float16">int8_float16</option>
+                                            <option value="int8">int8</option>
+                                            <option value="int16">int16</option>
+                                            <option value="float32">float32</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="speed.beam_size">Beam 宽度（越小越快）</label>
+                                        <input id="setting-beam-size" type="number" min="1" max="8" step="1" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="speed.temperature">Temperature（0=贪婪解码，1=完整回退）</label>
+                                        <input id="setting-temperature" type="number" min="0" max="1" step="0.1" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="speed.vad_ms">VAD 静音检测阈值（毫秒）</label>
+                                        <input id="setting-vad-ms" type="number" min="100" max="3000" step="100" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                    </div>
+                                    <div class="p-4 bg-stone-900/50 rounded-xl text-sm text-stone-400">
+                                        <p data-i18n="speed.hint">更改后保存，并重启 Whisper 服务使其生效。</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 界面设置（インターフェース設定）：左カラム Whisper 高速化の下 -->
+                            <div class="glass-card p-6 rounded-2xl">
+                                <h3 class="text-lg font-semibold mb-4" data-i18n="settings.interface">界面设置</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="settings.ui_language">界面语言</label>
+                                        <select id="setting-ui-language" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                            <option value="zh">中文</option>
+                                            <option value="ja">日本語</option>
+                                            <option value="en">English</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="glass-card p-6 rounded-2xl">
+                                <h3 class="text-lg font-semibold mb-4" data-i18n="ai.title">AI 校正（LLM）</h3>
+                                <div id="ai-active-profile" class="text-sm text-stone-400 mb-3"></div>
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between p-4 bg-stone-900/50 rounded-xl">
+                                        <div>
+                                            <div class="font-medium" data-i18n="ai.enable">启用 AI 校正</div>
+                                            <div class="text-sm text-stone-400" data-i18n="ai.enable_desc">转写完成后使用 LLM 修正错字、标点和段落</div>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input id="toggle-ai-correct" type="checkbox" class="sr-only peer">
+                                            <div class="w-14 h-7 bg-stone-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-500"></div>
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="ai.base_url">Base URL</label>
+                                        <input id="setting-deepseek-base-url" type="text" placeholder="https://api.deepseek.com/v1" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="ai.model">模型</label>
+                                        <input id="setting-deepseek-model" type="text" placeholder="deepseek-chat" list="deepseek-model-suggestions" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                        <datalist id="deepseek-model-suggestions">
+                                            <option value="deepseek-chat">deepseek-chat</option>
+                                            <option value="deepseek-reasoner">deepseek-reasoner</option>
+                                            <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+                                        </datalist>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="ai.api_key">API Key（可选）</label>
+                                        <input id="setting-deepseek-key" type="password" placeholder="sk-..." class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <button id="btn-ai-test" class="w-full px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-sm font-medium transition-all flex items-center justify-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                            <span data-i18n="ai.test">LLM 接続テスト</span>
+                                        </button>
+                                        <div id="ai-test-result" class="mt-2 text-sm text-stone-400 hidden"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="glass-card p-6 rounded-2xl">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-semibold" data-i18n="llm.title">LLM 模型管理</h3>
+                                    <button id="btn-llm-add" class="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 text-sm font-medium transition-all hover:bg-amber-500/30" data-i18n="llm.add">追加</button>
+                                </div>
+                                <div id="llm-profiles-list" class="space-y-2"></div>
+                                <div id="llm-profile-form" class="hidden mt-4 p-4 bg-stone-900/50 rounded-xl space-y-3">
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="llm.name">名称</label>
+                                        <input id="llm-f-name" type="text" placeholder="Ollama" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="llm.base_url">Base URL</label>
+                                        <input id="llm-f-base" type="text" placeholder="http://localhost:11434/v1" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="llm.api_key">API Key（可选）</label>
+                                        <input id="llm-f-key" type="password" placeholder="" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="llm.model">模型</label>
+                                        <input id="llm-f-model" type="text" placeholder="qwen2.5:7b" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button id="btn-llm-save" class="flex-1 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-sm font-medium transition-all" data-i18n="llm.save">保存</button>
+                                        <button id="btn-llm-cancel" class="flex-1 px-4 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-sm font-medium transition-all" data-i18n="llm.cancel">取消</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="glass-card p-6 rounded-2xl">
+                                <h3 class="text-lg font-semibold mb-4" data-i18n="autostart.title">开机自启</h3>
+                                <div class="mb-4">
+                                    <div class="flex items-center justify-between p-4 bg-stone-900/50 rounded-xl">
+                                        <div>
+                                            <div class="font-medium" data-i18n="autostart.enable">Windows 启动时自动运行</div>
+                                            <div class="text-sm text-stone-400" data-i18n="autostart.desc">自动启动 Whisper 服务和 Dashboard</div>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input id="toggle-autostart" type="checkbox" class="sr-only peer">
+                                            <div class="w-14 h-7 bg-stone-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-500"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div id="autostart-status" class="text-sm text-stone-400 mb-4">状态: 检查中...</div>
+                                <div class="p-4 bg-stone-900/50 rounded-xl text-sm text-stone-400">
+                                    <p data-i18n="autostart.path_hint">开启后，会在 Windows 启动文件夹中创建快捷方式：</p>
+                                    <code class="block mt-2 text-xs text-amber-300 break-all">%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\MyWhisperServer.lnk</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js?v=29"></script>
+</body>
+</html>

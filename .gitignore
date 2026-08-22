@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# ログ
+server.log
+dashboard/logs/
+*.log
+
+# データベース（records.db には API キー・設定が含まれるためコミット禁止）
+dashboard/data/
+
+# 自動起動（ランタイム生成物）
+dashboard/autostart/
+
+# テスト・一時ファイル
+test.mp3
+test_record.txt
+*.tmp
+*.bak
