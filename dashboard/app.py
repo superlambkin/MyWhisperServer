@@ -4,6 +4,7 @@ import sys
 import json
 import time
 import asyncio
+import shutil
 import secrets
 import base64
 import sqlite3
@@ -19,9 +20,12 @@ import psutil
 import aiohttp
 import edge_tts
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Request, Form, Query, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+# ローカル高速 TTS（Kokoro / VibeVoice）。重い import は関数内遅延なので起動コストはほぼゼロ
+from tts_local import engine_available, loaded_device, synthesize as tts_synthesize, unload as tts_unload, load as tts_load
 
 # 自启路径：Windows 用启动文件夹快捷方式，Linux 用 ~/.config/autostart desktop 文件
 IS_WINDOWS = platform.system() == "Windows"
@@ -257,6 +261,16 @@ def init_db():
             "whisper_beam_size": "3",
             "whisper_temperature": "0",
             "whisper_vad_min_silence_ms": "500",
+            # 音読み TTS エンジン（edge | kokoro | vibevoice）。edge は既定・フォールバック
+            "tts_engine": "edge",
+            # ローカル TTS の実行デバイス（auto | cuda | cpu）。auto は空き VRAM で判断
+            "tts_device": "auto",
+            # VibeVoice モデル（realtime | tts）。tts は英語/中国語のみ・合成非対応 → realtime 使用
+            "tts_vibevoice_model": "realtime",
+            # Kokoro の日本語音声（オフラインでローカル voices から選択）
+            "tts_kokoro_voice": "jf_alpha",
+            # 起動時にローカルTTSをVRAMに読込、以後常駐（on | off）
+            "tts_preload": "on",
         }
         for k, v in defaults.items():
             conn.execute("INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)", (k, v))
@@ -838,11 +852,13 @@ async def auto_start_whisper():
 async def lifespan(app: FastAPI):
     task = asyncio.create_task(monitor_loop())
     auto_start_task = asyncio.create_task(auto_start_whisper())
+    preload_tts_task = asyncio.create_task(preload_local_tts())
     yield
     # #10: 起動タスクを明示的にキャンセルし、ログハンドルを閉じる
     task.cancel()
     auto_start_task.cancel()
-    for t in (task, auto_start_task):
+    preload_tts_task.cancel()
+    for t in (task, auto_start_task, preload_tts_task):
         try:
             await t
         except asyncio.CancelledError:
@@ -859,6 +875,14 @@ async def lifespan(app: FastAPI):
             nvmlShutdown()
         except Exception:
             pass
+    # ローカル TTS エンジンのアンロードタスクを停止し VRAM を解放
+    for t in list(_tts_unload_tasks.values()):
+        t.cancel()
+    _tts_unload_tasks.clear()
+    try:
+        await asyncio.to_thread(tts_unload)
+    except Exception:
+        pass
 
 
 app = FastAPI(title="MyWhisperServer Dashboard", lifespan=lifespan)
@@ -1119,6 +1143,250 @@ async def api_ai_test(data: dict):
 
 
 # ---------------------------------------------------------------------------
+# チャット API（リアルタイム音声出力対応）
+# ---------------------------------------------------------------------------
+CHAT_SYSTEM_PROMPT = "あなたは親切で簡潔な日本語アシスタントです。会話は短く分かりやすく答えてください。"
+_SENT_STREAM_RE = re.compile(r"[^。！？.!?]*[。！？.!?]")
+
+_chat_sessions: Dict[str, dict] = {}
+_chat_sessions_lock = threading.Lock()
+_CHAT_SESSION_MAX = 20       # 1 セッションあたり保持するターン数（上限）
+_CHAT_SESSION_TTL = 1800     # 未使用 30 分でセッション破棄
+
+
+def _chat_session_get(session_id: str) -> list:
+    """セッション履歴を返す（返り値は編集用のコピー）。期限切れは掃除する。"""
+    now = time.time()
+    with _chat_sessions_lock:
+        expired = [k for k, v in _chat_sessions.items() if now - v["updated"] > _CHAT_SESSION_TTL]
+        for k in expired:
+            _chat_sessions.pop(k, None)
+        s = _chat_sessions.setdefault(session_id, {"history": [], "updated": now})
+        s["updated"] = now
+        return list(s["history"])
+
+
+def _chat_session_save(session_id: str, history: list):
+    """セッション履歴を保存（メッセージ数を上限に抑える）。"""
+    with _chat_sessions_lock:
+        _chat_sessions[session_id]["history"] = history[-_CHAT_SESSION_MAX * 2:]
+        _chat_sessions[session_id]["updated"] = time.time()
+
+
+async def _chat_llm_config() -> dict:
+    """アクティブな LLM 設定を返す（プロファイル同期済みの deepseek_* config を読む）。"""
+    api_key = (await get_config("deepseek_api_key") or "").strip()
+    model = (await get_config("deepseek_model") or "").strip() or "deepseek-chat"
+    base_url = (await get_config("deepseek_base_url") or "").strip() or "https://api.deepseek.com/v1"
+    base_url = base_url.rstrip("/")
+    from urllib.parse import urlsplit
+    if not base_url or urlsplit(base_url).scheme not in ("http", "https") or not urlsplit(base_url).netloc:
+        raise HTTPException(400, "LLM base_url が未設定です（設定→AI校正で設定してください）")
+    return {"api_key": api_key, "model": model, "base_url": base_url}
+
+
+async def _chat_llm_stream(cfg: dict, messages: list):
+    """OpenAI 互換エンドポイントへストリーミング問い合わせし、テキスト断片を逐次 yield する。"""
+    payload = {"model": cfg["model"], "messages": messages, "stream": True, "temperature": 0.7}
+    headers = {"Content-Type": "application/json"}
+    if cfg["api_key"]:
+        headers["Authorization"] = f"Bearer {cfg['api_key']}"
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"{cfg['base_url']}/chat/completions", json=payload, headers=headers,
+            timeout=aiohttp.ClientTimeout(total=300),
+        ) as resp:
+            if resp.status != 200:
+                body = (await resp.text())[:300]
+                raise RuntimeError(f"LLM HTTP {resp.status}: {body}")
+            async for line in resp.content:
+                line = line.decode("utf-8", errors="replace").strip()
+                if not line.startswith("data:"):
+                    continue
+                data = line[5:].strip()
+                if data == "[DONE]":
+                    break
+                try:
+                    obj = json.loads(data)
+                except Exception:
+                    continue
+                choices = obj.get("choices") or []
+                if choices:
+                    delta = choices[0].get("delta") or {}
+                    c = delta.get("content")
+                    if c:
+                        yield c
+
+
+def _sse(obj: dict) -> str:
+    return f"data: {json.dumps(obj, ensure_ascii=False)}\n\n"
+
+
+_B64_CHUNK = 200_000          # SSE 1 行あたりの base64 文字数（クライアントの行長上限 512KB を回避）
+_AUDIO_MAX_CHARS = 80         # 1 回の音声合成あたりの最大文字数
+
+
+def _split_utterance(sent: str, max_chars: int = _AUDIO_MAX_CHARS) -> list:
+    """読み上げ用に文を分割する。読点・区切りを優先し、足りなければ文字数で分割。"""
+    pieces = []
+    cur = ""
+    for ch in sent:
+        cur += ch
+        if (len(cur) >= 16 and ch in "、，,;：") or len(cur) >= max_chars:
+            pieces.append(cur)
+            cur = ""
+    if cur.strip():
+        pieces.append(cur)
+    return [p.strip() for p in pieces if p.strip()]
+
+
+async def _chat_emit_audio_lines(engine: str, lang: str, device: str, model_path, voice: str, piece: str) -> list:
+    """読み上げ片を音声合成し SSE イベント行のリストを返す。
+
+    大きな音声は base64 を複数チャンク（audio_chunk）に分割して送る:
+      audio_start → audio_chunk × N → audio_end
+    失敗時は audio_skip を 1 行返す（テキストのみ再生）。
+    """
+    try:
+        if engine == "edge":
+            r = await _tts_edge(piece, lang)
+            b64, mime, dur = r["audio_base64"], r["mime"], r.get("duration", 0)
+        else:
+            result = await asyncio.to_thread(
+                tts_synthesize, engine, piece, lang, device, model_path=model_path, voice=voice)
+            b64 = base64.b64encode(result["wav_bytes"]).decode("ascii")
+            mime, dur = result["mime"], result["duration"]
+    except Exception as e:
+        print(f"[chat] tts failed for sentence: {e}")
+        return [_sse({"type": "audio_skip", "text": piece})]
+    lines = [_sse({"type": "audio_start", "text": piece, "mime": mime, "duration": dur})]
+    for i in range(0, len(b64), _B64_CHUNK):
+        lines.append(_sse({"type": "audio_chunk", "data": b64[i:i + _B64_CHUNK]}))
+    lines.append(_sse({"type": "audio_end"}))
+    return lines
+
+
+@app.post("/api/v1/chat", dependencies=[Depends(require_auth)])
+async def api_chat(data: dict):
+    """チャット（非ストリーミング）。`{"message":"...","session_id":"..."}` → `{"reply":"...","session_id":"..."}`。
+
+    session_id を省略すると新しいセッションが作られる。LLM はアクティブプロファイル（Deepseek / Ollama 等）。
+    """
+    message = str(data.get("message", "")).strip()
+    if not message:
+        raise HTTPException(400, "message is required")
+    sid = str(data.get("session_id", "")).strip() or secrets.token_urlsafe(12)
+    history = _chat_session_get(sid)
+    messages = [{"role": "system", "content": CHAT_SYSTEM_PROMPT}] + history + [{"role": "user", "content": message}]
+    cfg = await _chat_llm_config()
+    payload = {"model": cfg["model"], "messages": messages, "stream": False, "temperature": 0.7}
+    headers = {"Content-Type": "application/json"}
+    if cfg["api_key"]:
+        headers["Authorization"] = f"Bearer {cfg['api_key']}"
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{cfg['base_url']}/chat/completions", json=payload, headers=headers,
+                timeout=aiohttp.ClientTimeout(total=300),
+            ) as resp:
+                if resp.status != 200:
+                    raise RuntimeError(f"LLM HTTP {resp.status}: {(await resp.text())[:300]}")
+                data = await resp.json()
+        reply = (data["choices"][0]["message"]["content"] or "").strip()
+    except Exception as e:
+        raise HTTPException(502, f"chat failed: {e}")
+    _chat_session_save(sid, history + [
+        {"role": "user", "content": message},
+        {"role": "assistant", "content": reply},
+    ])
+    return {"reply": reply, "session_id": sid}
+
+
+@app.post("/api/v1/chat/stream", dependencies=[Depends(require_auth)])
+async def api_chat_stream(data: dict):
+    """チャット（SSE ストリーミング＋文単位リアルタイム音声）。
+
+    イベント（`data: {json}`）:
+      - `{"type":"text","text":...}`     現在までのテキスト（表示用・蓄積更新）
+      - `{"type":"audio_start","text":...,"mime":...,"duration":...}` 読み上げ片の開始
+      - `{"type":"audio_chunk","data":...}` base64 音声チャンク（audio_end まで連結）
+      - `{"type":"audio_end"}` 読み上げ片の終わり（ここまでで WAV が完成）
+      - `{"type":"audio_skip","text":...}` 音声合成失敗（テキストのみ再生）
+      - `{"type":"done","full":...,"session_id":...}` 完了
+      - `{"type":"error","message":...}` エラー
+    """
+    message = str(data.get("message", "")).strip()
+    if not message:
+        raise HTTPException(400, "message is required")
+    sid = str(data.get("session_id", "")).strip() or secrets.token_urlsafe(12)
+    lang = str(data.get("lang", "") or "").split("-")[0].lower()
+    voice = str(data.get("voice", "") or "").strip()
+    history = _chat_session_get(sid)
+    messages = [{"role": "system", "content": CHAT_SYSTEM_PROMPT}] + history + [{"role": "user", "content": message}]
+    cfg = await _chat_llm_config()
+
+    # 音声出力設定
+    engine = (await get_config("tts_engine", "edge") or "edge").strip().lower()
+    model_path = None
+    if engine == "kokoro":
+        model_path = _kokoro_model_dir()
+    elif engine == "vibevoice":
+        model_path = _vibevoice_snapshot_path(VIBEVOICE_MODEL_CATALOG["realtime"]["repo"])
+    if not voice:
+        voice = (await get_config("tts_kokoro_voice", "jf_alpha") or "jf_alpha").strip()
+    pref = (await get_config("tts_device", "auto") or "auto").strip().lower()
+    device = _pick_tts_device(engine, pref)
+    if engine not in ("edge",):
+        _touch_engine(engine)
+
+    async def gen():
+        full = []
+        buf = ""
+        try:
+            async for token in _chat_llm_stream(cfg, messages):
+                full.append(token)
+                buf += token
+                yield _sse({"type": "text", "text": buf})
+                # 文末（。！？.!?）で区切って逐次音声合成
+                while True:
+                    m = _SENT_STREAM_RE.search(buf)
+                    if not m:
+                        break
+                    sent = m.group(0).strip()
+                    buf = buf[m.end():]
+                    if not sent:
+                        continue
+                    for piece in _split_utterance(sent):
+                        for line in await _chat_emit_audio_lines(engine, lang, device, model_path, voice, piece):
+                            yield line
+            # 文末記号なしで終わった残りを読み上げ
+            tail = buf.strip()
+            if tail:
+                for piece in _split_utterance(tail):
+                    for line in await _chat_emit_audio_lines(engine, lang, device, model_path, voice, piece):
+                        yield line
+            reply = "".join(full).strip()
+            _chat_session_save(sid, history + [
+                {"role": "user", "content": message},
+                {"role": "assistant", "content": reply},
+            ])
+            yield _sse({"type": "done", "full": reply, "session_id": sid})
+        except Exception as e:
+            print(f"[chat] stream error: {e}")
+            yield _sse({"type": "error", "message": str(e)})
+
+    return StreamingResponse(gen(), media_type="text/event-stream")
+
+
+@app.delete("/api/v1/chat/{session_id}", dependencies=[Depends(require_auth)])
+async def api_chat_clear(session_id: str):
+    """指定セッションの履歴をクリアする。"""
+    with _chat_sessions_lock:
+        _chat_sessions.pop(session_id, None)
+    return {"success": True}
+
+
+# ---------------------------------------------------------------------------
 # LLM プロファイル管理（Deepseek / Ollama など OpenAI 互換エンドポイント）
 # ---------------------------------------------------------------------------
 @app.get("/api/v1/llm/profiles")
@@ -1280,6 +1548,92 @@ TTS_VOICES = {
 }
 TTS_MAX_CHARS = 5000  # 1 リクエストあたりの最大文字数（クライアント側で分割して連続再生）
 
+# VibeVoice 用の空き VRAM しきい値。VibeVoice-Realtime-0.5B はロード時に ~4-5GB を使うため、
+# 6GB 機で空きが少ない（Whisper 稼働中など）場合は CPU へ落とす。
+VIBEVOICE_MIN_FREE_MB = 3000
+
+
+def _pick_tts_device(engine: str, pref: str) -> str:
+    """tts_device 設定（auto/cuda/cpu）に応じてローカル TTS の実行デバイスを決める。"""
+    if pref == "cuda":
+        return "cuda"
+    if pref == "cpu":
+        return "cpu"
+    # ロード済みエンジンはそのデバイスを使い続ける（VRAM 残量の揺れで CPU/CUDA を
+    # 往復してモデルを二重ロードしない。tts_local 側でも同様に維持する）
+    loaded = loaded_device(engine)
+    if loaded:
+        return loaded
+    # auto: 空き VRAM で判断。NVML が無い/空き不明なら CPU（安全側）
+    info = get_gpu_info()
+    if not info or "memory_free_mb" not in info:
+        return "cpu"
+    free_mb = info.get("memory_free_mb")
+    if engine == "vibevoice" and free_mb < VIBEVOICE_MIN_FREE_MB:
+        print(f"[tts] VibeVoice: 空きVRAM {free_mb}MB < {VIBEVOICE_MIN_FREE_MB}MB のため CPU で実行")
+        return "cpu"
+    return "cuda"
+
+
+# ローカル TTS エンジンのアイドルアンロード（VRAM を Whisper に返す）。
+# 300→1800 秒に延長: 音読みの初回レスポンスが遅い（VibeVoice は冷間ロードで ~40秒）原因だった。
+# 30 分で自動解放するため長時間放置時の VRAM は常駐しない（VRAM 余裕は Whisper に戻る）。
+TTS_IDLE_TTL = 1800
+_tts_unload_tasks: Dict[str, asyncio.Task] = {}
+# 起動時プリロードで常駐させたエンジン（アイドルアンロード対象外）
+_resident_engines: set = set()
+
+
+def _touch_engine(engine: str):
+    """エンジン使用を記録し、アイドル TTL 後のアンロードを再スケジュール。
+
+    起動時プリロードした常駐エンジンはアンロードしない（以後 VRAM に載せ続ける）。
+    """
+    if engine in _resident_engines:
+        return
+    t = _tts_unload_tasks.pop(engine, None)
+    if t:
+        t.cancel()
+    _tts_unload_tasks[engine] = asyncio.create_task(_delayed_unload(engine))
+
+
+async def _delayed_unload(engine: str):
+    try:
+        await asyncio.sleep(TTS_IDLE_TTL)
+    except asyncio.CancelledError:
+        return
+    await asyncio.to_thread(tts_unload, engine)
+    _tts_unload_tasks.pop(engine, None)
+    print(f"[tts] {engine} をアンロード（VRAM 解放）")
+
+
+async def preload_local_tts():
+    """起動時プリロード: tts_preload=on かつローカルエンジンなら合成なしでモデルを VRAM に読込・常駐。
+
+    バックグラウンドタスクとして実行するため、ダッシュボードの起動はブロックしない。
+    edge はクラウドのため対象外。失敗しても起動は継続する。
+    """
+    try:
+        preload = (await get_config("tts_preload", "on") or "on").strip().lower()
+        if preload != "on":
+            return
+        engine = (await get_config("tts_engine", "edge") or "edge").strip().lower()
+        if engine == "edge":
+            print("[tts] 起動時プリロード: edge はクラウドのため対象外")
+            return
+        pref = (await get_config("tts_device", "auto") or "auto").strip().lower()
+        device = _pick_tts_device(engine, pref)
+        model_path = None
+        if engine == "kokoro":
+            model_path = _kokoro_model_dir()
+        elif engine == "vibevoice":
+            model_path = _vibevoice_snapshot_path(VIBEVOICE_MODEL_CATALOG["realtime"]["repo"])
+        await asyncio.to_thread(tts_load, engine, device, model_path=model_path)
+        _resident_engines.add(engine)
+        print(f"[tts] 起動時プリロード完了: {engine} を常駐（device={device}, model={model_path or 'HF'}）")
+    except Exception as e:
+        print(f"[tts] 起動時プリロード失敗（続行）: {e}")
+
 
 class TTSRequest(BaseModel):
     text: str
@@ -1288,11 +1642,12 @@ class TTSRequest(BaseModel):
 
 @app.post("/api/v1/tts", dependencies=[Depends(require_auth)])
 async def api_tts(req: TTSRequest):
-    """Edge TTS でテキストを音声合成し、音声（MP3 base64）＋文境界情報を返却。
+    """テキストを音声合成し、音声（base64）＋文境界情報を返却。
 
-    SentenceBoundary（offset/duration）を文単位の読み上げ位置として返し、
-    フロントは再生位置に応じて詳細結果本文の該当文を下線ハイライトする。
-    ブラウザから直接呼べない（CORS 無し）ためバックエンドで合成する。
+    TTS エンジンは config の `tts_engine` で切替（edge / kokoro / vibevoice）。
+    edge は Microsoft Edge TTS（SentenceBoundary 付き）、
+    ローカルエンジンは 24kHz WAV + `boundaries`（kokoro=実測 / vibevoice=比例推定）。
+    フロントは再生位置に応じて該当文を下線ハイライトする。
     """
     text = (req.text or "").strip()
     if not text:
@@ -1300,6 +1655,47 @@ async def api_tts(req: TTSRequest):
     if len(text) > TTS_MAX_CHARS:
         raise HTTPException(400, f"text too long (max {TTS_MAX_CHARS} chars)")
     key = (req.lang or "").split("-")[0].lower()
+
+    engine = (await get_config("tts_engine", "edge") or "edge").strip().lower()
+    if engine == "edge":
+        return await _tts_edge(text, key)
+
+    # ローカルエンジン
+    ok, reason = engine_available(engine)
+    if not ok:
+        raise HTTPException(503, f"TTS engine '{engine}' が利用できません: {reason}")
+    pref = (await get_config("tts_device", "auto") or "auto").strip().lower()
+    device = _pick_tts_device(engine, pref)
+    try:
+        model_path = None
+        voice = None
+        if engine == "kokoro":
+            # ローカルモデルがあれば完全オフラインで使用（無ければ HF から）
+            model_path = _kokoro_model_dir()
+            voice = (await get_config("tts_kokoro_voice", "jf_alpha") or "jf_alpha").strip()
+        elif engine == "vibevoice":
+            # VibeVoice-TTS(1.5B) は英語/中国語のみ・CPUのみ・合成未対応のため、
+            # 選択されていても合成は常に Realtime-0.5B を使う（DL 管理・選択UIのみ対応）
+            vv = (await get_config("tts_vibevoice_model", "realtime") or "realtime").strip().lower()
+            if vv != "realtime":
+                print(f"[tts] VibeVoice-TTS は合成未対応（英語/中国語・CPUのみ）のため Realtime-0.5B を使用")
+            model_path = _vibevoice_snapshot_path(VIBEVOICE_MODEL_CATALOG["realtime"]["repo"])
+        result = await asyncio.to_thread(tts_synthesize, engine, text, key, device, model_path=model_path, voice=voice)
+        _touch_engine(engine)
+        return {
+            "audio_base64": base64.b64encode(result["wav_bytes"]).decode("ascii"),
+            "mime": result["mime"],
+            "duration": result["duration"],
+            "boundaries": result["boundaries"],
+            "boundaries_approx": result["boundaries_approx"],
+        }
+    except Exception as e:
+        print(f"[tts] {engine} error: {e}")
+        raise HTTPException(502, f"{engine} synthesis failed: {e}")
+
+
+async def _tts_edge(text: str, key: str) -> dict:
+    """Edge TTS（既定・フォールバック）で音声合成。MP3 base64 + SentenceBoundary を返す。"""
     voice = TTS_VOICES.get(key, TTS_VOICES["ja"])
     try:
         communicate = edge_tts.Communicate(text, voice)
@@ -1317,6 +1713,7 @@ async def api_tts(req: TTSRequest):
         duration = round((boundaries[-1]["t"] + boundaries[-1]["d"]), 3) if boundaries else 0.0
         return {
             "audio_base64": audio_b64,
+            "mime": "audio/mpeg",
             "duration": duration,
             "boundaries": boundaries,
         }
@@ -1387,6 +1784,35 @@ MODEL_CATALOG = {
 }
 ALLOWED_MODELS = list(MODEL_CATALOG)
 
+# Whisper モデルDL時の対象ファイル（HF リポジトリ内）
+_WHISPER_ALLOW_PATTERNS = ["config.json", "preprocessor_config.json", "model.bin", "tokenizer.json", "vocabulary.*"]
+
+# VibeVoice モデルカタログ（モデル管理・DL 対象）。合成は realtime のみ対応
+# （tts は英語/中国語のみ・CPUのみ・合成未対応 → 常に realtime にフォールバック）
+VIBEVOICE_MODEL_CATALOG = {
+    "realtime": {
+        "repo": "microsoft/VibeVoice-Realtime-0.5B",
+        "disk_gb": 1.9,
+        "lang": "ja・en・zh・ko・de・fr・it・nl・pl・pt・es",
+        "desc": "高速ストリーミング（0.5B・日本語含む）",
+        "marker": "model.safetensors",
+    },
+    "tts": {
+        "repo": "microsoft/VibeVoice-1.5B",
+        "disk_gb": 5.0,
+        "lang": "en・zh",
+        "desc": "長文TTS（1.5B・英語/中国語のみ・CPUのみ・合成非対応）",
+        "marker": "model.safetensors.index.json",
+    },
+}
+# VibeVoice モデルDL時の対象ファイル（figures 等を除外）
+_VIBEVOICE_ALLOW_PATTERNS = ["model*", "config.json", "preprocessor_config.json", "README.md", ".gitattributes"]
+
+# Kokoro モデル（オフライン TTS）の DL 情報
+KOKORO_MODEL_REPO = "hexgrad/Kokoro-82M"
+# モデル管理で DL 対象とする日本語音声（女声4 + 男声1）
+KOKORO_VOICES = ["jf_alpha", "jf_gongitsune", "jf_nezumi", "jf_tebukuro", "jm_kumo"]
+
 
 def _resolve_model_dir(raw: str) -> Path:
     """設定値（空なら既定）からモデル保存先を解決して作成する。"""
@@ -1406,28 +1832,85 @@ async def get_model_dir() -> Path:
     return _resolve_model_dir(await get_config("whisper_model_dir"))
 
 
-def _model_repo_dir(name: str) -> str:
-    """HuggingFace キャッシュ形式のリポジトリディレクトリ名（faster_whisper._MODELS から導出）。
-    large-v3-turbo は mobiuslabsgmbh、distil-* は faster-distil-whisper-* 等、Systran 以外も存在する。"""
-    try:
-        from faster_whisper.utils import _MODELS
-        repo = _MODELS.get(name, f"Systran/faster-whisper-{name}")
-    except Exception:
-        repo = f"Systran/faster-whisper-{name}"
+def _model_repo_dir(name: str, repo: str | None = None) -> str:
+    """HuggingFace キャッシュ形式のリポジトリディレクトリ名。
+    repo 指定なしは faster_whisper._MODELS から導出（whisper 用）。"""
+    if not repo:
+        try:
+            from faster_whisper.utils import _MODELS
+            repo = _MODELS.get(name, f"Systran/faster-whisper-{name}")
+        except Exception:
+            repo = f"Systran/faster-whisper-{name}"
     return f"models--{repo.replace('/', '--')}"
 
 
-def _is_model_downloaded(name: str) -> bool:
-    """モデルが保存先にダウンロード済みか（snapshots/<hash>/model.bin の存在で判定）。"""
-    snap = get_model_dir_sync() / _model_repo_dir(name) / "snapshots"
-    if not snap.is_dir():
-        return False
-    try:
-        for s in snap.iterdir():
-            if (s / "model.bin").is_file():
-                return True
-    except Exception:
-        pass
+def _hf_cache_root() -> Path:
+    """既定 HF キャッシュルート（HF_HOME 未設定時は ~/.cache/huggingface/hub）。"""
+    env = os.environ.get("HF_HOME", "").strip()
+    if env:
+        return Path(env) / "hub"
+    return Path.home() / ".cache" / "huggingface" / "hub"
+
+
+def _model_snapshot_path(name: str, repo: str | None = None, marker: str = "model.bin", check_hf_cache: bool = False):
+    """モデルのローカル snapshot ディレクトリを返す（未DL は None）。
+
+    モデル保存先（whisper_server/models）→ 既定 HF キャッシュ（check_hf_cache=True 時）の順に探す。
+    戻り値は from_pretrained に渡せるディレクトリパス（snapshots/<hash>/）。
+    """
+    roots = [get_model_dir_sync() / _model_repo_dir(name, repo)]
+    if check_hf_cache:
+        roots.append(_hf_cache_root() / _model_repo_dir(name, repo))
+    for root in roots:
+        snap = root / "snapshots"
+        if not snap.is_dir():
+            continue
+        try:
+            for s in snap.iterdir():
+                if (s / marker).is_file() or any(s.glob("model*.safetensors")):
+                    return str(s)
+        except Exception:
+            pass
+    return None
+
+
+def _vibevoice_snapshot_path(repo: str):
+    """VibeVoice モデルのローカル snapshot パスを返す（未DL は None）。
+
+    ① モデル管理の保存先（whisper_server/models）→ ② 既定 HF キャッシュ の順に探す。
+    戻り値は from_pretrained に渡せるディレクトリパス（snapshots/<hash>/）。
+    """
+    return _model_snapshot_path("", repo=repo, marker="model.safetensors", check_hf_cache=True)
+
+
+def _kokoro_model_dir() -> str | None:
+    """Kokoro のローカルモデルディレクトリを返す（未配置は None）。
+
+    models/kokoro/config.json + kokoro-v1_0.pth（＋ voices/）が存在すれば返す。
+    これがあると hf_hub_download を呼ばず完全オフラインで動作する。
+    """
+    d = get_model_dir_sync() / "kokoro"
+    if (d / "config.json").is_file() and (d / "kokoro-v1_0.pth").is_file():
+        return str(d)
+    return None
+
+
+def _is_model_downloaded(name: str, repo: str | None = None, marker: str = "model.bin", check_hf_cache: bool = False) -> bool:
+    """モデルがダウンロード済みか（snapshots/<hash>/<marker> の存在で判定）。
+    check_hf_cache=True ならモデル保存先に加え既定 HF キャッシュも確認する。"""
+    roots = [get_model_dir_sync() / _model_repo_dir(name, repo)]
+    if check_hf_cache:
+        roots.append(_hf_cache_root() / _model_repo_dir(name, repo))
+    for root in roots:
+        snap = root / "snapshots"
+        if not snap.is_dir():
+            continue
+        try:
+            for s in snap.iterdir():
+                if (s / marker).is_file():
+                    return True
+        except Exception:
+            pass
     return False
 
 
@@ -1437,23 +1920,30 @@ _download_state: Dict[str, str] = {}
 _download_progress: Dict[str, float] = {}
 
 
-def _download_model_sync(name: str, model_dir: Path):
+def _download_model_sync(name: str, model_dir: Path, repo: str | None = None, allow_patterns: str | list | None = None):
     """モデルを保存先へダウンロード（HF キャッシュ形式）し、バイト進捗を記録する。
 
     huggingface_hub のファイルDL進捗バー（.utils.tqdm.tqdm）を一時パッチして
     `_download_progress[name]` に 0-100% を書き込む。ファイルは逐次 DL し、
     「完了済みファイルの合計バイト + 進行中ファイルの現在バイト」÷ 全体バイト
     で全体 % を計算する（snapshot_download のバーはファイル数のみでバイト精度が無いため）。
+
+    repo / allow_patterns を省略すると whisper 用の既定値を使う（VibeVoice は
+    モデル管理から repo / パターンを指定して呼ぶ）。
     """
-    from faster_whisper.utils import _MODELS
     from huggingface_hub import HfApi, hf_hub_download
     import importlib
     # huggingface_hub.utils は同名クラスを再バインドするため importlib で実モジュールを取得
     _tqdm_mod = importlib.import_module("huggingface_hub.utils.tqdm")
     import fnmatch
 
-    repo = _MODELS.get(name, f"Systran/faster-whisper-{name}")
-    allow_patterns = ["config.json", "preprocessor_config.json", "model.bin", "tokenizer.json", "vocabulary.*"]
+    if not repo:
+        try:
+            from faster_whisper.utils import _MODELS
+            repo = _MODELS.get(name, f"Systran/faster-whisper-{name}")
+        except Exception:
+            repo = f"Systran/faster-whisper-{name}"
+    allow_patterns = allow_patterns or _WHISPER_ALLOW_PATTERNS
 
     # リポジトリの対象ファイル一覧と合計サイズを取得
     files = []
@@ -1495,21 +1985,103 @@ def _download_model_sync(name: str, model_dir: Path):
     _download_progress[name] = 100.0
 
 
-async def download_model_task(name: str):
+async def download_model_task(name: str, repo: str | None = None, allow_patterns: str | list | None = None):
     """バックグラウンドでモデルを保存先へダウンロード（HF キャッシュ形式）。"""
     if _download_state.get(name) == "downloading":
         return
     _download_state[name] = "downloading"
     _download_progress[name] = 0.0
     try:
-        print(f"[model] ダウンロード開始: {name}")
-        await asyncio.to_thread(_download_model_sync, name, get_model_dir_sync())
+        print(f"[model] ダウンロード開始: {name} ({repo or 'whisper-default'})")
+        await asyncio.to_thread(_download_model_sync, name, get_model_dir_sync(), repo, allow_patterns)
         _download_progress[name] = 100.0
         _download_state[name] = "done"
         print(f"[model] ダウンロード完了: {name}")
     except Exception as e:
         _download_state[name] = "error"
         print(f"[model] ダウンロード失敗 {name}: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+def _delete_model_repo(repo_dir_name: str) -> bool:
+    """モデルのリポジトリフォルダを保存先と既定 HF キャッシュの両方から削除する。"""
+    removed = False
+    for root in (get_model_dir_sync(), _hf_cache_root()):
+        target = root / repo_dir_name
+        if target.is_dir():
+            try:
+                shutil.rmtree(target, ignore_errors=True)
+                removed = True
+            except Exception as e:
+                print(f"[model] delete failed {target}: {e}")
+    return removed
+
+
+def _download_kokoro_sync(model_dir: Path, voices: list):
+    """Kokoro モデル（config.json + kokoro-v1_0.pth + 日本語音声5種）を models/kokoro へ DL する。
+
+    フラット配置（config.json / kokoro-v1_0.pth / voices/<name>.pt）で保存するので、
+    `_kokoro_model_dir()` / tts_local がそのまま完全オフラインで使える。
+    hf_hub_download の local_dir 指定でリポジトリ相対パスをそのまま保存する。
+    """
+    from huggingface_hub import HfApi, hf_hub_download
+    import importlib
+    _tqdm_mod = importlib.import_module("huggingface_hub.utils.tqdm")
+    name = "kokoro"
+    kokoro_dir = model_dir / "kokoro"
+    kokoro_dir.mkdir(parents=True, exist_ok=True)
+    (kokoro_dir / "voices").mkdir(parents=True, exist_ok=True)
+
+    files = ["config.json", "kokoro-v1_0.pth"] + [f"voices/{v}.pt" for v in voices]
+    # 対象ファイルの合計サイズを取得（進捗計算用）
+    sizes = {}
+    for f in HfApi().list_repo_tree(KOKORO_MODEL_REPO, recursive=True):
+        if getattr(f, "size", None) is not None:
+            sizes[getattr(f, "path", "")] = f.size
+    grand_total = sum(sizes.get(f, 0) for f in files) or 1
+
+    real_tqdm = _tqdm_mod.tqdm
+    done = [0.0]
+
+    class _ByteBar(real_tqdm):
+        def __init__(self, *args, **kwargs):
+            kwargs["disable"] = False
+            super().__init__(*args, **kwargs)
+
+        def display(self, *a, **k):
+            pass  # 進捗捕捉のみ（ログを汚さない）
+
+        def update(self, n=1):
+            super().update(n)
+            total = self.total or 0
+            if total and grand_total:
+                pct = min(99.0, (done[0] + self.n) / grand_total * 100)
+                _download_progress[name] = round(pct, 1)
+
+    _tqdm_mod.tqdm = _ByteBar
+    try:
+        _download_progress[name] = 0.0
+        for f in files:
+            hf_hub_download(KOKORO_MODEL_REPO, filename=f, local_dir=str(kokoro_dir))
+            done[0] += sizes.get(f, 0)
+    finally:
+        _tqdm_mod.tqdm = real_tqdm
+    _download_progress[name] = 100.0
+
+
+async def _kokoro_download_task():
+    """Kokoro モデルをバックグラウンドで保存先へダウンロードする。"""
+    _download_state["kokoro"] = "downloading"
+    _download_progress["kokoro"] = 0.0
+    try:
+        print(f"[model] ダウンロード開始: kokoro ({KOKORO_MODEL_REPO})")
+        await asyncio.to_thread(_download_kokoro_sync, get_model_dir_sync(), KOKORO_VOICES)
+        _download_state["kokoro"] = "done"
+        print("[model] ダウンロード完了: kokoro")
+    except Exception as e:
+        _download_state["kokoro"] = "error"
+        print(f"[model] ダウンロード失敗 kokoro: {e}")
         import traceback
         traceback.print_exc()
 
@@ -1530,6 +2102,7 @@ async def api_whisper_models():
             "downloaded": downloaded,
             "download_state": state,
             "download_progress": round(_download_progress.get(name, 0.0), 1),
+            "path": _model_snapshot_path(name) or "",
         }
     return {"models": catalog}
 
@@ -1543,6 +2116,137 @@ async def api_download_model(model_name: str):
         return {"success": False, "message": f"already downloaded: {model_name}"}
     asyncio.create_task(download_model_task(model_name))
     return {"success": True, "message": f"downloading {model_name}"}
+
+
+# ---------------------------------------------------------------------------
+# VibeVoice モデル管理（DL・状態。合成は realtime のみ対応）
+# ---------------------------------------------------------------------------
+@app.get("/api/v1/vibevoice/models")
+async def api_vibevoice_models():
+    """VibeVoice 対応モデル一覧（DL サイズ・言語・説明・DL状態）を返す。"""
+    catalog = {}
+    for name, info in VIBEVOICE_MODEL_CATALOG.items():
+        downloaded = _is_model_downloaded(name, repo=info["repo"], marker=info["marker"], check_hf_cache=True)
+        state = _download_state.get(name)
+        if state in (None, "none") and downloaded:
+            state = "done"
+        if state in (None, "none"):
+            state = "none"
+        catalog[name] = {
+            **info,
+            "downloaded": downloaded,
+            "download_state": state,
+            "download_progress": round(_download_progress.get(name, 0.0), 1),
+            "path": _model_snapshot_path(name, repo=info["repo"], marker=info["marker"], check_hf_cache=True) or "",
+        }
+    return {"models": catalog}
+
+
+@app.post("/api/v1/vibevoice/models/{name}/download", dependencies=[Depends(require_auth)])
+async def api_vibevoice_download(name: str):
+    """VibeVoice モデルをバックグラウンドで保存先へダウンロードする。"""
+    if name not in VIBEVOICE_MODEL_CATALOG:
+        return {"success": False, "message": f"unknown vibevoice model: {name}"}
+    info = VIBEVOICE_MODEL_CATALOG[name]
+    if _is_model_downloaded(name, repo=info["repo"], marker=info["marker"], check_hf_cache=True):
+        return {"success": False, "message": f"already downloaded: {name}"}
+    asyncio.create_task(download_model_task(name, repo=info["repo"], allow_patterns=_VIBEVOICE_ALLOW_PATTERNS))
+    return {"success": True, "message": f"downloading {name} ({info['repo']})"}
+
+
+@app.delete("/api/v1/whisper/models/{model_name}", dependencies=[Depends(require_auth)])
+async def api_delete_whisper_model(model_name: str):
+    """Whisper モデルを保存先・HF キャッシュから削除する（使用中・DL中は拒否）。"""
+    if model_name not in MODEL_CATALOG:
+        return {"success": False, "message": f"unknown model: {model_name}"}
+    active = str(await get_config("whisper_model") or "medium").strip().lower()
+    if model_name.lower() == active:
+        return {"success": False, "message": "現在使用中のモデルは削除できません（先に別モデルへ切替）"}
+    if _download_state.get(model_name) == "downloading":
+        return {"success": False, "message": "ダウンロード中のため削除できません"}
+    removed = _delete_model_repo(_model_repo_dir(model_name))
+    _download_state[model_name] = "none"
+    _download_progress[model_name] = 0.0
+    return {"success": removed, "message": "deleted" if removed else "not found"}
+
+
+@app.delete("/api/v1/vibevoice/models/{name}", dependencies=[Depends(require_auth)])
+async def api_delete_vibevoice_model(name: str):
+    """VibeVoice モデルを保存先・HF キャッシュから削除する（DL中は拒否）。"""
+    if name not in VIBEVOICE_MODEL_CATALOG:
+        return {"success": False, "message": f"unknown vibevoice model: {name}"}
+    if _download_state.get(name) == "downloading":
+        return {"success": False, "message": "ダウンロード中のため削除できません"}
+    info = VIBEVOICE_MODEL_CATALOG[name]
+    removed = _delete_model_repo(_model_repo_dir(name, repo=info["repo"]))
+    _download_state[name] = "none"
+    _download_progress[name] = 0.0
+    return {"success": removed, "message": "deleted" if removed else "not found"}
+
+
+# ---------------------------------------------------------------------------
+# Kokoro モデル管理（DL・状態・削除。オフライン TTS 用）
+# ---------------------------------------------------------------------------
+@app.get("/api/v1/kokoro/model")
+async def api_kokoro_model():
+    """Kokoro モデルの DL 状態と保存内容（音声一覧・容量）を返す。"""
+    d = get_model_dir_sync() / "kokoro"
+    downloaded = _kokoro_model_dir() is not None
+    state = _download_state.get("kokoro")
+    if state in (None, "none") and downloaded:
+        state = "done"
+    if state in (None, "none"):
+        state = "none"
+    voices = []
+    total = 0
+    if d.is_dir():
+        vd = d / "voices"
+        if vd.is_dir():
+            for f in sorted(vd.glob("*.pt")):
+                try:
+                    voices.append({"name": f.stem, "size_mb": round(f.stat().st_size / 1048576, 1)})
+                except OSError:
+                    pass
+        for f in ("config.json", "kokoro-v1_0.pth"):
+            p = d / f
+            if p.is_file():
+                try:
+                    total += p.stat().st_size
+                except OSError:
+                    pass
+    return {
+        "downloaded": downloaded,
+        "download_state": state,
+        "download_progress": round(_download_progress.get("kokoro", 0.0), 1),
+        "path": str(d) if downloaded else "",
+        "voices": voices,
+        "size_mb": round(total / 1048576, 1) if total else 0.0,
+    }
+
+
+@app.post("/api/v1/kokoro/model/download", dependencies=[Depends(require_auth)])
+async def api_kokoro_download():
+    """Kokoro モデルをバックグラウンドで models/kokoro へダウンロードする。"""
+    if _kokoro_model_dir():
+        return {"success": False, "message": "already downloaded: kokoro"}
+    if _download_state.get("kokoro") == "downloading":
+        return {"success": False, "message": "already downloading: kokoro"}
+    asyncio.create_task(_kokoro_download_task())
+    return {"success": True, "message": "downloading kokoro"}
+
+
+@app.delete("/api/v1/kokoro/model", dependencies=[Depends(require_auth)])
+async def api_kokoro_delete():
+    """Kokoro モデルフォルダ（models/kokoro）を削除する。"""
+    if _download_state.get("kokoro") == "downloading":
+        return {"success": False, "message": "ダウンロード中のため削除できません"}
+    d = get_model_dir_sync() / "kokoro"
+    if d.is_dir():
+        shutil.rmtree(d, ignore_errors=True)
+        _download_state["kokoro"] = "none"
+        _download_progress["kokoro"] = 0.0
+        return {"success": True, "message": "kokoro deleted"}
+    return {"success": False, "message": "not found"}
 
 
 @app.post("/api/v1/whisper/model", dependencies=[Depends(require_auth)])
@@ -1714,6 +2418,8 @@ async def api_get_config(request: Request):
         "active_llm_profile",
         "whisper_mode", "whisper_compute_type", "whisper_beam_size",
         "whisper_temperature", "whisper_vad_min_silence_ms",
+        "tts_engine", "tts_device", "tts_vibevoice_model",
+        "tts_kokoro_voice", "tts_preload",
     ]
     result = {}
     for k in keys:
@@ -1765,6 +2471,16 @@ async def api_set_config(data: dict):
                     _resolve_model_dir(v)  # 作成可能なパスかを検証
                 except Exception as e:
                     return {"success": False, "error": f"invalid model dir: {e}"}
+        if k == "tts_engine" and v not in ("edge", "kokoro", "vibevoice"):
+            return {"success": False, "error": f"invalid tts_engine: {v}"}
+        if k == "tts_device" and v not in ("auto", "cuda", "cpu"):
+            return {"success": False, "error": f"invalid tts_device: {v}"}
+        if k == "tts_vibevoice_model" and v not in ("realtime", "tts"):
+            return {"success": False, "error": f"invalid tts_vibevoice_model: {v}"}
+        if k == "tts_kokoro_voice" and v not in ("jf_alpha", "jf_gongitsune", "jf_nezumi", "jf_tebukuro", "jm_kumo"):
+            return {"success": False, "error": f"invalid tts_kokoro_voice: {v}"}
+        if k == "tts_preload" and v not in ("on", "off"):
+            return {"success": False, "error": f"invalid tts_preload: {v}"}
         await set_config(k, str(v))
     return {"success": True}
 

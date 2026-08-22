@@ -47,7 +47,7 @@
 | GPU 温度グラフ | リアルタイム推移に **GPU 温度**（赤色）の折れ線を追加 |
 | 変換フェーズ色分け | トレンドチャートに **変換（琥珀）/ AI 校正（マゼンタ）** の帯を表示し、フェーズを色で区別 |
 | リアルタイムロギング | 2 秒毎の CPU / GPU / メモリ / 変換フェーズを **JSONL** で記録。開始 / 停止ボタン＋ログ履歴セクションで一覧・閲覧・ダウンロード・削除 |
-| 音読み（Edge TTS） | 変換履歴の詳細結果を **女性音声** で読み上げ。再クリックで**一時停止 / 再開**、読上げ中の文を**下線表示**、本文**ダブルクリック**で指定位置から再生 |
+| 音読み（TTS 切替） | 変換履歴の詳細結果を読み上げ。エンジンは **Edge TTS / Kokoro（高速ローカル）/ VibeVoice（リアルタイム）** を設定画面で切替。再クリックで**一時停止 / 再開**、読上げ中の文を**下線表示**、本文**ダブルクリック**で指定位置から再生 |
 | 文字数表示 | 変換履歴一覧・詳細ヘッダーに**変換文と AI 校正文の文字数**を表示 |
 | 原文 / 校正タブ | 詳細結果で**変換文**と **AI 校正文**をタブ切替で表示 |
 
@@ -322,7 +322,10 @@ curl -X POST http://127.0.0.1:9000/asr \
 | メソッド | パス | 説明 |
 |---|---|---|
 | POST | `/asr` | 音声ファイルをアップロードして文字起こし |
+| POST | `/tts` | テキスト読み上げ（**LAN から認証なしで利用可**）。`POST {"text":"こんにちは","lang":"ja"}` → 既定は**音声バイトを直接返す**（`curl -o out.wav` で保存可）。`?format=json` で `{audio_base64,mime,duration,boundaries}` を返す。エンジン・音声はダッシュボード設定（`tts_engine` / `tts_kokoro_voice` / `tts_preload`）に従い、内部でダッシュボード `/api/v1/tts` にプロキシ |
 | POST | `/correct` | 与えられたテキストを AI 校正して返す（`{"text":"..."}` → `{"result":"...","llm_model":"...","correct_elapsed":12.3}`） |
+| POST | `/chat` | **チャット（LAN から認証なしで利用可）**。`POST {"message":"こんにちは","session_id":"..."}` → `{"reply":"...","session_id":"..."}`。LLM はダッシュボードのアクティブプロファイルに従い、内部で `/api/v1/chat` にプロキシ。会話履歴は `session_id` 単位で保持（省略時は新規） |
+| POST | `/chat/stream` | **チャット（SSE ストリーミング・LAN から認証なしで利用可）**。`POST {"message":"..."}` → 文単位のテキスト＋音声イベントを透過中継（`text` / `audio_start` / `audio_chunk` / `audio_end` / `audio_skip` / `done` / `error`）。リアルタイム音声出力は受信側で base64 デコードして再生 |
 | GET | `/health` | ヘルスチェック（`{"status":"ok","model":"medium"}`） |
 
 ## Dashboard（ポート 9001）
@@ -339,7 +342,10 @@ curl -X POST http://127.0.0.1:9000/asr \
 | POST | `/api/v1/whisper/model` | モデル切り替え `{"model":"small"}`（自動で再起動。**読込完了まで待機**し、失敗時は旧モデルへ自動復元） |
 | POST | `/api/v1/whisper/status_event` | 変換中ステータス受信（内部用） |
 | POST | `/api/v1/whisper/progress` | 変換進捗 0〜100 受信（内部用。`-1` = AI 校正中） |
-| POST | `/api/v1/tts` | 詳細結果の音読み用 Edge TTS 合成 `{"text":"...","lang":"ja"}` → `{"audio_base64":"...","duration":3.5,"boundaries":[{"t":0,"d":12000000}]}`（文境界付き MP3） |
+| POST | `/api/v1/tts` | 音読み用 TTS 合成 `{"text":"...","lang":"ja"}` → `{"audio_base64":"...","mime":"audio/mpeg|audio/wav","duration":3.5,"boundaries":[{"t":0,"d":1.7}],"boundaries_approx":false}`。エンジンは config `tts_engine` で切替（edge / kokoro / vibevoice）。edge=MP3＋実測境界、kokoro=24kHz WAV＋文単位実測境界、vibevoice=24kHz WAV＋比例推定境界。未導入のエンジン指定時は **503** を返し、edge がフォールバック |
+| POST | `/api/v1/chat` | **チャット（非ストリーミング）** `{"message":"...","session_id":"..."}` → `{"reply":"...","session_id":"..."}`。session_id 省略時は新規。LLM はアクティブプロファイル（`/api/v1/llm/profiles` の同期先）を使用 |
+| POST | `/api/v1/chat/stream` | **チャット（SSE ストリーミング＋文単位リアルタイム音声）**。`{"message":"...","session_id":"...","lang":"ja","voice":"jf_gongitsune"}` → `text` / `audio_start` / `audio_chunk` / `audio_end` / `audio_skip` / `done` / `error` イベント。長文は読点・80 文字で分割し、**base64 を複数チャンクに分割**して送信（SSE 行長上限対策）。音声エンジン・音声はダッシュボード設定（`tts_engine` / `tts_kokoro_voice`）に従う |
+| DELETE | `/api/v1/chat/{session_id}` | 指定セッションの会話履歴をクリア |
 | POST | `/api/v1/realtime-log/start` | リアルタイムロギング開始（新規 JSONL 作成） |
 | POST | `/api/v1/realtime-log/stop` | リアルタイムロギング停止（要約統計を追記） |
 | GET | `/api/v1/realtime-log` | ログ一覧（各ファイルの要約 + 現在の記録状態） |
@@ -439,6 +445,126 @@ Dashboard「設定」の「Whisper 高速化」で、速度と精度のバラン
 - **Beam 幅**：小さいほど速く、1 でビームサーチをやめて貪欲デコードになります（精度はやや低下）。
 - **Temperature**：`0` は貪欲デコードで最速。`1` は温度フォールバック（0〜1.0）で精度優先。
 - **VAD 無音しきい値**：小さいほど無音部分を細かく区切ります。大きいと変換が速くなる傾向があります。
+
+---
+
+## 音読み TTS（エンジン切替）
+
+読み上げの TTS エンジンは Dashboard「設定」→「読み上げ TTS」で切り替えられます。
+
+| エンジン | 特徴 | 音声 |
+|---|---|---|
+| **Edge TTS**（既定） | クラウド・要インターネット。文境界は実測（SentenceBoundary）。MP3 | 言語別の女性ニューラル音声 |
+| **Kokoro**（高速ローカル） | ローカル・オフライン。**GPU でウォーム時 0.3 秒程度**、24kHz WAV、文単位の実測境界。VRAM 約 1GB（Whisper と同居可）。モデルは `models/kokoro/` に格納済みで完全オフライン動作 | 日本語ネイティブ 5 声（女声 Alpha / Gongitsune / Nezumi / Tebukuro、男声 Kumo。設定画面＋Whisper サービス制御で選択可）ほか 8 言語 |
+| **VibeVoice-Realtime-0.5B** | ローカル・ストリーミング。**日本語は実験的**（公式が「意味不明になる可能性」と注記）。文境界は文字数比例推定（`boundaries_approx=true`） | 実験的マルチリンガル（要 `.pt` 音声の別途取得） |
+
+- **デバイス設定**：`自動（空きVRAMで判断）/ CUDA / CPU`。VibeVoice は**空き VRAM が 3GB 未満**だと CPU で実行（Whisper と同居しにくいため）。デバイスは**初回ロード時に確定**し、以後は維持します（VRAM 残量が揺れても往復ロードしない）。
+- ローカルエンジンは**初回使用時にモデルを自動ダウンロード**します（しばらく待ちます。以降は高速）。
+- 未導入のエンジンを選んだ場合は **503** が返り、Edge TTS に切り替えるか、以下で導入してください。
+
+### Kokoro をオフラインで使う（モデル格納済み）
+
+Kokoro は `whisper_server\models\kokoro\` に **モデル本体（config.json + kokoro-v1_0.pth）と日本語音声 5 種**を格納済みです。このフォルダがあれば **HF へのネットワークアクセスなしで完全オフライン**動作します（音声も `voices/` からローカルロード）。他の PC へ移す場合はこのフォルダごとコピーしてください。
+
+Dashboard「設定 → **模型管理**」の **Kokoro モデル**セクションでも管理できます（一般立ち上げ時の DL は不要ですが、未配置 PC では**ダウンロードボタン**で `models/kokoro` へ取得、**削除ボタン**でフォルダごと削除できます）。
+
+### 起動時プリロード（常駐・超高速応答）
+
+設定「起動時にローカルTTSをVRAMに読込（常駐）」が **ON**（既定）だと、**ダッシュボード起動時に選択中のローカルエンジンを VRAM に読み込み、以後アンロードしません**。これにより **初回読み上げも即応答**（Kokoro は約 0.3 秒）になります。ログに `[tts] 起動時プリロード完了: kokoro を常駐` と出力されます。VRAM を節約したい場合は OFF にすると、5 分（未使用時）のアイドルで自動解放されます。
+
+### 他 PC・端末から TTS を呼ぶ（LAN）
+
+Whisper サーバ（ポート 9000）に **認証なしの `POST /tts`** を追加しました。スマートフォンや別 PC から直接読み上げが可能です。
+
+```bash
+# 音声を直接保存（wav / mp3 はエンジンにより変わる）
+curl -X POST http://<PCのIP>:9000/tts \
+  -H "Content-Type: application/json" \
+  -d '{"text":"こんにちは、お元気ですか。","lang":"ja"}' -o out.wav
+
+# 境界情報付きで JSON を取得
+curl -X POST "http://<PCのIP>:9000/tts?format=json" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"こんにちは。","lang":"ja"}'
+```
+
+エンジン・音声はダッシュボードの設定に従います（リアルタイムチャットなどに利用可能）。
+
+### リアルタイムチャット・チャットボット API（音声出力付き）
+
+LLM（Deepseek 等・`/api/v1/llm/profiles` のアクティブプロファイル）と会話し、**文単位で読み上げ音声を返す**チャット API を追加しました。チャットボット / スマートスピーカー風のリアルタイム音声応答に利用できます。
+
+**① 非ストリーミング** — `POST /api/v1/chat`（9001）または `POST /chat`（9000・LAN 認証なし）
+
+```bash
+curl -X POST http://<PCのIP>:9000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"こんにちは、今日の天気は？"}'
+# → {"reply":"...","session_id":"xxxx"}
+# session_id を次のリクエストに渡すと会話履歴を引き継ぎます
+```
+
+**② SSE ストリーミング＋リアルタイム音声** — `POST /api/v1/chat/stream`（9001）または `POST /chat/stream`（9000・LAN 認証なし）
+
+`{"message":"...","session_id":"...","lang":"ja","voice":"jf_gongitsune"}` を送ると、以下のイベントが順に届きます：
+
+| type | 内容 |
+|---|---|
+| `text` | ここまでの全文（表示用・蓄積更新） |
+| `audio_start` | 読み上げ片の開始（`text` / `mime` / `duration`） |
+| `audio_chunk` | base64 音声チャンク（`audio_end` まで連結すると音声が完成） |
+| `audio_end` | 読み上げ片の終わり |
+| `audio_skip` | 合成失敗（テキストのみ再生） |
+| `done` | 完了（`full` / `session_id`） |
+| `error` | エラー |
+
+- 長文は読点・80 文字で読み上げ単位に分割し、それぞれ **即座に音声合成**して返すため、最初の文の音声が生成完了まで待たずに再生を開始できます（Kokoro 常駐時は文あたり約 0.1〜0.3 秒）。
+- 大きな音声は base64 を **複数チャンクに分割**して送るため、SSE の行長制限（512KB）に達しません。受信側は `audio_chunk` を連結して base64 デコード→ `mime`（audio/wav 等）で再生してください。
+- 会話履歴はダッシュボード内のメモリに保持（1 セッション最大 40 メッセージ・30 分未使用で破棄）。`DELETE /api/v1/chat/{session_id}` でクリアできます。
+
+### Kokoro の導入
+
+```bash
+python -m pip install "kokoro>=0.9.4" "misaki[ja]>=0.8" soundfile
+```
+
+### VibeVoice の導入（別途・実験的）
+
+```bash
+git clone https://github.com/microsoft/VibeVoice
+cd VibeVoice
+python -m pip install -e ".[streamingtts]"   # transformers を 4.51.3 に更新します
+bash demo/download_experimental_voices.sh    # 日本語など実験的声（.pt）
+```
+
+> ⚠️ `.[streamingtts]` はグローバルの `transformers` を 4.51.3 に更新します。他のパッケージとの競合が心配な場合は仮想環境を分けてください。
+
+> 📋 **実機での動作（GTX 1660 Ti 6GB / Win11 で検証）**
+> - モデルは **fp16** でロードします（Turing 世代は bf16 の一部カーネルが未対応で生成時に落ちるため、Ampere 以降のみ bf16）
+> - **初回ロードに約 40 秒**かかります（以降は維持）。アイドル 5 分でアンロードされ VRAM を解放
+> - **ウォーム時は RTF 約 1.5〜1.8×**（5 秒の音声に 8 秒程度）。実時間よりやや遅いため、低遅延が最優先なら Kokoro / Edge を推奨
+> - ロード時 VRAM 約 4〜5GB。Whisper（medium/int8）と同居は可能ですが、VRAM が逼迫し変換速度が落ちる場合があります
+
+### VibeVoice モデル管理（DL / 選択）
+
+VibeVoice には 2 つの TTS モデルがあります。Dashboard「設定」→「**模型管理**」の **VibeVoice モデル**セクションでダウンロードできます（既存の Whisper モデル DL 機構を流用。保存先も同じ `whisper_server/models`）。
+
+| モデル | サイズ | 対応言語 | 合成 |
+|---|---|---|---|
+| **Realtime 0.5B**（既定） | 1.9GB | 日本語・英語ほか 9 言語（日本語は実験的） | ✅ このモデルで読み上げ |
+| **TTS 1.5B** | 5.0GB | 英語・中国語のみ | ❌ 非対応（英語/中国語・CPU のみ・公式利用手順非公開のため） |
+
+- **モデル選択**は「設定 → 読み上げ TTS」と、ダッシュボード「Whisper 服务控制」の **VibeVoice モデル**セレクタ（右寄せ表示・TTS エンジンが VibeVoice の時のみ表示）で切り替えられます。設定値は `tts_vibevoice_model`（`realtime` / `tts`、既定 `realtime`）として保存されます。
+- **TTS 1.5B を選択しても合成は常に Realtime 0.5B で実行**されます（英語/中国語・CPU のみ・合成非対応のため）。選択時はログに「VibeVoice-TTS は合成未対応… Realtime-0.5B を使用」と表示され、UI にも注記されます。
+- どちらかのモデルをダウンロード済み・あるいは Hugging Face キャッシュに存在する場合は、合成時に **ローカル snapshot を使い再ダウンロードされません**。
+
+### モデルの削除（模型管理）
+
+「**模型管理**」の各モデルリスト（Whisper / VibeVoice / Kokoro）に **削除ボタン** を追加しました。ダウンロード済みモデルをクリック（確認ダイアログ付き）で削除できます。保存先 `whisper_server/models` と既定 HF キャッシュの**両方から削除**されます。
+
+- **現在使用中の Whisper モデル**は削除できません（先に別モデルへ切り替えてください）
+- ダウンロード中・未配置のモデルにはボタンが表示されません
+- 削除後に再度使用する場合は**ダウンロードボタン**で取得できます（Whisper モデルは `models` へ HF キャッシュ形式で保存）
 
 ---
 

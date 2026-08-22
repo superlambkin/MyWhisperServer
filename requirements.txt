@@ -11,3 +11,7 @@ aiosqlite>=0.22.0
 torch>=2.5.0
 torchaudio>=2.5.0
 edge-tts>=7.0.0
+# ローカル高速 TTS（音読み）。misaki[ja] は日本語 G2P。VibeVoice は別途 README 手順で導入
+kokoro>=0.9.4
+misaki[ja]>=0.8
+soundfile>=0.12

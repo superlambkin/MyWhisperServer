@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 import asyncio
+import base64
 import time
 import threading
 from pathlib import Path
@@ -9,7 +10,7 @@ from typing import Optional
 
 import aiohttp
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, Response, StreamingResponse
 from faster_whisper import WhisperModel
 
 app = FastAPI(title="Local Whisper Server")
@@ -358,6 +359,105 @@ async def asr(
 @app.get("/health")
 async def health():
     return {"status": "ok", "model": MODEL_SIZE}
+
+
+@app.post("/tts")
+async def tts_speech(data: dict, format: str = "raw"):
+    """テキスト読み上げ（LAN から認証なしで利用可）。ダッシュボードの /api/v1/tts へ内部プロキシ。
+
+    - 既定（format=raw）: 音声バイトを直接返す（Content-Type はエンジンの mime）。curl -o out.wav で保存可能。
+    - format=json: {audio_base64, mime, duration, boundaries, ...} を JSON で返す。
+    エンジン・音声・プリロードはダッシュボードの設定（tts_engine / tts_kokoro_voice / tts_preload）に従う。
+    ループバック（127.0.0.1）からダッシュボードを呼ぶため認証トークンは不要。
+    """
+    text = str(data.get("text", "")).strip()
+    if not text:
+        raise HTTPException(400, "text is required")
+    lang = str(data.get("lang", "") or "")
+    payload = {"text": text, "lang": lang}
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{DASHBOARD_URL}/api/v1/tts", json=payload,
+                timeout=aiohttp.ClientTimeout(total=600),
+            ) as resp:
+                if resp.status != 200:
+                    body = await resp.text()
+                    raise HTTPException(resp.status, f"dashboard TTS failed: {body[:300]}")
+                result = await resp.json()
+    except aiohttp.ClientError as e:
+        raise HTTPException(502, f"dashboard unreachable: {e}")
+    if format == "json":
+        return result
+    audio = base64.b64decode(result.get("audio_base64", "") or "")
+    if not audio:
+        raise HTTPException(502, "dashboard returned empty audio")
+    return Response(content=audio, media_type=result.get("mime", "audio/wav"))
+
+
+@app.post("/chat")
+async def chat_completion(data: dict):
+    """チャット（LAN から認証なしで利用可）。ダッシュボードの /api/v1/chat へ内部プロキシ。
+
+    body: {"message": "...", "session_id": "..."} → {"reply": "...", "session_id": "..."}
+    会話履歴はダッシュボード内の session_id 単位で保持される（省略時は新規セッション）。
+    LLM はダッシュボードのアクティブプロファイル（Deepseek / Ollama 等）に従う。
+    """
+    message = str(data.get("message", "")).strip()
+    if not message:
+        raise HTTPException(400, "message is required")
+    payload = {"message": message}
+    if data.get("session_id"):
+        payload["session_id"] = str(data["session_id"])
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{DASHBOARD_URL}/api/v1/chat", json=payload,
+                timeout=aiohttp.ClientTimeout(total=600),
+            ) as resp:
+                if resp.status != 200:
+                    body = await resp.text()
+                    raise HTTPException(resp.status, f"dashboard chat failed: {body[:300]}")
+                return await resp.json()
+    except aiohttp.ClientError as e:
+        raise HTTPException(502, f"dashboard unreachable: {e}")
+
+
+@app.post("/chat/stream")
+async def chat_completion_stream(data: dict):
+    """チャット（SSE ストリーミング・LAN から認証なしで利用可）。ダッシュボードの /api/v1/chat/stream を中継。
+
+    body: {"message": "...", "session_id": "..."} — SSE イベントはそのまま透過（
+      {"type":"text"}/{"type":"audio"}/{"type":"audio_skip"}/{"type":"done"}/{"type":"error"}）。
+    リアルタイム音声出力は、受信側で audio_base64 を base64 デコードして再生する。
+    """
+    message = str(data.get("message", "")).strip()
+    if not message:
+        raise HTTPException(400, "message is required")
+    payload = {"message": message}
+    for k in ("session_id", "lang", "voice"):
+        if data.get(k):
+            payload[k] = str(data[k])
+
+    async def relay():
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{DASHBOARD_URL}/api/v1/chat/stream", json=payload,
+                    timeout=aiohttp.ClientTimeout(total=600, connect=30),
+                ) as resp:
+                    if resp.status != 200:
+                        body = (await resp.text())[:300]
+                        yield f"data: {{\"type\":\"error\",\"message\":\"dashboard chat failed: {body}\"}}\n\n"
+                        return
+                    async for line in resp.content:
+                        line = line.decode("utf-8", errors="replace")
+                        if line.startswith("data:"):
+                            yield line
+        except aiohttp.ClientError as e:
+            yield f"data: {{\"type\":\"error\",\"message\":\"dashboard unreachable: {e}\"}}\n\n"
+
+    return StreamingResponse(relay(), media_type="text/event-stream")
 
 
 @app.post("/correct")

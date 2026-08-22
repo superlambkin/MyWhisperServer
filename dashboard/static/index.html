@@ -10,7 +10,7 @@
     <script src="/static/vendor/tailwind.js?v=30"></script>
     <script src="/static/vendor/chart.umd.min.js?v=30"></script>
     <link rel="stylesheet" href="/static/vendor/fonts.css?v=30">
-    <link rel="stylesheet" href="/static/css/style.css?v=37">
+    <link rel="stylesheet" href="/static/css/style.css?v=39">
 </head>
 <body class="text-stone-100 font-manrope overflow-hidden">
     <div class="flex h-screen">
@@ -235,7 +235,7 @@
                                 </div>
                                 <a href="ms-settings:storage" title="Open Windows Storage settings" class="bg-stone-900/50 rounded-xl p-3 text-center block hover:bg-stone-800/60 border border-transparent hover:border-amber-500/40 transition-all">
                                     <div id="disk-percent" class="text-base font-bold text-cyan-400">-- / -- GB</div>
-                                    <div class="text-xs text-stone-400"><span data-i18n="storage.title">ストレージ</span> ↗</div>
+                                    <div class="text-xs text-stone-400"><span data-i18n="storage.title">ストレージ</span></div>
                                 </a>
                             </div>
                         </div>
@@ -313,9 +313,18 @@
                                 <div class="bg-stone-900/50 rounded-xl p-3 text-center">
                                     <div id="gpu-mem-text" class="text-xl font-bold text-pink-400">-- / -- MB</div>
                                     <div class="text-xs text-stone-400" data-i18n="gpu.mem">显存</div>
-                                    <div class="mt-1">
-                                        <div id="gpu-mem-model" class="text-base font-mono text-cyan-300 font-semibold truncate" title="Whisper model">--</div>
-                                        <div id="gpu-mem-size" class="text-[10px] text-stone-400 mt-0.5 truncate" title="">--</div>
+                                    <div class="mt-1.5 space-y-0.5">
+                                        <div class="truncate" title="Whisper model">
+                                            <span id="gpu-mem-model" class="font-mono text-cyan-300 font-semibold text-xs">--</span>
+                                            <span id="gpu-mem-size" class="text-stone-400 text-[10px] ml-1">--</span>
+                                        </div>
+                                        <div id="gpu-mem-tts" class="hidden truncate" title="TTS model">
+                                            <span id="gpu-mem-tts-model" class="font-mono text-fuchsia-300 font-semibold text-xs">--</span>
+                                            <span id="gpu-mem-tts-size" class="text-stone-400 text-[10px] ml-1">--</span>
+                                        </div>
+                                        <div id="gpu-mem-total-line" class="hidden truncate text-stone-500 text-[10px]">
+                                            <span data-i18n="gpu.model_total">合计</span> <span id="gpu-mem-total">--</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div id="gpu-temp-box" class="bg-stone-900/50 rounded-xl p-3 text-center">
@@ -382,7 +391,25 @@
                                     </button>
                                 </div>
                             </div>
-                            <div id="model-info" class="text-sm text-stone-500 mb-4"></div>
+                            <!-- 読み上げ（TTS）の VibeVoice モデル選択：設定画面 tts_vibevoice_model と同期。エンジンが vibevoice の時のみ表示・右寄せ -->
+                            <div id="vv-model-select-wrap" class="flex items-center justify-end gap-2 mb-4 shrink-0 hidden">
+                                <label class="text-sm text-stone-400" data-i18n="settings.tts_vibevoice_model">VibeVoice 模型</label>
+                                <select id="vv-model-select" class="px-3 py-2 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                    <option value="realtime" data-i18n="settings.tts_vibevoice_model.realtime">Realtime 0.5B（高速・日本語含む）</option>
+                                    <option value="tts" data-i18n="settings.tts_vibevoice_model.tts">TTS 1.5B（英語/中文のみ・CPUのみ・合成非対応）</option>
+                                </select>
+                            </div>
+                            <!-- 読み上げ（TTS）の Kokoro 日本語音声選択：設定画面 tts_kokoro_voice と同期。エンジンが kokoro の時のみ表示 -->
+                            <div id="kk-voice-select-wrap" class="flex items-center justify-end gap-2 mb-4 shrink-0 hidden">
+                                <label class="text-sm text-stone-400" data-i18n="settings.tts_kokoro_voice">Kokoro 声音（日本語）</label>
+                                <select id="kk-voice-select" class="px-3 py-2 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                    <option value="jf_alpha" data-i18n="settings.tts_kokoro_voice.jf_alpha">女声 Alpha（标准）</option>
+                                    <option value="jf_gongitsune" data-i18n="settings.tts_kokoro_voice.jf_gongitsune">女声 Gongitsune</option>
+                                    <option value="jf_nezumi" data-i18n="settings.tts_kokoro_voice.jf_nezumi">女声 Nezumi</option>
+                                    <option value="jf_tebukuro" data-i18n="settings.tts_kokoro_voice.jf_tebukuro">女声 Tebukuro</option>
+                                    <option value="jm_kumo" data-i18n="settings.tts_kokoro_voice.jm_kumo">男声 Kumo</option>
+                                </select>
+                            </div>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-base">
                                 <div class="bg-stone-900/50 rounded-xl p-3">
                                     <span class="text-stone-400 block" data-i18n="whisper.status">状态</span>
@@ -728,18 +755,61 @@
                                 </div>
                             </div>
 
-                            <!-- 模型管理（FasterWhisper）：モデル保存先指定 + DL 済みのみ一覧 -->
+                            <!-- 音読み TTS（読み上げエンジン切替）：Edge / Kokoro / VibeVoice -->
                             <div class="glass-card p-6 rounded-2xl">
-                                <h3 class="text-lg font-semibold mb-4" data-i18n="model.manage">模型管理</h3>
+                                <h3 class="text-lg font-semibold mb-4" data-i18n="settings.tts">朗读 TTS</h3>
                                 <div class="space-y-4">
                                     <div>
-                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="model.dir">模型保存位置</label>
-                                        <input id="setting-model-dir" type="text" placeholder="C:\Users\superlambkin\whisper_server\models" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none font-mono text-xs">
-                                        <p class="mt-1 text-xs text-stone-500" data-i18n="model.dir_hint">模型切换・新下载时的保存位置（空=默认）</p>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="settings.tts_engine">TTS 引擎</label>
+                                        <select id="setting-tts-engine" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                            <option value="edge" data-i18n="settings.tts_engine.edge">Edge TTS（默认·云端）</option>
+                                            <option value="kokoro" data-i18n="settings.tts_engine.kokoro">Kokoro（高速本地）</option>
+                                            <option value="vibevoice" data-i18n="settings.tts_engine.vibevoice">VibeVoice（实时本地）</option>
+                                        </select>
                                     </div>
-                                    <div id="model-manage-list" class="space-y-1 max-h-72 overflow-y-auto"></div>
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="settings.tts_device">设备</label>
+                                        <select id="setting-tts-device" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                            <option value="auto" data-i18n="settings.tts_device.auto">自动（按剩余显存）</option>
+                                            <option value="cuda">CUDA (GPU)</option>
+                                            <option value="cpu">CPU</option>
+                                        </select>
+                                    </div>
+                                    <!-- VibeVoice モデル選択（エンジンが vibevoice の時のみ表示） -->
+                                    <div id="setting-tts-vibevoice-wrap" class="hidden">
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="settings.tts_vibevoice_model">VibeVoice 模型</label>
+                                        <select id="setting-tts-vibevoice-model" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                            <option value="realtime" data-i18n="settings.tts_vibevoice_model.realtime">Realtime 0.5B（高速・日本語含む）</option>
+                                            <option value="tts" data-i18n="settings.tts_vibevoice_model.tts">TTS 1.5B（英語/中国語のみ・CPUのみ・合成非対応）</option>
+                                        </select>
+                                        <p class="mt-1 text-xs text-stone-500" data-i18n="settings.tts_vibevoice_hint">VibeVoice-TTS（1.5B）は英語・中国語のみ・CPU のみで合成未対応です。選択時は Realtime（0.5B）で読み上げます。</p>
+                                    </div>
+                                    <!-- Kokoro 日本語音声選択（エンジンが kokoro の時のみ表示・ローカル voices） -->
+                                    <div id="setting-tts-kokoro-voice-wrap" class="hidden">
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="settings.tts_kokoro_voice">Kokoro 声音（日本語）</label>
+                                        <select id="setting-tts-kokoro-voice" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none">
+                                            <option value="jf_alpha" data-i18n="settings.tts_kokoro_voice.jf_alpha">女声 Alpha（标准）</option>
+                                            <option value="jf_gongitsune" data-i18n="settings.tts_kokoro_voice.jf_gongitsune">女声 Gongitsune</option>
+                                            <option value="jf_nezumi" data-i18n="settings.tts_kokoro_voice.jf_nezumi">女声 Nezumi</option>
+                                            <option value="jf_tebukuro" data-i18n="settings.tts_kokoro_voice.jf_tebukuro">女声 Tebukuro</option>
+                                            <option value="jm_kumo" data-i18n="settings.tts_kokoro_voice.jm_kumo">男声 Kumo</option>
+                                        </select>
+                                    </div>
+                                    <!-- 起動時プリロード（ローカルTTSをVRAM常駐） -->
+                                    <div class="flex items-center justify-between p-4 bg-stone-900/50 rounded-xl">
+                                        <div>
+                                            <div class="font-medium" data-i18n="settings.tts_preload">起動時にローカルTTSをVRAMに読込（常駐）</div>
+                                            <div class="text-sm text-stone-400" data-i18n="settings.tts_preload_desc">Kokoro / VibeVoice をダッシュボード起動時に読み込み、以後アンロードせず常駐させます（初回読み上げが即応答。VRAM は消費します）</div>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input id="setting-tts-preload" type="checkbox" class="sr-only peer">
+                                            <div class="w-14 h-7 bg-stone-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-500"></div>
+                                        </label>
+                                    </div>
+                                    <p class="mt-1 text-xs text-stone-500" data-i18n="settings.tts_hint">本地引擎首次使用会下载模型。未安装的引擎请切换到 Edge TTS。VibeVoice 需单独安装（见 README）。</p>
                                 </div>
                             </div>
+
                         </div>
 
                         <div class="space-y-6">
@@ -824,6 +894,29 @@
                                 </div>
                             </div>
 
+                            <!-- 模型管理（FasterWhisper）：モデル保存先指定 + DL 済みのみ一覧。LLM 模型管理と起動時自動実行の間 -->
+                            <div class="glass-card p-6 rounded-2xl">
+                                <h3 class="text-lg font-semibold mb-4" data-i18n="model.manage">模型管理</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="model.dir">模型保存位置</label>
+                                        <input id="setting-model-dir" type="text" placeholder="C:\Users\superlambkin\whisper_server\models" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none font-mono text-xs">
+                                        <p class="mt-1 text-xs text-stone-500" data-i18n="model.dir_hint">模型切换・新下载时的保存位置（空=默认）</p>
+                                    </div>
+                                    <div id="model-manage-list" class="space-y-1 max-h-72 overflow-y-auto"></div>
+                                    <!-- VibeVoice モデルDL（既存 Whisper モデルDL機構を流用） -->
+                                    <div class="mt-4">
+                                        <div class="text-sm text-stone-400 mb-2" data-i18n="model.vibevoice_manage">VibeVoice 模型</div>
+                                        <div id="vibevoice-model-list" class="space-y-1 max-h-48 overflow-y-auto"></div>
+                                    </div>
+                                    <!-- Kokoro モデルDL（オフライン TTS。DL 済みなら models/kokoro を完全オフライン利用） -->
+                                    <div class="mt-4">
+                                        <div class="text-sm text-stone-400 mb-2" data-i18n="model.kokoro_manage">Kokoro 模型</div>
+                                        <div id="kokoro-model-list" class="space-y-1 max-h-48 overflow-y-auto"></div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="glass-card p-6 rounded-2xl">
                                 <h3 class="text-lg font-semibold mb-4" data-i18n="autostart.title">开机自启</h3>
                                 <div class="mb-4">
@@ -904,6 +997,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=54"></script>
+    <script src="/static/js/app.js?v=65"></script>
 </body>
 </html>

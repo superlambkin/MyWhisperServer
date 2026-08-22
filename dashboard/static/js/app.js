@@ -16,7 +16,7 @@ const I18N = {
         "nav.readme": "Readme",
         "sidebar.whisper_service": "Whisper 服务",
         "status.checking": "检查中...",
-        "status.running": "运行中",
+        "status.running": "待机中",
         "status.stopped": "已停止",
         "status.starting": "启动中",
         "status.converting": "转换中",
@@ -65,6 +65,9 @@ const I18N = {
         "gpu.mem_detail_prefix": "显存:",
         "gpu.not_available": "GPU 信息不可用",
         "gpu.not_detected": "未检测到 NVIDIA GPU",
+        "gpu.model_total": "合计",
+        "gpu.tts_cpu": "CPU",
+        "gpu.tts_cloud": "云",
         "realtime.trend": "实时趋势",
         "realtime.shrink": "缩小",
         "realtime.expand": "放大",
@@ -126,6 +129,12 @@ const I18N = {
         "model.use": "使用",
         "model.download": "下载",
         "model.download_start": "开始下载",
+        "model.vibevoice_manage": "VibeVoice 模型",
+        "model.kokoro_manage": "Kokoro 模型",
+        "model.delete": "删除",
+        "model.delete_confirm": "确定删除该模型？模型文件将从磁盘删除。",
+        "model.deleted": "已删除",
+        "model.voices": "个声音",
         "records.title": "转换履历",
         "records.search": "搜索文件名或结果...",
         "records.refresh": "刷新",
@@ -160,6 +169,7 @@ const I18N = {
         "records.pause": "暂停",
         "records.resume": "继续",
         "records.no_tts": "朗读失败（Edge TTS）",
+        "records.tts_cold_wait": "正在生成语音。首次使用或长时间闲置后需要加载模型，可能需要数十秒",
         "records.delete": "删除",
         "records.delete_confirm": "确定删除这条记录吗？",
         "records.deleted": "记录已删除",
@@ -238,6 +248,28 @@ const I18N = {
         "settings.saved": "设置已保存",
         "settings.save_failed": "保存失败",
         "settings.hint": "更改后点击保存。Whisper 高速化・模型相关设置需重启 Whisper 服务生效。",
+        "settings.tts": "朗读 TTS",
+        "settings.tts_engine": "TTS 引擎",
+        "settings.tts_engine.edge": "Edge TTS（默认·云端）",
+        "settings.tts_engine.kokoro": "Kokoro（高速本地）",
+        "settings.tts_engine.vibevoice": "VibeVoice（实时本地）",
+        "settings.tts_device": "设备",
+        "settings.tts_device.auto": "自动（按剩余显存）",
+        "settings.tts_device.cuda": "CUDA (GPU)",
+        "settings.tts_device.cpu": "CPU",
+        "settings.tts_hint": "本地引擎首次使用会下载模型。未安装的引擎请切换到 Edge TTS。VibeVoice 需单独安装（见 README）。",
+        "settings.tts_vibevoice_model": "VibeVoice 模型",
+        "settings.tts_vibevoice_model.realtime": "Realtime 0.5B（高速・日语含）",
+        "settings.tts_vibevoice_model.tts": "TTS 1.5B（英语/中文・仅CPU・不可合成）",
+        "settings.tts_vibevoice_hint": "TTS 1.5B 仅支持英语/中文・仅 CPU・不可合成。选择后仍使用 Realtime（0.5B）朗读。",
+        "settings.tts_kokoro_voice": "Kokoro 声音（日语）",
+        "settings.tts_kokoro_voice.jf_alpha": "女声 Alpha（标准）",
+        "settings.tts_kokoro_voice.jf_gongitsune": "女声 Gongitsune",
+        "settings.tts_kokoro_voice.jf_nezumi": "女声 Nezumi",
+        "settings.tts_kokoro_voice.jf_tebukuro": "女声 Tebukuro",
+        "settings.tts_kokoro_voice.jm_kumo": "男声 Kumo",
+        "settings.tts_preload": "启动时将本地TTS读入VRAM（常驻）",
+        "settings.tts_preload_desc": "在 Dashboard 启动时加载 Kokoro / VibeVoice，此后不卸载而常驻（首次朗读立即响应。会占用 VRAM）",
         "autostart.title": "开机自启",
         "autostart.enable": "Windows 启动时自动运行",
         "autostart.desc": "自动启动 Whisper 服务和 Dashboard",
@@ -262,7 +294,7 @@ const I18N = {
         "nav.readme": "Readme",
         "sidebar.whisper_service": "Whisper サービス",
         "status.checking": "確認中...",
-        "status.running": "実行中",
+        "status.running": "待機中",
         "status.stopped": "停止中",
         "status.starting": "起動中",
         "status.converting": "変換中",
@@ -311,6 +343,9 @@ const I18N = {
         "gpu.mem_detail_prefix": "VRAM:",
         "gpu.not_available": "GPU 情報を取得できません",
         "gpu.not_detected": "NVIDIA GPU が検出されません",
+        "gpu.model_total": "合計",
+        "gpu.tts_cpu": "CPU",
+        "gpu.tts_cloud": "クラウド",
         "realtime.trend": "リアルタイム推移",
         "realtime.shrink": "縮小",
         "realtime.expand": "拡大",
@@ -372,6 +407,12 @@ const I18N = {
         "model.use": "使用",
         "model.download": "DL",
         "model.download_start": "ダウンロードを開始しました",
+        "model.vibevoice_manage": "VibeVoice モデル",
+        "model.kokoro_manage": "Kokoro モデル",
+        "model.delete": "削除",
+        "model.delete_confirm": "このモデルを削除しますか？モデルファイルがディスクから削除されます。",
+        "model.deleted": "削除しました",
+        "model.voices": "音声",
         "records.title": "変換履歴",
         "records.search": "ファイル名や結果を検索...",
         "records.refresh": "更新",
@@ -406,6 +447,7 @@ const I18N = {
         "records.pause": "一時停止",
         "records.resume": "再開",
         "records.no_tts": "読み上げに失敗しました（Edge TTS）",
+        "records.tts_cold_wait": "音声を生成しています。初回または長時間放置後はモデルの読込に数十秒かかることがあります",
         "records.delete": "削除",
         "records.delete_confirm": "この記録を削除しますか？",
         "records.deleted": "記録を削除しました",
@@ -484,6 +526,28 @@ const I18N = {
         "settings.saved": "設定を保存しました",
         "settings.save_failed": "保存に失敗しました",
         "settings.hint": "変更後は「保存」を押してください。Whisper 高速化・モデル関連の設定は Whisper サービスの再起動で反映されます。",
+        "settings.tts": "読み上げ TTS",
+        "settings.tts_engine": "TTS エンジン",
+        "settings.tts_engine.edge": "Edge TTS（既定・クラウド）",
+        "settings.tts_engine.kokoro": "Kokoro（高速ローカル）",
+        "settings.tts_engine.vibevoice": "VibeVoice（リアルタイム）",
+        "settings.tts_device": "デバイス",
+        "settings.tts_device.auto": "自動（空きVRAMで判断）",
+        "settings.tts_device.cuda": "CUDA (GPU)",
+        "settings.tts_device.cpu": "CPU",
+        "settings.tts_hint": "ローカルエンジンは初回使用時にモデルをダウンロードします。未導入のエンジンは Edge TTS へ切り替えてください。VibeVoice は別途インストールが必要です（README 参照）。",
+        "settings.tts_vibevoice_model": "VibeVoice モデル",
+        "settings.tts_vibevoice_model.realtime": "Realtime 0.5B（高速・日本語含む）",
+        "settings.tts_vibevoice_model.tts": "TTS 1.5B（英語/中国語のみ・CPUのみ・合成非対応）",
+        "settings.tts_vibevoice_hint": "VibeVoice-TTS（1.5B）は英語・中国語のみ・CPU のみで合成未対応です。選択時は Realtime（0.5B）で読み上げます。",
+        "settings.tts_kokoro_voice": "Kokoro 音声（日本語）",
+        "settings.tts_kokoro_voice.jf_alpha": "女声 Alpha（標準）",
+        "settings.tts_kokoro_voice.jf_gongitsune": "女声 Gongitsune",
+        "settings.tts_kokoro_voice.jf_nezumi": "女声 Nezumi",
+        "settings.tts_kokoro_voice.jf_tebukuro": "女声 Tebukuro",
+        "settings.tts_kokoro_voice.jm_kumo": "男声 Kumo",
+        "settings.tts_preload": "起動時にローカルTTSをVRAMに読込（常駐）",
+        "settings.tts_preload_desc": "ダッシュボード起動時に Kokoro / VibeVoice を読み込み、以後アンロードせず常駐させます（初回読み上げが即応答。VRAM は消費します）",
         "autostart.title": "起動時自動実行",
         "autostart.enable": "Windows 起動時に自動実行",
         "autostart.desc": "Whisper サービスと Dashboard を自動起動",
@@ -508,7 +572,7 @@ const I18N = {
         "nav.readme": "Readme",
         "sidebar.whisper_service": "Whisper Service",
         "status.checking": "Checking...",
-        "status.running": "Running",
+        "status.running": "Standby",
         "status.stopped": "Stopped",
         "status.starting": "Starting",
         "status.converting": "Converting",
@@ -557,6 +621,9 @@ const I18N = {
         "gpu.mem_detail_prefix": "VRAM:",
         "gpu.not_available": "GPU info unavailable",
         "gpu.not_detected": "No NVIDIA GPU detected",
+        "gpu.model_total": "Total",
+        "gpu.tts_cpu": "CPU",
+        "gpu.tts_cloud": "Cloud",
         "realtime.trend": "Real-time Trend",
         "realtime.shrink": "Shrink",
         "realtime.expand": "Expand",
@@ -618,6 +685,12 @@ const I18N = {
         "model.use": "Use",
         "model.download": "Download",
         "model.download_start": "Download started",
+        "model.vibevoice_manage": "VibeVoice Models",
+        "model.kokoro_manage": "Kokoro Model",
+        "model.delete": "Delete",
+        "model.delete_confirm": "Delete this model? Model files will be removed from disk.",
+        "model.deleted": "Deleted",
+        "model.voices": "voices",
         "records.title": "Transcription History",
         "records.search": "Search filename or result...",
         "records.refresh": "Refresh",
@@ -652,6 +725,7 @@ const I18N = {
         "records.pause": "Pause",
         "records.resume": "Resume",
         "records.no_tts": "Read aloud failed (Edge TTS)",
+        "records.tts_cold_wait": "Generating audio. On first use or after idle, model loading can take tens of seconds",
         "records.delete": "Delete",
         "records.delete_confirm": "Delete this record?",
         "records.deleted": "Record deleted",
@@ -730,6 +804,28 @@ const I18N = {
         "settings.saved": "Settings saved",
         "settings.save_failed": "Failed to save",
         "settings.hint": "Save after making changes. Speed & model-related settings apply after restarting the Whisper service.",
+        "settings.tts": "Read-aloud TTS",
+        "settings.tts_engine": "TTS Engine",
+        "settings.tts_engine.edge": "Edge TTS (default·cloud)",
+        "settings.tts_engine.kokoro": "Kokoro (fast local)",
+        "settings.tts_engine.vibevoice": "VibeVoice (realtime local)",
+        "settings.tts_device": "Device",
+        "settings.tts_device.auto": "Auto (by free VRAM)",
+        "settings.tts_device.cuda": "CUDA (GPU)",
+        "settings.tts_device.cpu": "CPU",
+        "settings.tts_hint": "Local engines download the model on first use. Switch to Edge TTS if an engine is not installed. VibeVoice requires a separate install (see README).",
+        "settings.tts_vibevoice_model": "VibeVoice model",
+        "settings.tts_vibevoice_model.realtime": "Realtime 0.5B (fast·incl. Japanese)",
+        "settings.tts_vibevoice_model.tts": "TTS 1.5B (English/Chinese·CPU-only·no synth)",
+        "settings.tts_vibevoice_hint": "VibeVoice-TTS (1.5B) is English/Chinese-only, CPU-only and cannot synthesize. When selected, Realtime (0.5B) is used for speech.",
+        "settings.tts_kokoro_voice": "Kokoro voice (Japanese)",
+        "settings.tts_kokoro_voice.jf_alpha": "Female Alpha (default)",
+        "settings.tts_kokoro_voice.jf_gongitsune": "Female Gongitsune",
+        "settings.tts_kokoro_voice.jf_nezumi": "Female Nezumi",
+        "settings.tts_kokoro_voice.jf_tebukuro": "Female Tebukuro",
+        "settings.tts_kokoro_voice.jm_kumo": "Male Kumo",
+        "settings.tts_preload": "Load local TTS into VRAM at startup (resident)",
+        "settings.tts_preload_desc": "Loads Kokoro / VibeVoice at Dashboard startup and keeps it resident without unloading (instant first read. Consumes VRAM)",
         "autostart.title": "Auto-start",
         "autostart.enable": "Run automatically when Windows starts",
         "autostart.desc": "Auto-start Whisper service and Dashboard",
@@ -1408,6 +1504,7 @@ function updateSystemDisplay(data, history) {
 
     // GPU
     const gpu = data.gpu;
+    gpuAvailable = !!(gpu && !gpu.error);
     if (gpu && !gpu.error) {
         $('#gpu-name').textContent = gpu.name || 'NVIDIA GPU';
         const util = gpu.utilization || 0;
@@ -1456,6 +1553,9 @@ function updateSystemDisplay(data, history) {
     if (history && mainChart) {
         updateChart(history);
     }
+
+    // GPU 有無に応じて TTS の VRAM 目安（device=auto）を再評価
+    renderGpuTtsDisplay();
 }
 
 // ---------------------------------------------------------------------------
@@ -1470,29 +1570,77 @@ function sameModel(a, b) {
     return MODEL_ALIASES[a] === b || MODEL_ALIASES[b] === a;
 }
 
-// GPU モニタ「显存」下の搭載モデル名 + 容量を更新（model 無し/不明なら '--'）
+// GPU モニタ「显存」下: Whisper と TTS の搭載モデル・各 VRAM 目安・合計を表示
+let gpuAvailable = false;   // updateSystemDisplay で NVIDIA GPU 情報が取得できたか（TTS の device 判定に使用）
+let gpuWhisperVram = 0;     // 現在表示中の Whisper VRAM 目安（合計算出用）
+
 function updateGpuModelDisplay(model) {
     const memModel = $('#gpu-mem-model');
     const memSize = $('#gpu-mem-size');
+    gpuWhisperVram = 0;
     if (!model) {
         if (memModel) memModel.textContent = '--';
         if (memSize) { memSize.textContent = '--'; memSize.title = ''; }
-        return;
-    }
-    if (memModel) memModel.textContent = model;
-    if (memSize) {
+    } else {
+        if (memModel) memModel.textContent = model;
         const info = modelCatalog && modelCatalog[model];
-        if (info) {
+        if (info && memSize) {
             const ct = (config.whisper_compute_type || 'int8_float16').toLowerCase();
-            const vram = (parseFloat(ct.includes('int8') ? info.vram_int8 : info.vram_fp16) || 0).toFixed(1);
-            const text = `DL ${info.disk_gb}GB · VRAM ${vram}GB`;
+            gpuWhisperVram = parseFloat(ct.includes('int8') ? info.vram_int8 : info.vram_fp16) || 0;
+            const text = `VRAM ${gpuWhisperVram.toFixed(1)}GB`;
             memSize.textContent = text;
-            memSize.title = text;
-        } else {
+            memSize.title = `Whisper ${model}: ${text}`;
+        } else if (memSize) {
             memSize.textContent = '';
             memSize.title = '';
         }
     }
+    renderGpuTtsDisplay();
+}
+
+// 現在の TTS 設定から実行モデル名と VRAM 目安を返す（GPU 実行のみ vram>0、CPU/クラウドは 0）
+function ttsVramEstimate() {
+    const engine = (config.tts_engine || 'edge').toLowerCase();
+    if (engine === 'edge') return { label: 'Edge TTS', mode: 'cloud', vram: 0 };
+    const dev = (config.tts_device || 'auto').toLowerCase();
+    const gpu = dev === 'cuda' || (dev === 'auto' && gpuAvailable);
+    if (engine === 'kokoro') {
+        return gpu
+            ? { label: 'Kokoro', mode: 'vram', vram: 1.0 }
+            : { label: 'Kokoro', mode: 'cpu', vram: 0 };
+    }
+    if (engine === 'vibevoice') {
+        const vv = (config.tts_vibevoice_model || 'realtime').toLowerCase();
+        if (vv === 'tts') return { label: 'VibeVoice TTS 1.5B', mode: 'cpu', vram: 0 };
+        return gpu
+            ? { label: 'VibeVoice Realtime', mode: 'vram', vram: 4.5 }
+            : { label: 'VibeVoice Realtime', mode: 'cpu', vram: 0 };
+    }
+    return null;
+}
+
+// GPU モニタの TTS モデル行と合計を描画
+function renderGpuTtsDisplay() {
+    const wrap = $('#gpu-mem-tts');
+    const totalLine = $('#gpu-mem-total-line');
+    const totalEl = $('#gpu-mem-total');
+    const tts = ttsVramEstimate();
+    if (!tts) {
+        if (wrap) wrap.classList.add('hidden');
+        if (totalLine) totalLine.classList.add('hidden');
+        if (totalEl) totalEl.textContent = '--';
+        return;
+    }
+    const ttsModel = $('#gpu-mem-tts-model');
+    const ttsSize = $('#gpu-mem-tts-size');
+    if (ttsModel) ttsModel.textContent = tts.label;
+    const sizeText = tts.mode === 'vram' ? `VRAM ${tts.vram.toFixed(1)}GB` : (tts.mode === 'cloud' ? t('gpu.tts_cloud') : t('gpu.tts_cpu'));
+    if (ttsSize) { ttsSize.textContent = sizeText; ttsSize.title = `${tts.label}: ${sizeText}`; }
+    if (wrap) wrap.classList.remove('hidden');
+
+    const total = (gpuWhisperVram || 0) + (tts.vram || 0);
+    if (totalEl) totalEl.textContent = total.toFixed(1) + 'GB';
+    if (totalLine) totalLine.classList.remove('hidden');
 }
 
 function updateWhisperStatus(data) {
@@ -1547,8 +1695,9 @@ function updateWhisperStatus(data) {
         $('#stat-model').textContent = data.health.model;
         updateGpuModelDisplay(data.health.model);
         const sel = $('#select-model');
-        // エイリアス（turbo ⇔ large-v3-turbo）は同一モデルなので選択中を書き換えない
-        if (sel && !sameModel(sel.value, data.health.model)) {
+        // エイリアス（turbo ⇔ large-v3-turbo）は同一モデルなので選択中を書き換えない。
+        // ユーザーがドロップダウンで選んだ直後（切替ボタン未クリック）は上書きしない
+        if (sel && !modelSelectionPending && !sameModel(sel.value, data.health.model)) {
             sel.value = data.health.model;
         }
     } else if (!starting) {
@@ -1602,6 +1751,10 @@ function selectedModelVram() {
 
 // モデルカタログ（DL 状態含む）を保持。選択肢生成と設定画面の管理リストで共用
 let modelCatalog = null;
+// モデル切替ドロップダウンをユーザーが選択中か（切替未実行）
+// updateWhisperStatus が 2 秒毎に現在実行中モデルでドロップダウンを上書きするため、
+// ユーザーが選んだ直後の「Small→medium が勝手に small に戻る」事故を防ぐ
+let modelSelectionPending = false;
 
 async function fetchModelCatalog() {
     try {
@@ -1666,14 +1819,15 @@ function renderModelManageList() {
         const failed = info.download_state === 'error';
 
         const row = document.createElement('div');
-        row.className = 'p-2 rounded-lg bg-stone-900/50 text-sm';
+        row.className = 'p-2 rounded-lg bg-stone-900/50 hover:bg-stone-800 transition-colors duration-150 text-sm';
         const top = document.createElement('div');
         top.className = 'flex items-center justify-between gap-2';
 
-        // 左: モデル名 + DL 容量 + 状態（モデル名の後ろに表示）
+        // 左: モデル名 + DL 容量 + 状態（モデル名の後ろに表示）。マウスオンで保存パス表示
         const left = document.createElement('div');
         left.className = 'flex items-center gap-2 min-w-0 flex-wrap';
-        left.innerHTML = `<span class="font-mono text-xs">${escapeHtml(name)}</span><span class="text-xs text-stone-500">DL ${info.disk_gb}GB</span>`;
+        const nameTitle = info.path ? ` title="${escapeHtml(info.path)}"` : '';
+        left.innerHTML = `<span class="font-mono text-xs"${nameTitle}>${escapeHtml(name)}</span><span class="text-xs text-stone-500">DL ${info.disk_gb}GB</span>`;
 
         // 右: ボタン
         const right = document.createElement('div');
@@ -1709,6 +1863,10 @@ function renderModelManageList() {
             btn.textContent = t('model.use');
             btn.addEventListener('click', () => switchToModel(name));
             row.appendChild(top);
+            // 削除ボタン（使用中モデルは削除不可）
+            if (String(config.whisper_model || '').toLowerCase() !== name.toLowerCase()) {
+                right.appendChild(makeDeleteBtn(name, deleteWhisperModel));
+            }
         } else if (failed) {
             const state = document.createElement('span');
             state.className = 'text-xs text-rose-400';
@@ -1738,8 +1896,35 @@ function renderModelManageList() {
     });
 }
 
-// モデルのダウンロードを開始し、進行中は 4 秒ごとに状態をポーリング
+// モデルのダウンロードを開始し、進行中は 2 秒ごとに状態をポーリング（Whisper / VibeVoice 共用）
 let _pollDownload = null;
+function _startDownloadPolling() {
+    if (_pollDownload) return;
+    _pollDownload = setInterval(async () => {
+        let anyDl = false;
+        const models = await fetchModelCatalog();
+        if (models) {
+            renderModelManageList();
+            populateModelSelect();  // DL 完了で選択肢に追加
+            anyDl = anyDl || Object.values(models).some(m => m.download_state === 'downloading');
+        }
+        const vv = await fetchVibevoiceModelCatalog();
+        if (vv) {
+            renderVibevoiceModelList();
+            anyDl = anyDl || Object.values(vv).some(m => m.download_state === 'downloading');
+        }
+        const kk = await fetchKokoroModelInfo();
+        if (kk) {
+            renderKokoroModelList();
+            anyDl = anyDl || kk.download_state === 'downloading';
+        }
+        if (!anyDl) {
+            clearInterval(_pollDownload);
+            _pollDownload = null;
+        }
+    }, 2000);
+}
+
 async function downloadModel(name) {
     try {
         const resp = await apiFetch(`${API_BASE}/whisper/models/${encodeURIComponent(name)}/download`, { method: 'POST' });
@@ -1748,19 +1933,307 @@ async function downloadModel(name) {
             showToast(t('model.download_start') + ': ' + name, 'success');
             await fetchModelCatalog();
             renderModelManageList();
-            if (!_pollDownload) {
-                _pollDownload = setInterval(async () => {
-                    const models = await fetchModelCatalog();
-                    if (!models) return;
-                    renderModelManageList();
-                    populateModelSelect();  // DL 完了で選択肢に追加
-                    const anyDl = Object.values(models).some(m => m.download_state === 'downloading');
-                    if (!anyDl) {
-                        clearInterval(_pollDownload);
-                        _pollDownload = null;
-                    }
-                }, 2000);
-            }
+            _startDownloadPolling();
+        } else {
+            showToast(data.message || t('toast.action_failed'), 'error');
+        }
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+}
+
+// ---------------------------------------------------------------------------
+// VibeVoice モデル管理（DL + 選択）
+// ---------------------------------------------------------------------------
+// カタログ（DL 状態含む）を保持。設定画面の管理リストで描画
+let vibevoiceCatalog = null;
+
+async function fetchVibevoiceModelCatalog() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/vibevoice/models`);
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        vibevoiceCatalog = data.models || {};
+        return vibevoiceCatalog;
+    } catch (e) {
+        console.error('Failed to fetch VibeVoice model catalog:', e);
+        return null;
+    }
+}
+
+// 設定画面「模型管理」カードの VibeVoice モデルリストを描画
+function renderVibevoiceModelList() {
+    const list = $('#vibevoice-model-list');
+    if (!list || !vibevoiceCatalog) return;
+    list.innerHTML = '';
+    Object.keys(vibevoiceCatalog).forEach((name) => {
+        const info = vibevoiceCatalog[name];
+        const downloading = info.download_state === 'downloading';
+        const failed = info.download_state === 'error';
+
+        const row = document.createElement('div');
+        row.className = 'p-2 rounded-lg bg-stone-900/50 hover:bg-stone-800 transition-colors duration-150 text-sm';
+        const top = document.createElement('div');
+        top.className = 'flex items-center justify-between gap-2';
+
+        const left = document.createElement('div');
+        left.className = 'flex items-center gap-2 min-w-0 flex-wrap';
+        const nameTitle = info.path ? ` title="${escapeHtml(info.path)}"` : '';
+        left.innerHTML = `<span class="font-mono text-xs"${nameTitle}>${escapeHtml(name)}</span><span class="text-xs text-stone-500">DL ${info.disk_gb}GB</span>`;
+
+        const right = document.createElement('div');
+        right.className = 'flex items-center gap-2 shrink-0';
+        let btn;
+
+        if (downloading) {
+            const pct = Math.min(100, Math.max(0, info.download_progress || 0));
+            const state = document.createElement('span');
+            state.className = 'text-xs text-amber-400';
+            state.textContent = `${t('model.downloading')} ${pct}%`;
+            left.appendChild(state);
+            btn = document.createElement('button');
+            btn.disabled = true;
+            btn.className = 'px-3 py-1 rounded-lg bg-stone-800 text-stone-400 text-xs';
+            btn.textContent = t('model.downloading_short');
+            const bar = document.createElement('div');
+            bar.className = 'w-full h-1.5 bg-stone-800 rounded-full overflow-hidden mt-1.5';
+            const fill = document.createElement('div');
+            fill.className = 'h-full bg-amber-500 rounded-full transition-all duration-500';
+            fill.style.width = pct + '%';
+            bar.appendChild(fill);
+            row.appendChild(top);
+            row.appendChild(bar);
+        } else if (info.downloaded) {
+            const state = document.createElement('span');
+            state.className = 'text-xs text-emerald-400';
+            state.textContent = t('model.downloaded');
+            left.appendChild(state);
+            btn = document.createElement('button');
+            btn.disabled = true;
+            btn.className = 'px-3 py-1 rounded-lg bg-stone-800 text-stone-500 text-xs';
+            btn.textContent = t('model.use');
+            row.appendChild(top);
+            // 削除ボタン
+            right.appendChild(makeDeleteBtn(name, deleteVibevoiceModel));
+        } else if (failed) {
+            const state = document.createElement('span');
+            state.className = 'text-xs text-rose-400';
+            state.textContent = t('model.download_failed');
+            left.appendChild(state);
+            btn = document.createElement('button');
+            btn.className = 'px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs font-medium transition-all';
+            btn.textContent = t('model.retry_download');
+            btn.addEventListener('click', () => downloadVibevoiceModel(name));
+            row.appendChild(top);
+        } else {
+            const state = document.createElement('span');
+            state.className = 'text-xs text-stone-500';
+            state.textContent = t('model.not_downloaded');
+            left.appendChild(state);
+            btn = document.createElement('button');
+            btn.className = 'px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs font-medium transition-all';
+            btn.textContent = t('model.download');
+            btn.addEventListener('click', () => downloadVibevoiceModel(name));
+            row.appendChild(top);
+        }
+
+        right.appendChild(btn);
+        top.appendChild(left);
+        top.appendChild(right);
+        list.appendChild(row);
+    });
+}
+
+// VibeVoice モデルのダウンロードを開始（既存 Whisper DL 機構を流用）
+async function downloadVibevoiceModel(name) {
+    try {
+        const resp = await apiFetch(`${API_BASE}/vibevoice/models/${encodeURIComponent(name)}/download`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) {
+            showToast(t('model.download_start') + ': ' + name, 'success');
+            await fetchVibevoiceModelCatalog();
+            renderVibevoiceModelList();
+            _startDownloadPolling();
+        } else {
+            showToast(data.message || t('toast.action_failed'), 'error');
+        }
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+}
+
+// ---------------------------------------------------------------------------
+// モデル削除（Whisper / VibeVoice / Kokoro 共用の削除ボタン）
+// ---------------------------------------------------------------------------
+function makeDeleteBtn(name, deleteFn) {
+    const del = document.createElement('button');
+    del.className = 'px-3 py-1 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs font-medium transition-all';
+    del.textContent = t('model.delete');
+    del.addEventListener('click', async () => {
+        if (!window.confirm(`${t('model.delete_confirm')}\n\n${name}`)) return;
+        del.disabled = true;
+        const ok = await deleteFn(name);
+        if (!ok) del.disabled = false;
+    });
+    return del;
+}
+
+async function deleteWhisperModel(name) {
+    try {
+        const resp = await apiFetch(`${API_BASE}/whisper/models/${encodeURIComponent(name)}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.success) {
+            showToast(t('model.deleted') + ': ' + name, 'success');
+            await fetchModelCatalog();
+            renderModelManageList();
+            populateModelSelect();
+            return true;
+        }
+        showToast(data.message || t('toast.action_failed'), 'error', 8000);
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+    return false;
+}
+
+async function deleteVibevoiceModel(name) {
+    try {
+        const resp = await apiFetch(`${API_BASE}/vibevoice/models/${encodeURIComponent(name)}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.success) {
+            showToast(t('model.deleted') + ': ' + name, 'success');
+            await fetchVibevoiceModelCatalog();
+            renderVibevoiceModelList();
+            return true;
+        }
+        showToast(data.message || t('toast.action_failed'), 'error', 8000);
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+    return false;
+}
+
+async function deleteKokoroModel() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/kokoro/model`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.success) {
+            showToast(t('model.deleted') + ': kokoro', 'success');
+            await fetchKokoroModelInfo();
+            renderKokoroModelList();
+            return true;
+        }
+        showToast(data.message || t('toast.action_failed'), 'error', 8000);
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+    return false;
+}
+
+// ---------------------------------------------------------------------------
+// Kokoro モデル管理（DL・状態・削除。オフライン TTS 用）
+// ---------------------------------------------------------------------------
+let kokoroModel = null;
+
+async function fetchKokoroModelInfo() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/kokoro/model`);
+        if (!resp.ok) return null;
+        kokoroModel = await resp.json();
+        return kokoroModel;
+    } catch (e) {
+        console.error('Failed to fetch Kokoro model info:', e);
+        return null;
+    }
+}
+
+function renderKokoroModelList() {
+    const list = $('#kokoro-model-list');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!kokoroModel) {
+        list.innerHTML = '<div class="p-2 text-xs text-stone-500">--</div>';
+        return;
+    }
+    const info = kokoroModel;
+    const downloading = info.download_state === 'downloading';
+    const failed = info.download_state === 'error';
+
+    const row = document.createElement('div');
+    row.className = 'p-2 rounded-lg bg-stone-900/50 hover:bg-stone-800 transition-colors duration-150 text-sm';
+    const top = document.createElement('div');
+    top.className = 'flex items-center justify-between gap-2';
+    const left = document.createElement('div');
+    left.className = 'flex items-center gap-2 min-w-0 flex-wrap';
+    const pathTitle = info.path ? ` title="${escapeHtml(info.path)}"` : '';
+    const sizeTxt = info.size_mb ? `${info.size_mb}MB` : '';
+    left.innerHTML = `<span class="font-mono text-xs"${pathTitle}>kokoro</span><span class="text-xs text-stone-500">${sizeTxt}</span>`;
+    const right = document.createElement('div');
+    right.className = 'flex items-center gap-2 shrink-0';
+    let btn;
+
+    if (downloading) {
+        const pct = Math.min(100, Math.max(0, info.download_progress || 0));
+        const state = document.createElement('span');
+        state.className = 'text-xs text-amber-400';
+        state.textContent = `${t('model.downloading')} ${pct}%`;
+        left.appendChild(state);
+        btn = document.createElement('button');
+        btn.disabled = true;
+        btn.className = 'px-3 py-1 rounded-lg bg-stone-800 text-stone-400 text-xs';
+        btn.textContent = t('model.downloading_short');
+        const bar = document.createElement('div');
+        bar.className = 'w-full h-1.5 bg-stone-800 rounded-full overflow-hidden mt-1.5';
+        const fill = document.createElement('div');
+        fill.className = 'h-full bg-amber-500 rounded-full transition-all duration-500';
+        fill.style.width = pct + '%';
+        bar.appendChild(fill);
+        row.appendChild(top);
+        row.appendChild(bar);
+    } else if (info.downloaded) {
+        const state = document.createElement('span');
+        state.className = 'text-xs text-emerald-400';
+        state.textContent = t('model.downloaded') + (info.voices && info.voices.length ? `・${info.voices.length} ${t('model.voices')}` : '');
+        left.appendChild(state);
+        row.appendChild(top);
+        btn = makeDeleteBtn('kokoro', deleteKokoroModel);
+    } else if (failed) {
+        const state = document.createElement('span');
+        state.className = 'text-xs text-rose-400';
+        state.textContent = t('model.download_failed');
+        left.appendChild(state);
+        row.appendChild(top);
+        btn = document.createElement('button');
+        btn.className = 'px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs font-medium transition-all';
+        btn.textContent = t('model.retry_download');
+        btn.addEventListener('click', () => downloadKokoroModel());
+    } else {
+        const state = document.createElement('span');
+        state.className = 'text-xs text-stone-500';
+        state.textContent = t('model.not_downloaded');
+        left.appendChild(state);
+        row.appendChild(top);
+        btn = document.createElement('button');
+        btn.className = 'px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs font-medium transition-all';
+        btn.textContent = t('model.download');
+        btn.addEventListener('click', () => downloadKokoroModel());
+    }
+
+    right.appendChild(btn);
+    top.appendChild(left);
+    top.appendChild(right);
+    list.appendChild(row);
+}
+
+async function downloadKokoroModel() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/kokoro/model/download`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) {
+            showToast(t('model.download_start') + ': kokoro', 'success');
+            await fetchKokoroModelInfo();
+            renderKokoroModelList();
+            _startDownloadPolling();
         } else {
             showToast(data.message || t('toast.action_failed'), 'error');
         }
@@ -1833,6 +2306,8 @@ async function switchModel(modelName) {
     if (sel) sel.disabled = true;
     if (btnLabel) { btnLabel.dataset.i18n = 'whisper.switching'; btnLabel.textContent = t('whisper.switching'); }
     try {
+        // 選択状態を確定して送信 → 以降は実行中モデルで自動同期してよい
+        modelSelectionPending = false;
         showToast(t('whisper.switching') + ': ' + model, 'info', 60000);
         const resp = await apiFetch(`${API_BASE}/whisper/model`, {
             method: 'POST',
@@ -2258,7 +2733,7 @@ async function deleteRealtimeLog() {
 // ---------------------------------------------------------------------------
 // Readme（サイドバー「Readme」表示内容）
 // ---------------------------------------------------------------------------
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.4.4';
 
 // モデル別 60分音声ベンチマーク目安（GTX 1660 Ti 6GB・int8_float16・beam=3）
 const MODEL_BENCH = {
@@ -2317,6 +2792,14 @@ const README_CONTENT = {
         changelog_title: '功能追加履历',
         changelog: [
             {
+                ver: 'v1.2.0', date: '2026-08-22',
+                items: [
+                    '朗读 TTS：引擎可切换（Edge TTS / Kokoro 本地高速 / VibeVoice 实时）+ 设备设置',
+                    '本地高速 TTS（Kokoro）：日语原生音色・24kHz WAV・句级下划线高亮',
+                    'VibeVoice（实验性）：~200ms 流式实时合成（需另行安装）',
+                ],
+            },
+            {
                 ver: 'v1.1.0', date: '2026-08-22',
                 items: [
                     '朗读（Edge TTS 女声）：暂停/继续・当前句下划线・双击正文从指定位置播放',
@@ -2373,6 +2856,14 @@ const README_CONTENT = {
         changelog_title: '機能追加履歴',
         changelog: [
             {
+                ver: 'v1.2.0', date: '2026-08-22',
+                items: [
+                    '音読み TTS：エンジン切替（Edge TTS / Kokoro ローカル高速 / VibeVoice リアルタイム）とデバイス設定を追加',
+                    'ローカル高速 TTS（Kokoro）：日本語ネイティブ音声・24kHz WAV・文単位の下線ハイライト',
+                    'VibeVoice（実験的）：~200ms ストリーミング合成（別途インストールが必要）',
+                ],
+            },
+            {
                 ver: 'v1.1.0', date: '2026-08-22',
                 items: [
                     '音読み（Edge TTS 女性音声）：一時停止/再開・読上げ中の文を下線表示・本文ダブルクリックで指定位置から再生',
@@ -2428,6 +2919,14 @@ const README_CONTENT = {
         current_version: 'Current version',
         changelog_title: 'Changelog',
         changelog: [
+            {
+                ver: 'v1.2.0', date: '2026-08-22',
+                items: [
+                    'Read-aloud TTS: switchable engine (Edge TTS / Kokoro fast local / VibeVoice realtime) + device setting',
+                    'Fast local TTS (Kokoro): native Japanese voices, 24kHz WAV, sentence-level highlight',
+                    'VibeVoice (experimental): ~200ms streaming synthesis (requires separate install)',
+                ],
+            },
             {
                 ver: 'v1.1.0', date: '2026-08-22',
                 items: [
@@ -2758,13 +3257,15 @@ window.clearRecords = async function() {
 // バックエンド /api/v1/tts の音声（MP3 base64）＋文境界情報を
 // チャンク単位で連続再生し、読み上げ中の文を詳細結果本文に下線表示する
 // ---------------------------------------------------------------------------
-const TTS_CHUNK_CHARS = 1500;   // 1 リクエストあたりの目安文字数
+const TTS_CHUNK_CHARS = 60;     // 1 リクエストあたりの目安文字数（1文前後）。ローカル合成の初回音声を短縮
 let speakBtn = null;            // 読み上げ中のボタン（トグル用）
 let ttsAudio = null;            // 現在再生中の Audio
 let ttsQueue = [];              // 残りの再生チャンク {text, start}
 let ttsGen = 0;                 // 世代カウンタ（停止後の遅延再生を防止）
 let lastHi = null;              // 現在の下線ハイライト位置（重複再描画の防止）
 let ttsPaused = false;          // 一時停止中か（ボタン再クリックで現在位置から再開）
+let ttsBuf = null;              // 次チャンクのプリロード済み音声 {chunk, data}（連続再生ギャップ短縮）
+let ttsColdWarnTimer = null;    // 初回音声までの待ちが長い場合のヒント toast タイマー
 
 // 文末（。！？.!?）区切りで文のリスト（文字位置付き）を返す
 function splitSentences(text) {
@@ -2879,6 +3380,8 @@ function stopSpeaking() {
     ttsPaused = false;
     if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
     ttsQueue = [];
+    ttsBuf = null;
+    if (ttsColdWarnTimer) { clearTimeout(ttsColdWarnTimer); ttsColdWarnTimer = null; }
     lastHi = null;
     clearHighlight('#record-content');
     clearHighlight('#record-detail-content');
@@ -2904,65 +3407,109 @@ window.readRecordContent = function(btn, contentId, lang, startOffset = 0) {
     startOffset = Math.max(0, Math.min(startOffset, text.length));
     const gen = ++ttsGen;
     ttsQueue = chunkText(text, TTS_CHUNK_CHARS, startOffset);
+    // 合成待ち中もボタンを「読み上げ中」表示にする（冷間ロードでも視覚フィードバック）
+    setReadBtn(btn, 'reading');
+    // 8 秒経っても音声が鳴らない場合は冷間ロードのヒントを表示（温間ユーザーには邪魔しない）
+    ttsColdWarnTimer = setTimeout(() => {
+        if (ttsGen === gen && !ttsAudio) {
+            showToast(t('records.tts_cold_wait'), 'info', 5000);
+        }
+    }, 8000);
     speakNextChunk(btn, contentId, lang || '', gen);
 };
+
+// /api/v1/tts を呼び、音声 base64 + 文境界を返す（失敗時 throw）
+async function fetchTtsChunk(chunk, lang) {
+    const resp = await apiFetch(`${API_BASE}/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: chunk.text, lang: lang })
+    });
+    if (!resp.ok) {
+        // エンジン未導入などの詳細を toast に出す（例: VibeVoice 未インストール）
+        let msg = `HTTP ${resp.status}`;
+        try { const e = await resp.json(); if (e && e.detail) msg = e.detail; } catch (_) {}
+        throw new Error(msg);
+    }
+    return resp.json();
+}
 
 async function speakNextChunk(btn, contentId, lang, gen) {
     if (!ttsQueue.length || gen !== ttsGen) { stopSpeaking(); return; }
     const chunk = ttsQueue.shift();
+    // プリロード済みならそれを即再生（合成待ちギャップを短縮）
+    if (ttsBuf && ttsBuf.chunk === chunk) {
+        const data = ttsBuf.data;
+        ttsBuf = null;
+        if (gen === ttsGen) playChunk(btn, contentId, lang, gen, chunk, data);
+        return;
+    }
     try {
-        const resp = await apiFetch(`${API_BASE}/tts`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: chunk.text, lang: lang })
-        });
+        const data = await fetchTtsChunk(chunk, lang);
         if (gen !== ttsGen) return;                 // 停止されたら再生しない
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const data = await resp.json();
-        const audioBlob = b64ToBlob(data.audio_base64, 'audio/mpeg');
-        const url = URL.createObjectURL(audioBlob);
-        // 文境界（edge-tts SentenceBoundary の開始秒）と文リストを順対応付ける
-        const sentences = splitSentences(chunk.text);
-        const audio = new Audio(url);
-        ttsAudio = audio;
-        audio.addEventListener('timeupdate', () => {
-            if (gen !== ttsGen) return;
-            const t = audio.currentTime;
-            let idx = -1;
-            const b = data.boundaries || [];
-            for (let i = 0; i < b.length; i++) { if (b[i].t <= t) idx = i; else break; }
-            if (idx >= 0) {
-                const si = Math.min(idx, sentences.length - 1);
-                const st = sentences[si];
-                const key = (chunk.start + st.start) + '_' + (chunk.start + st.end);
-                if (key !== lastHi) {
-                    lastHi = key;
-                    highlightRange(contentId, chunk.start + st.start, chunk.start + st.end);
-                }
-            }
-        });
-        audio.onended = () => {
-            URL.revokeObjectURL(url);
-            ttsAudio = null;
-            lastHi = null;
-            clearHighlight(contentId);
-            speakNextChunk(btn, contentId, lang, gen);
-        };
-        audio.onerror = () => {
-            URL.revokeObjectURL(url);
-            ttsAudio = null;
-            stopSpeaking();
-            showToast(t('records.no_tts'), 'error');
-        };
-        // チャンク取得中に一時停止された場合は再生せずに停止状態を維持（再開時に play）
-        setReadBtn(btn, ttsPaused ? 'paused' : 'reading');
-        if (!ttsPaused) await audio.play();
+        playChunk(btn, contentId, lang, gen, chunk, data);
     } catch (e) {
         if (gen === ttsGen) {                        // 停止ではなく実エラーの場合のみ報告
             stopSpeaking();
             showToast(t('records.no_tts') + ': ' + (e.message || ''), 'error');
         }
     }
+}
+
+function playChunk(btn, contentId, lang, gen, chunk, data) {
+    // 再生中に次のチャンクをプリロード（合成時間を再生に隠す）
+    startPreload(btn, contentId, lang, gen);
+    // mime はエンジンにより audio/mpeg（edge）/ audio/wav（ローカル）
+    const audioBlob = b64ToBlob(data.audio_base64, data.mime || 'audio/mpeg');
+    const url = URL.createObjectURL(audioBlob);
+    // 文境界（各エンジンの開始秒）と文リストを順対応付ける
+    const sentences = splitSentences(chunk.text);
+    const audio = new Audio(url);
+    ttsAudio = audio;
+    if (ttsColdWarnTimer) { clearTimeout(ttsColdWarnTimer); ttsColdWarnTimer = null; }
+    audio.addEventListener('timeupdate', () => {
+        if (gen !== ttsGen) return;
+        const t = audio.currentTime;
+        let idx = -1;
+        const b = data.boundaries || [];
+        for (let i = 0; i < b.length; i++) { if (b[i].t <= t) idx = i; else break; }
+        if (idx >= 0) {
+            const si = Math.min(idx, sentences.length - 1);
+            const st = sentences[si];
+            const key = (chunk.start + st.start) + '_' + (chunk.start + st.end);
+            if (key !== lastHi) {
+                lastHi = key;
+                highlightRange(contentId, chunk.start + st.start, chunk.start + st.end);
+            }
+        }
+    });
+    audio.onended = () => {
+        URL.revokeObjectURL(url);
+        ttsAudio = null;
+        lastHi = null;
+        clearHighlight(contentId);
+        speakNextChunk(btn, contentId, lang, gen);
+    };
+    audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        ttsAudio = null;
+        stopSpeaking();
+        showToast(t('records.no_tts'), 'error');
+    };
+    // チャンク取得中に一時停止された場合は再生せずに停止状態を維持（再開時に play）
+    setReadBtn(btn, ttsPaused ? 'paused' : 'reading');
+    if (!ttsPaused) audio.play().catch(() => {});
+}
+
+// 次のチャンク音声を先に合成しておく（失敗時は無視し、順次取得にフォールバック）
+function startPreload(btn, contentId, lang, gen) {
+    if (ttsBuf || !ttsQueue.length) return;
+    const nextChunk = ttsQueue[0];
+    fetchTtsChunk(nextChunk, lang).then(data => {
+        if (gen === ttsGen && !ttsBuf && ttsQueue.length && ttsQueue[0] === nextChunk) {
+            ttsBuf = { chunk: nextChunk, data };
+        }
+    }).catch(() => {});
 }
 
 // ---------------------------------------------------------------------------
@@ -3155,6 +3702,7 @@ async function loadSettings() {
         const resp = await apiFetch(`${API_BASE}/config`);
         const data = await resp.json();
         config = { ...config, ...data };
+        renderGpuTtsDisplay();
 
         $('#setting-language').value = config.default_language || 'zh';
         $('#setting-output').value = config.default_output || 'txt';
@@ -3183,6 +3731,34 @@ async function loadSettings() {
         if ($('#setting-vad-ms')) {
             $('#setting-vad-ms').value = config.whisper_vad_min_silence_ms || 500;
         }
+        // 音読み TTS エンジン設定
+        if ($('#setting-tts-engine')) {
+            $('#setting-tts-engine').value = config.tts_engine || 'edge';
+        }
+        if ($('#setting-tts-device')) {
+            $('#setting-tts-device').value = config.tts_device || 'auto';
+        }
+        // VibeVoice モデル選択（設定画面とダッシュボード制御を同期）
+        const vvModel = config.tts_vibevoice_model || 'realtime';
+        if ($('#setting-tts-vibevoice-model')) {
+            $('#setting-tts-vibevoice-model').value = vvModel;
+        }
+        if ($('#vv-model-select')) {
+            $('#vv-model-select').value = vvModel;
+        }
+        // Kokoro 日本語音声選択（設定画面とダッシュボード制御を同期）
+        const kkVoice = config.tts_kokoro_voice || 'jf_alpha';
+        if ($('#setting-tts-kokoro-voice')) {
+            $('#setting-tts-kokoro-voice').value = kkVoice;
+        }
+        if ($('#kk-voice-select')) {
+            $('#kk-voice-select').value = kkVoice;
+        }
+        // 起動時プリロード（ローカルTTS常駐）
+        if ($('#setting-tts-preload')) {
+            $('#setting-tts-preload').checked = String(config.tts_preload || 'on').toLowerCase() !== 'off';
+        }
+        showVibevoiceModelSetting();
         // AI 校正设置（アクティブプロファイルのスナップショットを表示）
         if ($('#toggle-ai-correct')) {
             $('#toggle-ai-correct').checked = String(config.ai_correct_enabled).toLowerCase() === 'true';
@@ -3241,6 +3817,12 @@ async function saveSettings() {
         whisper_vad_min_silence_ms: $('#setting-vad-ms').value,
         // モデル保存先（次回の切替・起動時に反映）
         whisper_model_dir: $('#setting-model-dir').value.trim(),
+        // 音読み TTS エンジン設定
+        tts_engine: $('#setting-tts-engine').value,
+        tts_device: $('#setting-tts-device').value,
+        tts_vibevoice_model: $('#setting-tts-vibevoice-model').value,
+        tts_kokoro_voice: $('#setting-tts-kokoro-voice').value,
+        tts_preload: $('#setting-tts-preload').checked ? 'on' : 'off',
     };
     // #5: キー欄が空なら送信しない（既存キーを維持）
     const newKey = $('#setting-deepseek-key').value.trim();
@@ -3260,6 +3842,7 @@ async function saveSettings() {
                 String(data.whisper_temperature) !== String(config.whisper_temperature) ||
                 String(data.whisper_vad_min_silence_ms) !== String(config.whisper_vad_min_silence_ms);
             config = { ...config, ...data };
+            renderGpuTtsDisplay();
             setUiLanguage(newUiLanguage);
             // アクティブプロファイルが居れば、AI カードで編集したスナップショットを
             // プロファイル行にも同期して不整合を防ぐ
@@ -3697,6 +4280,38 @@ function showToast(message, type = 'info', duration = 3000) {
     setTimeout(() => toast.remove(), duration);
 }
 
+// TTS エンジンが vibevoice の時のみ VibeVoice モデル設定を表示
+function showVibevoiceModelSetting() {
+    const eng = config.tts_engine || 'edge';
+    const visible = eng === 'vibevoice';
+    const wrap = $('#setting-tts-vibevoice-wrap');
+    if (wrap) wrap.classList.toggle('hidden', !visible);
+    const vvWrap = $('#vv-model-select-wrap');
+    if (vvWrap) vvWrap.classList.toggle('hidden', !visible);
+    // Kokoro 日本語音声セレクタ（エンジンが kokoro の時のみ表示）
+    const kkWrap = $('#setting-tts-kokoro-voice-wrap');
+    if (kkWrap) kkWrap.classList.toggle('hidden', eng !== 'kokoro');
+    const kkDashWrap = $('#kk-voice-select-wrap');
+    if (kkDashWrap) kkDashWrap.classList.toggle('hidden', eng !== 'kokoro');
+}
+
+// 起動時に config を取得し、ダッシュボードの VibeVoice 制御を実際の設定で初期化
+async function initTtsVibevoiceControl() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/config`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+        config = { ...config, ...data };
+        const vvModel = config.tts_vibevoice_model || 'realtime';
+        if ($('#vv-model-select')) $('#vv-model-select').value = vvModel;
+        if ($('#setting-tts-vibevoice-model')) $('#setting-tts-vibevoice-model').value = vvModel;
+        showVibevoiceModelSetting();
+        renderGpuTtsDisplay();
+    } catch (e) {
+        console.error('Failed to load config for VibeVoice control:', e);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // 事件绑定
 // ---------------------------------------------------------------------------
@@ -3707,7 +4322,10 @@ function initEventListeners() {
     // 引数無しで呼ぶ（click イベントが modelName に渡るのを防ぐ。switchToModel は文字列を渡す）
     $('#btn-switch-model').addEventListener('click', () => switchModel());
     const modelSel = $('#select-model');
-    if (modelSel) modelSel.addEventListener('change', updateModelInfo);
+    if (modelSel) modelSel.addEventListener('change', () => {
+        modelSelectionPending = true;  // 切替未実行の間はステータス更新で上書きさせない
+        updateModelInfo();
+    });
 
     $('#records-search').addEventListener('input', (e) => {
         loadRecords(e.target.value);
@@ -3796,6 +4414,63 @@ function initEventListeners() {
     $('#btn-save-settings').addEventListener('click', saveSettings);
     $('#btn-ai-test').addEventListener('click', testAIConnection);
 
+    // TTS エンジン変更で VibeVoice モデル設定の表示を切替
+    const ttsEngineSel = $('#setting-tts-engine');
+    if (ttsEngineSel) {
+        ttsEngineSel.addEventListener('change', () => {
+            config.tts_engine = ttsEngineSel.value;
+            showVibevoiceModelSetting();
+            renderGpuTtsDisplay();
+        });
+    }
+    // ダッシュボード制御の VibeVoice モデル選択：即時 config 保存＋設定画面と同期
+    const vvDashSel = $('#vv-model-select');
+    if (vvDashSel) {
+        vvDashSel.addEventListener('change', async () => {
+            const v = vvDashSel.value;
+            if ($('#setting-tts-vibevoice-model')) $('#setting-tts-vibevoice-model').value = v;
+            config.tts_vibevoice_model = v;
+            renderGpuTtsDisplay();
+            try {
+                await apiFetch(`${API_BASE}/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tts_vibevoice_model: v }),
+                });
+                showToast(t('toast.saved'), 'success');
+            } catch (e) {
+                showToast(t('toast.network_error') + ': ' + e.message, 'error');
+            }
+        });
+    }
+    // ダッシュボード制御の Kokoro 音声選択：即時 config 保存＋設定画面と同期
+    const kkDashSel = $('#kk-voice-select');
+    if (kkDashSel) {
+        kkDashSel.addEventListener('change', async () => {
+            const v = kkDashSel.value;
+            if ($('#setting-tts-kokoro-voice')) $('#setting-tts-kokoro-voice').value = v;
+            config.tts_kokoro_voice = v;
+            renderGpuTtsDisplay();
+            try {
+                await apiFetch(`${API_BASE}/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tts_kokoro_voice: v }),
+                });
+                showToast(t('toast.saved'), 'success');
+            } catch (e) {
+                showToast(t('toast.network_error') + ': ' + e.message, 'error');
+            }
+        });
+    }
+    // 設定画面の VibeVoice モデル選択：ダッシュボード制御の選択肢に同期
+    const vvSettingSel = $('#setting-tts-vibevoice-model');
+    if (vvSettingSel) {
+        vvSettingSel.addEventListener('change', () => {
+            if ($('#vv-model-select')) $('#vv-model-select').value = vvSettingSel.value;
+        });
+    }
+
     // LLM プロファイル管理
     $('#btn-llm-add').addEventListener('click', () => openProfileForm());
     $('#btn-llm-save').addEventListener('click', saveProfile);
@@ -3873,6 +4548,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initAuth();
     setupAuthUI();
     populateModelSelect();
+    fetchVibevoiceModelCatalog().then(() => renderVibevoiceModelList());
+    fetchKokoroModelInfo().then(() => renderKokoroModelList());
+    initTtsVibevoiceControl();
     connectWebSocket();
     loadStats();
     loadRecords();
