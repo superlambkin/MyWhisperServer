@@ -48,6 +48,10 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     <span data-i18n="nav.settings">设置</span>
                 </a>
+                <a href="#readme" class="nav-link" data-section="readme">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    <span data-i18n="nav.readme">Readme</span>
+                </a>
             </nav>
 
             <div class="p-4 border-t border-white/10">
@@ -778,6 +782,44 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- Readme Section -->
+                <section id="readme" class="section hidden">
+                    <div class="max-w-4xl mx-auto space-y-6">
+                        <div class="glass-card p-6 rounded-2xl">
+                            <h3 class="text-lg font-semibold mb-4" id="readme-overview-title">功能概要</h3>
+                            <ul id="readme-overview" class="space-y-2 text-sm text-stone-300"></ul>
+                        </div>
+                        <div class="glass-card p-6 rounded-2xl">
+                            <h3 class="text-lg font-semibold mb-4" id="readme-arch-title">系统构成</h3>
+                            <div id="readme-arch"></div>
+                        </div>
+                        <div class="glass-card p-6 rounded-2xl">
+                            <h3 class="text-lg font-semibold mb-2" id="readme-bench-title">Whisper 模型比较</h3>
+                            <p class="text-xs text-stone-400 mb-4" id="readme-bench-note"></p>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="text-stone-400 border-b border-white/10">
+                                            <th class="text-left py-2 pr-3 font-medium" id="th-model">模型</th>
+                                            <th class="text-left py-2 pr-3 font-medium" id="th-lang">语言</th>
+                                            <th class="text-right py-2 pr-3 font-medium" id="th-speed">转换时间（60分）</th>
+                                            <th class="text-right py-2 pr-3 font-medium" id="th-acc">精度（相对）</th>
+                                            <th class="text-left py-2 font-medium" id="th-feat">特点</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="readme-model-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="glass-card p-6 rounded-2xl">
+                            <h3 class="text-lg font-semibold mb-4" id="readme-version-title">版本信息</h3>
+                            <div id="readme-current-version" class="text-sm font-mono text-amber-300 mb-4"></div>
+                            <h4 class="text-sm font-medium text-stone-400 mb-2" id="readme-changelog-title">功能追加履历</h4>
+                            <div id="readme-version" class="space-y-4"></div>
+                        </div>
+                    </div>
+                </section>
             </div>
         </main>
     </div>
@@ -797,6 +839,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=33"></script>
+    <script src="/static/js/app.js?v=34"></script>
 </body>
 </html>

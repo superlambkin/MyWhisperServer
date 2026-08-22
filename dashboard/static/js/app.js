@@ -12,6 +12,7 @@ const I18N = {
         "nav.records": "转换履历",
         "nav.logs": "实时日志",
         "nav.settings": "设置",
+        "nav.readme": "Readme",
         "sidebar.whisper_service": "Whisper 服务",
         "status.checking": "检查中...",
         "status.running": "运行中",
@@ -219,6 +220,7 @@ const I18N = {
         "nav.records": "変換履歴",
         "nav.logs": "リアルタイムログ",
         "nav.settings": "設定",
+        "nav.readme": "Readme",
         "sidebar.whisper_service": "Whisper サービス",
         "status.checking": "確認中...",
         "status.running": "実行中",
@@ -426,6 +428,7 @@ const I18N = {
         "nav.records": "Transcription History",
         "nav.logs": "Live Logs",
         "nav.settings": "Settings",
+        "nav.readme": "Readme",
         "sidebar.whisper_service": "Whisper Service",
         "status.checking": "Checking...",
         "status.running": "Running",
@@ -680,6 +683,7 @@ function applyI18n() {
     updateWhisperStatus(lastWhisperStatus || { running: false });
     renderRecords(lastRecords || []);
     renderLLMProfiles(llmProfiles || []);
+    renderReadme(); // Readme セクション（言語切替・初期化時に再描画）
 }
 
 // ---------------------------------------------------------------------------
@@ -1401,6 +1405,7 @@ async function fetchModelCatalog() {
         if (!resp.ok) return null;
         const data = await resp.json();
         modelCatalog = data.models || {};
+        renderReadmeModels(); // Readme のモデル比較表を反映
         return modelCatalog;
     } catch (e) {
         console.error('Failed to fetch model catalog:', e);
@@ -1731,6 +1736,230 @@ function updateChart(history) {
 }
 
 // ---------------------------------------------------------------------------
+// Readme（サイドバー「Readme」表示内容）
+// ---------------------------------------------------------------------------
+const APP_VERSION = '1.0.0';
+
+// モデル別 60分音声ベンチマーク目安（GTX 1660 Ti 6GB・int8_float16・beam=3）
+const MODEL_BENCH = {
+    "tiny":             { speed: '約2分',  wer: '約2.4' },
+    "tiny.en":          { speed: '約2分',  wer: '約2.2' },
+    "base":             { speed: '約3分',  wer: '約2.0' },
+    "base.en":          { speed: '約3分',  wer: '約1.8' },
+    "small":            { speed: '約5分',  wer: '約1.5' },
+    "small.en":         { speed: '約5分',  wer: '約1.4' },
+    "distil-small.en":  { speed: '約4分',  wer: '約1.6' },
+    "medium":           { speed: '約10分', wer: '約1.2' },
+    "medium.en":        { speed: '約10分', wer: '約1.1' },
+    "distil-medium.en": { speed: '約7分',  wer: '約1.2' },
+    "large-v1":         { speed: '約24分', wer: '約1.1' },
+    "large-v2":         { speed: '約22分', wer: '約1.0' },
+    "large-v3":         { speed: '約22分', wer: '1.00' },
+    "large":            { speed: '約22分', wer: '1.00' },
+    "distil-large-v2":  { speed: '約15分', wer: '約1.1' },
+    "distil-large-v3":  { speed: '約15分', wer: '約1.05' },
+    "large-v3-turbo":   { speed: '約8分',  wer: '約1.15' },
+    "turbo":            { speed: '約8分',  wer: '約1.15' },
+};
+
+const README_CONTENT = {
+    zh: {
+        overview_title: '功能概要',
+        overview: [
+            '本地语音转写（faster-whisper + CTranslate2，GPU 加速）',
+            '实时监控（CPU / GPU / 内存使用率，转写中动画与实时进度）',
+            'AI 校对（LLM: Deepseek / MiniMax / Ollama / 自定义 OpenAI 兼容端点）',
+            '转写履历管理（搜索、再校对、SRT 输出）',
+            '实时日志查看',
+            'Whisper 模型管理（下载、切换、保存位置指定、VRAM 警告）',
+            '多语言界面（中文 / 日本語 / English）',
+            '连接令牌认证（写入・控制操作，本地回环免除）',
+            'Windows 开机自启动',
+        ],
+        arch_title: '系统构成',
+        arch_desc: '在 LAN 内 PC（例: 192.168.0.88）上运行以下服务。出外访问时经 NAS（QNAP）的 VPN（Tailscale / WireGuard）连接。',
+        arch: [
+            ['MyWhisperServer Dashboard', 'FastAPI + WebSocket + SQLite（:9001）— 设置・监控・履历・Readme 界面'],
+            ['Whisper Server', 'faster-whisper（:9000）— GPU 推理，转写后执行 AI 校对'],
+            ['LLM 校对引擎', 'Deepseek API / MiniMax API / Ollama 等 OpenAI 兼容端点'],
+            ['模型保存位置', 'models/（HuggingFace 缓存格式）— 可在设置中变更'],
+            ['数据库', 'dashboard/data/records.db — 转写履历・设置・LLM 配置文件'],
+            ['前端', '纯静态 HTML + Tailwind + Chart.js（无外部 CDN）'],
+        ],
+        bench_title: 'Whisper 模型比较（以 60 分钟语音为基准）',
+        bench_note: 'GTX 1660 Ti 6GB・int8_float16・beam=3 下的近似值。实际耗时随语音内容・语言・GPU 负载而异。精度为相对 large-v3（1.00）的 WER 比，数值越小越准确。',
+        th_model: '模型', th_lang: '语言', th_speed: '转换时间（60分）', th_acc: '精度（相对）', th_feat: '特点',
+        version_title: '版本信息',
+        current_version: '当前版本',
+        changelog_title: '功能追加履历',
+        changelog: [
+            {
+                ver: 'v1.0.0', date: '2026-08-22',
+                items: [
+                    'LLM 管理追加 Deepseek / MiniMax / Ollama，模型列表下拉化',
+                    '模型保存位置指定 + 模型管理 UI（下载・切换・仅显示已下载）',
+                    '连接令牌认证・API 密钥掩码化・SSRF 对策（安全强化）',
+                    'AI 校对 401 回归修复、Whisper 进程孤立对策',
+                    '大容量语音对应（/asr 直列化・1GB 上限・实时进度）',
+                    '多语言 UI・CDN 本地化・Readme 页面新增',
+                ],
+            },
+        ],
+    },
+    ja: {
+        overview_title: '機能概要',
+        overview: [
+            'ローカル音声認識（faster-whisper + CTranslate2、GPU 高速化）',
+            'リアルタイム監視（CPU / GPU / メモリ使用率、変換中アニメーションと進捗）',
+            'AI 校正（LLM: Deepseek / MiniMax / Ollama / カスタム OpenAI 互換エンドポイント）',
+            '変換履歴管理（検索・再校正・SRT 出力）',
+            'リアルタイムログ表示',
+            'Whisper モデル管理（DL・切替・保存先指定・VRAM 警告）',
+            '多言語 UI（中文 / 日本語 / English）',
+            '接続トークン認証（書き込み・制御操作のみ、ループバック免除）',
+            'Windows 自動起動',
+        ],
+        arch_title: 'システム構成',
+        arch_desc: 'LAN 内の PC（例: 192.168.0.88）で以下を実行。外出先からは NAS（QNAP）の VPN（Tailscale / WireGuard）経由で接続。',
+        arch: [
+            ['MyWhisperServer Dashboard', 'FastAPI + WebSocket + SQLite（:9001）— 設定・監視・履歴・Readme 画面'],
+            ['Whisper Server', 'faster-whisper（:9000）— GPU 推論、転写後に AI 校正を実行'],
+            ['LLM 校正エンジン', 'Deepseek API / MiniMax API / Ollama など OpenAI 互換エンドポイント'],
+            ['モデル保存先', 'models/（HuggingFace キャッシュ形式）— 設定画面で変更可'],
+            ['データベース', 'dashboard/data/records.db — 転写履歴・設定・LLM プロファイル'],
+            ['フロントエンド', '静的 HTML + Tailwind + Chart.js（外部 CDN 不使用）'],
+        ],
+        bench_title: 'Whisper モデル比較（60分音声基準）',
+        bench_note: 'GTX 1660 Ti 6GB・int8_float16・beam=3 での目安。実際の所要時間は音声内容・言語・GPU 負荷で変動。精度は large-v3（1.00）を基準とした相対 WER 比で、小さいほど正確。',
+        th_model: 'モデル', th_lang: '言語', th_speed: '変換時間（60分）', th_acc: '精度（相対）', th_feat: '特徴',
+        version_title: 'バージョン情報',
+        current_version: '現在のバージョン',
+        changelog_title: '機能追加履歴',
+        changelog: [
+            {
+                ver: 'v1.0.0', date: '2026-08-22',
+                items: [
+                    'LLM 管理に Deepseek / MiniMax / Ollama を追加、モデルリストをプルダウン化',
+                    'モデル保存先の指定 + モデル管理 UI（DL・切替・DL 済みのみ表示）',
+                    '接続トークン認証・API キーマスク化・SSRF 対策（セキュリティ強化）',
+                    'AI 校正 401 回帰の修正、Whisper プロセス孤立対策',
+                    '大容量音声対応（/asr 直列化・1GB 上限・リアルタイム進捗）',
+                    '多言語 UI・CDN ローカル化・Readme ページ追加',
+                ],
+            },
+        ],
+    },
+    en: {
+        overview_title: 'Overview',
+        overview: [
+            'Local speech-to-text (faster-whisper + CTranslate2, GPU accelerated)',
+            'Real-time monitoring (CPU / GPU / memory usage, conversion animation & progress)',
+            'AI correction (LLM: Deepseek / MiniMax / Ollama / custom OpenAI-compatible endpoints)',
+            'Transcription history (search, re-correct, SRT export)',
+            'Real-time log viewer',
+            'Whisper model management (download, switch, storage location, VRAM warning)',
+            'Multilingual UI (中文 / 日本語 / English)',
+            'Connection-token auth (write/control only, loopback exempt)',
+            'Windows auto-start',
+        ],
+        arch_title: 'System Architecture',
+        arch_desc: 'Runs on a PC in the LAN (e.g. 192.168.0.88). For remote access, connect via the NAS (QNAP) VPN (Tailscale / WireGuard).',
+        arch: [
+            ['MyWhisperServer Dashboard', 'FastAPI + WebSocket + SQLite (:9001) — settings, monitoring, history, Readme UI'],
+            ['Whisper Server', 'faster-whisper (:9000) — GPU inference, AI correction after transcription'],
+            ['LLM correction engine', 'Deepseek API / MiniMax API / Ollama or any OpenAI-compatible endpoint'],
+            ['Model storage', 'models/ (HuggingFace cache layout) — configurable in settings'],
+            ['Database', 'dashboard/data/records.db — history, settings, LLM profiles'],
+            ['Frontend', 'Static HTML + Tailwind + Chart.js (no external CDN)'],
+        ],
+        bench_title: 'Whisper model comparison (60-min audio baseline)',
+        bench_note: 'Approximate values on GTX 1660 Ti 6GB · int8_float16 · beam=3. Actual time varies with audio content, language and GPU load. Accuracy is relative WER vs large-v3 (1.00); lower is better.',
+        th_model: 'Model', th_lang: 'Lang', th_speed: 'Time (60min)', th_acc: 'Accuracy (rel.)', th_feat: 'Notes',
+        version_title: 'Version Info',
+        current_version: 'Current version',
+        changelog_title: 'Changelog',
+        changelog: [
+            {
+                ver: 'v1.0.0', date: '2026-08-22',
+                items: [
+                    'Added Deepseek / MiniMax / Ollama to LLM management with model dropdowns',
+                    'Model storage location setting + model management UI (download, switch, downloaded-only)',
+                    'Connection-token auth, API key masking, SSRF protection (security hardening)',
+                    'Fixed AI correction 401 regression; orphan Whisper process fix',
+                    'Large-audio support (/asr serialization, 1GB cap, real-time progress)',
+                    'Multilingual UI, local CDN assets, Readme page added',
+                ],
+            },
+        ],
+    },
+};
+
+function renderReadmeModels() {
+    const tbody = $('#readme-model-tbody');
+    if (!tbody || !modelCatalog) return;
+    const langLabel = (info) => {
+        if (info.lang === 'en') return uiLanguage === 'ja' ? '英語' : uiLanguage === 'zh' ? '英语' : 'English';
+        if (info.lang === 'multi') return uiLanguage === 'ja' ? '多言語' : uiLanguage === 'zh' ? '多语言' : 'Multilingual';
+        return info.lang || '';
+    };
+    const rows = Object.keys(modelCatalog).map(name => {
+        const info = modelCatalog[name] || {};
+        const bench = MODEL_BENCH[name] || {};
+        const w = parseFloat(bench.wer);
+        const wc = !isNaN(w)
+            ? (w <= 1.15 ? 'text-emerald-400' : w <= 1.6 ? 'text-amber-300' : 'text-rose-400')
+            : 'text-stone-500';
+        return `<tr class="border-b border-white/5">
+            <td class="py-2 pr-3 font-mono text-cyan-300">${escapeHtml(name)}</td>
+            <td class="py-2 pr-3">${langLabel(info)}</td>
+            <td class="py-2 pr-3 text-right">${escapeHtml(bench.speed || '—')}</td>
+            <td class="py-2 pr-3 text-right font-medium ${wc}">${escapeHtml(bench.wer || '—')}</td>
+            <td class="py-2 text-stone-400">${escapeHtml(info.desc || '')}</td>
+        </tr>`;
+    }).join('');
+    tbody.innerHTML = rows;
+}
+
+function renderReadme() {
+    const c = README_CONTENT[uiLanguage] || README_CONTENT['zh'];
+    const set = (id, val) => { const el = $(id); if (el) el.textContent = val; };
+    set('#readme-overview-title', c.overview_title);
+    set('#readme-arch-title', c.arch_title);
+    set('#readme-bench-title', c.bench_title);
+    set('#readme-bench-note', c.bench_note);
+    set('#readme-version-title', c.version_title);
+    set('#readme-changelog-title', c.changelog_title);
+    set('#readme-current-version', `${c.current_version}: v${APP_VERSION}`);
+    set('#th-model', c.th_model);
+    set('#th-lang', c.th_lang);
+    set('#th-speed', c.th_speed);
+    set('#th-acc', c.th_acc);
+    set('#th-feat', c.th_feat);
+
+    const ov = $('#readme-overview');
+    if (ov) ov.innerHTML = c.overview.map(x =>
+        `<li class="flex items-start gap-2"><span class="text-amber-400 mt-1">•</span><span>${escapeHtml(x)}</span></li>`).join('');
+
+    const arch = $('#readme-arch');
+    if (arch) {
+        arch.innerHTML = `<p class="text-sm text-stone-400 mb-3">${escapeHtml(c.arch_desc)}</p>` +
+            c.arch.map(([n, d]) => `<div class="flex items-start gap-3 py-2 border-b border-white/5">
+                <span class="text-amber-300 text-sm font-mono w-72 shrink-0">${escapeHtml(n)}</span>
+                <span class="text-sm text-stone-300">${escapeHtml(d)}</span>
+            </div>`).join('');
+    }
+
+    const ver = $('#readme-version');
+    if (ver) {
+        ver.innerHTML = c.changelog.map(e => `<div class="border-l-2 border-amber-500/40 pl-4 py-1">
+            <div class="font-medium text-amber-300">${escapeHtml(e.ver)}<span class="text-stone-500 text-xs ml-2">${escapeHtml(e.date)}</span></div>
+            <ul class="list-disc pl-5 mt-1 space-y-0.5 text-sm text-stone-300">${e.items.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>
+        </div>`).join('');
+    }
+    renderReadmeModels();
+}
+
+// ---------------------------------------------------------------------------
 // 导航
 // ---------------------------------------------------------------------------
 function initNavigation() {
@@ -1759,6 +1988,8 @@ function showSection(name) {
     } else if (name === 'settings') {
         loadSettings();
         loadAutostartStatus();
+    } else if (name === 'readme') {
+        renderReadme(); // カタログ取得前に開いた場合も最新状態で描画
     }
 }
 
