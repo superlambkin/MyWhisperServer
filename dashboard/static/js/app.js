@@ -11,6 +11,7 @@ const I18N = {
         "nav.dashboard": "仪表盘",
         "nav.records": "转换履历",
         "nav.logs": "实时日志",
+        "nav.logging": "记录日志",
         "nav.settings": "设置",
         "nav.readme": "Readme",
         "sidebar.whisper_service": "Whisper 服务",
@@ -67,6 +68,31 @@ const I18N = {
         "realtime.trend": "实时趋势",
         "realtime.shrink": "缩小",
         "realtime.expand": "放大",
+        "realtime.phase_idle": "待机",
+        "realtime.phase_transcribe": "转换中",
+        "realtime.phase_correct": "AI 校正中",
+        "realtime.log_start": "开始记录",
+        "realtime.log_stop": "停止记录",
+        "realtime.log_recording": "记录中",
+        "realtime.log_recording_tip": "正在记录实时数据...",
+        "logging.title": "记录日志",
+        "logging.refresh": "刷新",
+        "logging.empty": "暂无记录",
+        "logging.select_hint": "选择左侧日志查看内容",
+        "logging.download": "下载",
+        "logging.copy": "复制",
+        "logging.delete": "删除",
+        "logging.copied": "已复制",
+        "logging.delete_confirm": "删除此日志？",
+        "logging.deleted": "已删除",
+        "logging.active_badge": "记录中",
+        "logging.samples": "样本数",
+        "logging.duration": "时长",
+        "logging.avg_cpu": "平均CPU",
+        "logging.avg_gpu": "平均GPU利用率",
+        "logging.avg_temp": "平均温度",
+        "logging.lines": "行数",
+        "logging.size": "大小",
         "whisper.control": "Whisper 服务控制",
         "whisper.start": "启动服务",
         "whisper.stop": "停止服务",
@@ -124,6 +150,16 @@ const I18N = {
         "records.empty": "暂无记录",
         "records.detail": "完整结果",
         "records.view": "查看",
+        "records.chars": "字数",
+        "records.chars_raw": "原文",
+        "records.chars_corr": "校正后",
+        "records.tab_raw": "转换结果",
+        "records.tab_corrected": "AI校正结果",
+        "records.read": "朗读",
+        "records.reading": "朗读中...",
+        "records.pause": "暂停",
+        "records.resume": "继续",
+        "records.no_tts": "朗读失败（Edge TTS）",
         "records.delete": "删除",
         "records.delete_confirm": "确定删除这条记录吗？",
         "records.deleted": "记录已删除",
@@ -221,6 +257,7 @@ const I18N = {
         "nav.dashboard": "ダッシュボード",
         "nav.records": "変換履歴",
         "nav.logs": "リアルタイムログ",
+        "nav.logging": "ログ履歴",
         "nav.settings": "設定",
         "nav.readme": "Readme",
         "sidebar.whisper_service": "Whisper サービス",
@@ -277,6 +314,31 @@ const I18N = {
         "realtime.trend": "リアルタイム推移",
         "realtime.shrink": "縮小",
         "realtime.expand": "拡大",
+        "realtime.phase_idle": "待機",
+        "realtime.phase_transcribe": "変換中",
+        "realtime.phase_correct": "AI 校正中",
+        "realtime.log_start": "記録開始",
+        "realtime.log_stop": "記録停止",
+        "realtime.log_recording": "記録中",
+        "realtime.log_recording_tip": "リアルタイム計測を記録中...",
+        "logging.title": "ログ履歴",
+        "logging.refresh": "更新",
+        "logging.empty": "記録がありません",
+        "logging.select_hint": "左のログを選択して内容を表示",
+        "logging.download": "ダウンロード",
+        "logging.copy": "コピー",
+        "logging.delete": "削除",
+        "logging.copied": "コピーしました",
+        "logging.delete_confirm": "このログを削除しますか？",
+        "logging.deleted": "削除しました",
+        "logging.active_badge": "記録中",
+        "logging.samples": "サンプル数",
+        "logging.duration": "記録時間",
+        "logging.avg_cpu": "平均CPU",
+        "logging.avg_gpu": "平均GPU使用率",
+        "logging.avg_temp": "平均温度",
+        "logging.lines": "行数",
+        "logging.size": "サイズ",
         "whisper.control": "Whisper サービス制御",
         "whisper.start": "サービス開始",
         "whisper.stop": "サービス停止",
@@ -334,6 +396,16 @@ const I18N = {
         "records.empty": "履歴がありません",
         "records.detail": "詳細結果",
         "records.view": "表示",
+        "records.chars": "文字数",
+        "records.chars_raw": "原文",
+        "records.chars_corr": "校正後",
+        "records.tab_raw": "変換結果",
+        "records.tab_corrected": "AI校正結果",
+        "records.read": "音読み",
+        "records.reading": "読み上げ中...",
+        "records.pause": "一時停止",
+        "records.resume": "再開",
+        "records.no_tts": "読み上げに失敗しました（Edge TTS）",
         "records.delete": "削除",
         "records.delete_confirm": "この記録を削除しますか？",
         "records.deleted": "記録を削除しました",
@@ -431,6 +503,7 @@ const I18N = {
         "nav.dashboard": "Dashboard",
         "nav.records": "Transcription History",
         "nav.logs": "Live Logs",
+        "nav.logging": "Log History",
         "nav.settings": "Settings",
         "nav.readme": "Readme",
         "sidebar.whisper_service": "Whisper Service",
@@ -487,6 +560,31 @@ const I18N = {
         "realtime.trend": "Real-time Trend",
         "realtime.shrink": "Shrink",
         "realtime.expand": "Expand",
+        "realtime.phase_idle": "Idle",
+        "realtime.phase_transcribe": "Transcribing",
+        "realtime.phase_correct": "AI Correcting",
+        "realtime.log_start": "Start Logging",
+        "realtime.log_stop": "Stop Logging",
+        "realtime.log_recording": "Recording",
+        "realtime.log_recording_tip": "Recording real-time metrics...",
+        "logging.title": "Log History",
+        "logging.refresh": "Refresh",
+        "logging.empty": "No logs yet",
+        "logging.select_hint": "Select a log on the left",
+        "logging.download": "Download",
+        "logging.copy": "Copy",
+        "logging.delete": "Delete",
+        "logging.copied": "Copied",
+        "logging.delete_confirm": "Delete this log?",
+        "logging.deleted": "Deleted",
+        "logging.active_badge": "Recording",
+        "logging.samples": "Samples",
+        "logging.duration": "Duration",
+        "logging.avg_cpu": "Avg CPU",
+        "logging.avg_gpu": "Avg GPU Util",
+        "logging.avg_temp": "Avg Temp",
+        "logging.lines": "Lines",
+        "logging.size": "Size",
         "whisper.control": "Whisper Service Control",
         "whisper.start": "Start Service",
         "whisper.stop": "Stop Service",
@@ -544,6 +642,16 @@ const I18N = {
         "records.empty": "No records",
         "records.detail": "Full Result",
         "records.view": "View",
+        "records.chars": "Chars",
+        "records.chars_raw": "Raw",
+        "records.chars_corr": "Corrected",
+        "records.tab_raw": "Original",
+        "records.tab_corrected": "AI Corrected",
+        "records.read": "Read Aloud",
+        "records.reading": "Reading...",
+        "records.pause": "Pause",
+        "records.resume": "Resume",
+        "records.no_tts": "Read aloud failed (Edge TTS)",
         "records.delete": "Delete",
         "records.delete_confirm": "Delete this record?",
         "records.deleted": "Record deleted",
@@ -690,6 +798,12 @@ function applyI18n() {
     renderRecords(lastRecords || []);
     renderLLMProfiles(llmProfiles || []);
     renderReadme(); // Readme セクション（言語切替・初期化時に再描画）
+    // 動的テキスト（フェーズピル・ロギングボタン）を言語切替後も再描画
+    setCurrentPhase(currentPhase);
+    refreshRealtimeLogBtn();
+    if ($('#logging')) loadRealtimeLogs(); // ロギングセクションが開いていれば一覧を再読込
+    // 読み上げボタン状態（読み上げ中/一時停止中）も言語切替後も維持
+    if (speakBtn) setReadBtn(speakBtn, ttsPaused ? 'paused' : 'reading');
 }
 
 // ---------------------------------------------------------------------------
@@ -739,6 +853,9 @@ let llmProfiles = []; // LLM プロファイル一覧
 let activeLlmModel = ''; // アクティブな LLM プロファイルのモデル名（AI 校正バー表示用）
 let currentConverting = false; // 是否正在转换（驱动状态显示与进度条）
 let currentModel = ''; // 実行中 Whisper モデル（リアルタイム監視表示用）
+let currentPhase = 'idle'; // 現在フェーズ: 'idle' | 'transcribe' | 'correct'（チャート帯・ピル表示用）
+let chartPhases = []; // チャート帯描画用の履歴フェーズ配列（system_history.phase のスライス）
+let realtimeLogActive = false; // リアルタイムロギング記録中か
 let trendWindow = parseInt(localStorage.getItem('trend_window') || '60', 10); // 趋势图横向显示点数
 let timeUnit = localStorage.getItem('records_time_unit') || 'sec'; // 履历时间显示单位: 'sec' | 'minsec'
 
@@ -958,6 +1075,23 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// 文字数（コードポイント単位でカウント：サロゲートペアも1文字扱い）
+function charCount(str) {
+    return str ? Array.from(String(str)).length : 0;
+}
+
+function fmtNum(n) {
+    return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// 原文/校正後 の文字数表示テキスト（校正済みなら両方を矢印で結ぶ）
+function recordCharsText(raw, result) {
+    const rc = fmtNum(charCount(raw));
+    const cc = fmtNum(charCount(result));
+    if (result !== raw) return `${t('records.chars_raw')}: ${rc} → ${t('records.chars_corr')}: ${cc}`;
+    return `${t('records.chars')}: ${rc}`;
+}
+
 // ---------------------------------------------------------------------------
 // WebSocket
 // ---------------------------------------------------------------------------
@@ -1060,6 +1194,15 @@ function setProgress(pct) {
 
 let correctStageTimer = null;  // 校正段补足 100% 后延迟隐藏用
 
+// フェーズピル（#realtime-phase）を現在のフェーズに合わせて更新
+function setCurrentPhase(phase) {
+    currentPhase = phase;
+    const pill = $('#realtime-phase');
+    if (!pill) return;
+    pill.className = `phase-pill phase-${phase}`;
+    pill.textContent = t(`realtime.phase_${phase}`);
+}
+
 function updateConverting(state) {
     // 转换中：CPU / GPU 卡片显示心跳动画（Whisper 制御カードはアニメなし）
     const active = state === 'converting';
@@ -1084,6 +1227,12 @@ function updateConverting(state) {
         conversionTiming.phase = 'transcribe';
     } else if (!active && conversionTiming.active) {
         finalizeConversionTiming();
+    }
+    // フェーズピル更新（変換中→transcribe / 校正中→correct / それ以外→idle）
+    if (active) {
+        setCurrentPhase(conversionTiming.phase === 'correct' ? 'correct' : 'transcribe');
+    } else {
+        setCurrentPhase('idle');
     }
     // 进度条：转换中显示两段并归零，结束隐藏
     const wrap = $('#progress-bar-wrap');
@@ -1156,6 +1305,10 @@ function handleProgressTiming(msg) {
             conversionTiming.correctStartTs = Date.now();
         }
         conversionTiming.phase = 'correct';
+        setCurrentPhase('correct');
+    } else if (msg.phase === 'transcribe') {
+        conversionTiming.phase = 'transcribe';
+        setCurrentPhase('transcribe');
     }
     // 音声時間が確定したら記録（変換フェーズ完了時点）
     if (msg.duration !== undefined && msg.duration !== null && msg.duration > 0) {
@@ -1188,9 +1341,9 @@ function updateConversionMonitor() {
         correctMs = 0;
     }
     const elapsedMs = now - tm.startTs; // 処理時間（変換中は増加、終了後は確定値）
-    const fmt = (s) => formatTime(Math.max(0, s), 'sec');
+    const fmt = (s) => formatTime(Math.max(0, s), 'minsec');
 
-    $('#live-duration').textContent = tm.durationKnown ? fmt(tm.duration) : '--s';
+    $('#live-duration').textContent = tm.durationKnown ? fmt(tm.duration) : '--:--';
     $('#live-convert').textContent = fmt(convertMs / 1000);
     $('#live-correct').textContent = fmt(correctMs / 1000);
     $('#live-elapsed').textContent = fmt(elapsedMs / 1000);
@@ -1355,6 +1508,8 @@ function updateWhisperStatus(data) {
     const pid = $('#whisper-pid');
     const uptime = $('#whisper-uptime');
     const managed = $('#whisper-managed');
+    const eq = $('#sidebar-eq');
+    const sidebarCard = eq ? eq.closest('.glass-card') : null;
 
     if (converting) {
         dot.className = 'w-2 h-2 rounded-full bg-amber-500 status-pulse';
@@ -1381,6 +1536,10 @@ function updateWhisperStatus(data) {
         status.textContent = t('status.stopped');
         status.className = 'font-medium text-rose-400';
     }
+
+    // サイドバー：変換中のみイコライザー＋カード発光（変換以外では非表示）
+    if (eq) eq.classList.toggle('hidden', !converting);
+    if (sidebarCard) sidebarCard.classList.toggle('sidebar-converting', converting);
 
     const proc = data.process;
     if (data.health && data.health.model) {
@@ -1666,8 +1825,15 @@ async function switchModel(modelName) {
     if (vram > 5.5 && !window.confirm(t('model.confirm_danger'))) {
         return;
     }
+    // 切替中（モデル読込 20〜30秒）は多重実行を防ぐため操作を無効化＋ラベル変更
+    const btn = $('#btn-switch-model');
+    const btnLabel = btn ? btn.querySelector('[data-i18n]') : null;
+    const sel = $('#select-model');
+    if (btn) btn.disabled = true;
+    if (sel) sel.disabled = true;
+    if (btnLabel) { btnLabel.dataset.i18n = 'whisper.switching'; btnLabel.textContent = t('whisper.switching'); }
     try {
-        showToast(t('whisper.switching'), 'info');
+        showToast(t('whisper.switching') + ': ' + model, 'info', 60000);
         const resp = await apiFetch(`${API_BASE}/whisper/model`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1679,16 +1845,56 @@ async function switchModel(modelName) {
             updateGpuModelDisplay(model); // GPU モニタのモデル情報を即時反映
             showToast(t('whisper.switch_done') + ': ' + model, 'success');
         } else {
-            showToast(data.message || t('toast.action_failed'), 'error');
+            showToast(data.message || t('toast.action_failed'), 'error', 8000);
         }
     } catch (e) {
         showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+        if (sel) sel.disabled = false;
+        if (btnLabel) { btnLabel.dataset.i18n = 'whisper.switch_model'; btnLabel.textContent = t('whisper.switch_model'); }
     }
 }
 
 // ---------------------------------------------------------------------------
 // 图表
 // ---------------------------------------------------------------------------
+// 変換（transcribe）/ AI 校正（correct）フェーズをチャート背景帯で色分けするカスタムプラグイン
+const phaseBandsPlugin = {
+    id: 'phaseBands',
+    beforeDatasetsDraw(chart, args, opts) {
+        if (!chartPhases || chartPhases.length < 2) return;
+        const xScale = chart.scales.x;
+        const yScale = chart.scales.y;
+        const area = chart.chartArea;
+        if (!xScale || !area) return;
+        const colors = {
+            transcribe: 'rgba(255, 176, 32, 0.10)',
+            correct: 'rgba(255, 61, 129, 0.14)',
+        };
+        const step = Math.max(2, Math.abs(xScale.getPixelForValue(1) - xScale.getPixelForValue(0)));
+        const ctx = chart.ctx;
+        let i = 0;
+        const phases = chartPhases;
+        while (i < phases.length) {
+            const phase = phases[i];
+            if (phase === 'transcribe' || phase === 'correct') {
+                let j = i;
+                while (j + 1 < phases.length && phases[j + 1] === phase) j++;
+                const x0 = xScale.getPixelForValue(i);
+                const x1 = xScale.getPixelForValue(j);
+                ctx.save();
+                ctx.fillStyle = colors[phase];
+                ctx.fillRect(x0, area.top, Math.max(1, x1 - x0 + step), area.bottom - area.top);
+                ctx.restore();
+                i = j + 1;
+            } else {
+                i++;
+            }
+        }
+    }
+};
+
 function initChart() {
     const ctx = $('#main-chart');
     if (!ctx) return;
@@ -1698,6 +1904,7 @@ function initChart() {
 
     mainChart = new Chart(ctx, {
         type: 'line',
+        plugins: [phaseBandsPlugin],
         data: {
             labels: Array(60).fill(''),
             datasets: [
@@ -1764,6 +1971,22 @@ function initChart() {
                     tension: 0.4,
                     pointRadius: 0,
                     borderWidth: 2,
+                },
+                {
+                    label: 'GPU Temp °C',
+                    data: Array(60).fill(0),
+                    borderColor: '#f87171',
+                    backgroundColor: (context) => {
+                        const ctx = context.chart.ctx;
+                        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                        gradient.addColorStop(0, 'rgba(248, 113, 113, 0.3)');
+                        gradient.addColorStop(1, 'rgba(248, 113, 113, 0)');
+                        return gradient;
+                    },
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    borderWidth: 2,
                 }
             ]
         },
@@ -1814,13 +2037,228 @@ function updateChart(history) {
     mainChart.data.datasets[1].data = (history.memory || []).slice(start);
     mainChart.data.datasets[2].data = (history.gpu_util || []).slice(start);
     mainChart.data.datasets[3].data = (history.gpu_mem || []).slice(start);
+    mainChart.data.datasets[4].data = (history.gpu_temp || []).slice(start);
+    // フェーズ帯描画用：同じウィンドウに揃えてスライス（ラベルと要素数を一致させる）
+    chartPhases = (history.phase || []).slice(start);
     mainChart.update('none');
+}
+
+// ---------------------------------------------------------------------------
+// リアルタイムロギング（JSONL 記録の開始/停止 + ボタン状態）
+// ---------------------------------------------------------------------------
+async function initRealtimeLogState() {
+    try {
+        const resp = await fetch(`${API_BASE}/realtime-log`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+        realtimeLogActive = !!(data && data.active);
+    } catch (e) {
+        console.error('Failed to load realtime-log state:', e);
+    }
+    refreshRealtimeLogBtn();
+}
+
+function refreshRealtimeLogBtn() {
+    const btn = $('#btn-realtime-log');
+    if (!btn) return;
+    btn.classList.toggle('recording-active', realtimeLogActive);
+    const dot = btn.querySelector('.rec-dot');
+    if (dot) dot.classList.toggle('rec-dot-active', realtimeLogActive);
+    const label = btn.querySelector('[data-i18n]');
+    if (label) label.textContent = t(realtimeLogActive ? 'realtime.log_stop' : 'realtime.log_start');
+    btn.title = t(realtimeLogActive ? 'realtime.log_recording_tip' : '');
+}
+
+async function toggleRealtimeLog() {
+    const endpoint = realtimeLogActive ? '/realtime-log/stop' : '/realtime-log/start';
+    try {
+        const resp = await apiFetch(`${API_BASE}${endpoint}`, { method: 'POST' });
+        if (!resp.ok) {
+            const body = await resp.json().catch(() => ({}));
+            console.error('realtime-log toggle failed:', resp.status, body);
+            return;
+        }
+        realtimeLogActive = !realtimeLogActive;
+        refreshRealtimeLogBtn();
+        // 記録停止時：ログ履歴セクションが開いていれば一覧を再読み込み
+        if (!realtimeLogActive) {
+            const section = document.querySelector('.nav-link.active');
+            if (section && section.dataset.section === 'logging') loadRealtimeLogs();
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// ログ履歴セクション（JSONL 一覧・閲覧・ダウンロード・コピー・削除）
+// ---------------------------------------------------------------------------
+let selectedLogName = '';
+let selectedLogText = null;
+
+function fmtBytes(bytes) {
+    if (!bytes && bytes !== 0) return '-';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+async function loadRealtimeLogs() {
+    const listEl = $('#rtlog-list');
+    if (!listEl) return;
+    try {
+        const resp = await fetch(`${API_BASE}/realtime-log`);
+        const data = await resp.json();
+        renderRealtimeLogList(data || { files: [], active: null });
+        // 選択中ログの要約・一覧を最新の meta 情報で更新
+        if (selectedLogName && data && data.files && data.files.some(f => f.name === selectedLogName)) {
+            renderRealtimeLogSummary(data.files.find(f => f.name === selectedLogName));
+        }
+    } catch (e) {
+        console.error('Failed to load realtime logs:', e);
+        listEl.innerHTML = `<div class="text-sm text-rose-400">${t('logging.empty')}</div>`;
+    }
+}
+
+function renderRealtimeLogList(data) {
+    const listEl = $('#rtlog-list');
+    if (!listEl) return;
+    const files = data.files || [];
+    if (!files.length) {
+        listEl.innerHTML = `<div class="text-sm text-stone-500">${t('logging.empty')}</div>`;
+        return;
+    }
+    listEl.innerHTML = files.map(f => {
+        const active = data.active && data.active.filename === f.name;
+        const isSel = selectedLogName === f.name;
+        const cls = isSel ? 'bg-amber-500/15 border-amber-500/40' : 'border-white/10 hover:border-amber-500/30';
+        const samples = f.samples != null ? fmtNum(f.samples) : '-';
+        return `
+        <div class="rtlog-item rounded-xl border ${cls} bg-stone-900/40 px-3 py-2.5 cursor-pointer transition-all" data-name="${escapeHtml(f.name)}">
+            <div class="flex items-center justify-between gap-2">
+                <span class="font-mono text-xs text-amber-300 truncate">${escapeHtml(f.name)}</span>
+                ${active ? `<span class="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300">${t('logging.active_badge')}</span>` : ''}
+            </div>
+            <div class="mt-1 flex items-center gap-3 text-[11px] text-stone-400">
+                <span>${t('logging.samples')}: ${samples}</span>
+                ${f.duration_sec != null ? `<span>${t('logging.duration')}: ${f.duration_sec}s</span>` : ''}
+                ${f.avg_cpu != null ? `<span>CPU ${f.avg_cpu}%</span>` : ''}
+                ${f.avg_gpu_util != null ? `<span>GPU ${f.avg_gpu_util}%</span>` : ''}
+            </div>
+            <div class="mt-0.5 flex items-center gap-3 text-[11px] text-stone-500">
+                <span>${f.started_at ? String(f.started_at).replace('T', ' ') : ''}</span>
+                <span>${fmtBytes(f.size)}</span>
+            </div>
+        </div>`;
+    }).join('');
+    // クリックで内容を表示
+    listEl.querySelectorAll('.rtlog-item').forEach(el => {
+        el.addEventListener('click', () => viewRealtimeLog(el.dataset.name));
+    });
+}
+
+function renderRealtimeLogSummary(meta) {
+    const sum = $('#rtlog-summary');
+    if (!sum) return;
+    if (!meta) { sum.innerHTML = ''; return; }
+    const items = [];
+    if (meta.whisper_model) items.push([t('live.model'), meta.whisper_model]);
+    if (meta.samples != null) items.push([t('logging.samples'), fmtNum(meta.samples)]);
+    if (meta.duration_sec != null) items.push([t('logging.duration'), meta.duration_sec + 's']);
+    if (meta.avg_cpu != null) items.push([t('logging.avg_cpu'), meta.avg_cpu + '%']);
+    if (meta.avg_gpu_util != null) items.push([t('logging.avg_gpu'), meta.avg_gpu_util + '%']);
+    if (meta.avg_gpu_temp != null) items.push([t('logging.avg_temp'), meta.avg_gpu_temp + '°C']);
+    sum.innerHTML = items.map(([k, v]) =>
+        `<span class="inline-flex items-center gap-1.5 mr-3 mb-1 text-[11px] text-stone-300 bg-stone-900/50 rounded-lg px-2.5 py-1 border border-white/10"><span class="text-stone-500">${k}</span><span class="font-semibold">${escapeHtml(String(v))}</span></span>`
+    ).join('');
+}
+
+async function viewRealtimeLog(name) {
+    if (!name) return;
+    try {
+        const resp = await fetch(`${API_BASE}/realtime-log/${encodeURIComponent(name)}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const text = await resp.text();
+        selectedLogName = name;
+        selectedLogText = text;
+        $('#rtlog-detail-title').textContent = name;
+        const actions = $('#rtlog-detail-actions');
+        if (actions) actions.classList.remove('hidden');
+        $('#rtlog-content').textContent = text || '(empty)';
+        // 一覧の選択状態を更新
+        document.querySelectorAll('#rtlog-list .rtlog-item').forEach(el => {
+            const sel = el.dataset.name === name;
+            el.classList.toggle('bg-amber-500/15', sel);
+            el.classList.toggle('border-amber-500/40', sel);
+        });
+        // 要約：先頭の meta 行から抽出
+        const firstLine = text.split('\n').find(l => l.trim());
+        const meta = { name };
+        if (firstLine) {
+            try {
+                const first = JSON.parse(firstLine);
+                if (first.whisper_model) meta.whisper_model = first.whisper_model;
+                if (first.ts) meta.started_at = first.ts;
+            } catch (e) { /* ignore */ }
+        }
+        renderRealtimeLogSummary(meta);
+    } catch (e) {
+        console.error('Failed to view log:', e);
+        showToast('Error: ' + e.message, 'error');
+    }
+}
+
+function downloadRealtimeLog() {
+    if (!selectedLogName || selectedLogText == null) return;
+    const blob = new Blob([selectedLogText], { type: 'application/x-ndjson;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = selectedLogName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+}
+
+function copyRealtimeLog() {
+    if (selectedLogText == null) return;
+    navigator.clipboard.writeText(selectedLogText).then(() => {
+        showToast(t('logging.copied'), 'success');
+    }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = selectedLogText;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); showToast(t('logging.copied'), 'success'); } catch (e) {}
+        document.body.removeChild(ta);
+    });
+}
+
+async function deleteRealtimeLog() {
+    if (!selectedLogName) return;
+    if (!window.confirm(t('logging.delete_confirm') + '\n' + selectedLogName)) return;
+    try {
+        const resp = await apiFetch(`${API_BASE}/realtime-log/${encodeURIComponent(selectedLogName)}`, { method: 'DELETE' });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        selectedLogName = '';
+        selectedLogText = null;
+        const actions = $('#rtlog-detail-actions');
+        if (actions) actions.classList.add('hidden');
+        $('#rtlog-content').textContent = '';
+        $('#rtlog-summary').innerHTML = '';
+        $('#rtlog-detail-title').textContent = t('logging.select_hint');
+        loadRealtimeLogs();
+        showToast(t('logging.deleted'), 'success');
+    } catch (e) {
+        console.error('Failed to delete log:', e);
+        showToast('Error: ' + e.message, 'error');
+    }
 }
 
 // ---------------------------------------------------------------------------
 // Readme（サイドバー「Readme」表示内容）
 // ---------------------------------------------------------------------------
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 
 // モデル別 60分音声ベンチマーク目安（GTX 1660 Ti 6GB・int8_float16・beam=3）
 const MODEL_BENCH = {
@@ -1857,6 +2295,9 @@ const README_CONTENT = {
             '多语言界面（中文 / 日本語 / English）',
             '连接令牌认证（写入・控制操作，本地回环免除）',
             'Windows 开机自启动',
+            '朗读（Edge TTS 女声）：暂停/继续・当前句下划线・双击正文从指定位置播放',
+            '实时记录（JSONL 保存・记录日志查看・AI 可解析）',
+            '转换/AI 校对阶段色带 + GPU 温度图表',
         ],
         arch_title: '系统构成',
         arch_desc: '在 LAN 内 PC（例: 192.168.0.88）上运行以下服务。出外访问时经 NAS（QNAP）的 VPN（Tailscale / WireGuard）连接。',
@@ -1875,6 +2316,16 @@ const README_CONTENT = {
         current_version: '当前版本',
         changelog_title: '功能追加履历',
         changelog: [
+            {
+                ver: 'v1.1.0', date: '2026-08-22',
+                items: [
+                    '朗读（Edge TTS 女声）：暂停/继续・当前句下划线・双击正文从指定位置播放',
+                    '转换履历：转换文与 AI 校正文的字符数 + 标签切换（原文/校正后）',
+                    '实时记录（JSONL）：开始/停止按钮・记录日志查看・AI 可解析格式',
+                    '趋势图：转换/AI 校对阶段色带 + GPU 温度图表',
+                    '模型切换：等待读入完成，失败时自动恢复旧模型',
+                ],
+            },
             {
                 ver: 'v1.0.0', date: '2026-08-22',
                 items: [
@@ -1900,6 +2351,9 @@ const README_CONTENT = {
             '多言語 UI（中文 / 日本語 / English）',
             '接続トークン認証（書き込み・制御操作のみ、ループバック免除）',
             'Windows 自動起動',
+            '音読み（Edge TTS 女性音声）：一時停止/再開・読上げ中の文を下線表示・本文ダブルクリックで指定位置から再生',
+            'リアルタイムロギング（JSONL 記録・ログ履歴表示・AI 解析可能）',
+            '変換/AI 校正フェーズの帯色分け + GPU 温度グラフ',
         ],
         arch_title: 'システム構成',
         arch_desc: 'LAN 内の PC（例: 192.168.0.88）で以下を実行。外出先からは NAS（QNAP）の VPN（Tailscale / WireGuard）経由で接続。',
@@ -1918,6 +2372,16 @@ const README_CONTENT = {
         current_version: '現在のバージョン',
         changelog_title: '機能追加履歴',
         changelog: [
+            {
+                ver: 'v1.1.0', date: '2026-08-22',
+                items: [
+                    '音読み（Edge TTS 女性音声）：一時停止/再開・読上げ中の文を下線表示・本文ダブルクリックで指定位置から再生',
+                    '変換履歴：変換文と AI 校正文の文字数表示 + タブ切替（原文/校正後）',
+                    'リアルタイムロギング（JSONL）：記録開始/停止ボタン・ログ履歴セクション・AI 解析可能な形式',
+                    'トレンドチャート：変換/AI 校正フェーズの帯色分け + GPU 温度グラフ追加',
+                    'モデル切替：読込完了まで待機し、失敗時は旧モデルへ自動復元',
+                ],
+            },
             {
                 ver: 'v1.0.0', date: '2026-08-22',
                 items: [
@@ -1943,6 +2407,9 @@ const README_CONTENT = {
             'Multilingual UI (中文 / 日本語 / English)',
             'Connection-token auth (write/control only, loopback exempt)',
             'Windows auto-start',
+            'Read-aloud (Edge TTS female): pause/resume, current-sentence underline, double-click to jump',
+            'Real-time logging (JSONL save, log history viewer, AI-parseable)',
+            'Phase-colored trend chart (transcribe/correct) + GPU temperature line',
         ],
         arch_title: 'System Architecture',
         arch_desc: 'Runs on a PC in the LAN (e.g. 192.168.0.88). For remote access, connect via the NAS (QNAP) VPN (Tailscale / WireGuard).',
@@ -1961,6 +2428,16 @@ const README_CONTENT = {
         current_version: 'Current version',
         changelog_title: 'Changelog',
         changelog: [
+            {
+                ver: 'v1.1.0', date: '2026-08-22',
+                items: [
+                    'Read-aloud (Edge TTS female): pause/resume, current-sentence underline, double-click jump',
+                    'Transcription history: char counts for raw & corrected text + tab switcher (raw/corrected)',
+                    'Real-time logging (JSONL): start/stop button, log history section, AI-parseable format',
+                    'Trend chart: transcribe/correct phase color bands + GPU temperature line',
+                    'Model switch: waits for model load; auto-reverts to the previous model on failure',
+                ],
+            },
             {
                 ver: 'v1.0.0', date: '2026-08-22',
                 items: [
@@ -2121,6 +2598,8 @@ function showSection(name) {
         loadRecords();
     } else if (name === 'logs') {
         loadLogs();
+    } else if (name === 'logging') {
+        loadRealtimeLogs();
     } else if (name === 'settings') {
         loadSettings();
         loadAutostartStatus();
@@ -2147,7 +2626,7 @@ function renderRecords(records) {
     lastRecords = records;
     const tbody = $('#records-table-body');
     if (!records || records.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-slate-500">${t('records.empty')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-slate-500">${t('records.empty')}</td></tr>`;
         return;
     }
 
@@ -2169,6 +2648,12 @@ function renderRecords(records) {
         const correctBtn = r.output_format !== 'srt'
             ? `<button class="text-fuchsia-400 hover:text-fuchsia-300 text-sm ml-2" title="${t('records.correct')}" onclick="correctRecord(${r.id})">${t('records.correct')}</button>`
             : '';
+        // 文字数：校正済み（原文≠結果）なら 原文→校正後 の両方を表示
+        const res = r.result || '';
+        const rawRes = r.raw_result || res;
+        const charsCell = (rawRes !== res)
+            ? `${fmtNum(charCount(rawRes))}<span class="text-fuchsia-400" title="${t('records.chars_corr')}"> → ${fmtNum(charCount(res))}</span>`
+            : `${fmtNum(charCount(res))}`;
         return `
         <tr>
             <td class="py-3 text-slate-400 font-mono text-xs">${formatDateTime(r.timestamp)}</td>
@@ -2181,8 +2666,9 @@ function renderRecords(records) {
             <td class="py-3 text-amber-300">${formatTime(total)}</td>
             <td class="py-3 font-mono ${speedClass}">${speedText}</td>
             <td class="py-3 text-slate-300">${escapeHtml(truncate(r.summary, 40))}</td>
+            <td class="py-3 text-slate-400 font-mono text-xs whitespace-nowrap">${charsCell}</td>
             <td class="py-3">
-                <button class="text-amber-400 hover:text-amber-300 text-sm" onclick="showRecordContent(${r.id}, '${encodeURIComponent(r.result || '')}')">${t('records.view')}</button>
+                <button class="text-amber-400 hover:text-amber-300 text-sm" onclick="showRecordContent(${r.id}, '${encodeURIComponent(r.result || '')}', '${r.language || ''}', '${encodeURIComponent(r.raw_result || '')}')">${t('records.view')}</button>
                 <button class="text-cyan-400 hover:text-cyan-300 text-sm ml-2" onclick="copyRecordText(${r.id}, '${encodeURIComponent(r.result || '')}')">${t('records.copy')}</button>
                 ${correctBtn}
                 <button class="text-rose-400 hover:text-rose-300 ml-2 align-middle" title="${t('records.delete')}" onclick="deleteRecord(${r.id})">
@@ -2267,20 +2753,290 @@ window.clearRecords = async function() {
     }
 };
 
-window.showRecordDetail = function(id, encodedResult) {
-    const result = decodeURIComponent(encodedResult);
-    $('#record-detail-content').textContent = result;
+// ---------------------------------------------------------------------------
+// 詳細結果の読み上げ（Microsoft Edge TTS / 女性ニューラル音声）
+// バックエンド /api/v1/tts の音声（MP3 base64）＋文境界情報を
+// チャンク単位で連続再生し、読み上げ中の文を詳細結果本文に下線表示する
+// ---------------------------------------------------------------------------
+const TTS_CHUNK_CHARS = 1500;   // 1 リクエストあたりの目安文字数
+let speakBtn = null;            // 読み上げ中のボタン（トグル用）
+let ttsAudio = null;            // 現在再生中の Audio
+let ttsQueue = [];              // 残りの再生チャンク {text, start}
+let ttsGen = 0;                 // 世代カウンタ（停止後の遅延再生を防止）
+let lastHi = null;              // 現在の下線ハイライト位置（重複再描画の防止）
+let ttsPaused = false;          // 一時停止中か（ボタン再クリックで現在位置から再開）
+
+// 文末（。！？.!?）区切りで文のリスト（文字位置付き）を返す
+function splitSentences(text) {
+    const parts = text.match(/[^。！？.!?]*[。！？.!?]|[^。！？.!?]+$/g) || [text];
+    const out = [];
+    let pos = 0;
+    for (const s of parts) {
+        out.push({ text: s, start: pos, end: pos + s.length });
+        pos += s.length;
+    }
+    return out;
+}
+
+// 文を最大 maxLen 文字のチャンクにまとめる（連続読み上げ用）。
+// fromOffset 以降の文だけを対象にする（ダブルクリックでのジャンプ再生用）。
+function chunkText(text, maxLen, fromOffset = 0) {
+    const chunks = [];
+    let cur = '';
+    let curStart = -1;
+    for (const s of splitSentences(text)) {
+        if (s.end <= fromOffset) continue;   // fromOffset より前に終わる文はスキップ
+        if (curStart === -1) curStart = s.start;
+        if ((cur + s.text).length > maxLen && cur) {
+            chunks.push({ text: cur, start: curStart });
+            cur = s.text;
+            curStart = s.start;
+        } else {
+            cur += s.text;
+        }
+    }
+    if (cur) chunks.push({ text: cur, start: curStart });
+    return chunks;
+}
+
+// base64 の MP3 を Blob に変換
+function b64ToBlob(b64, mime) {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+}
+
+// 指定文字範囲（本文全体基準の offset）を <span class="tts-underline"> で囲んで下線表示
+function highlightRange(contentId, start, end) {
+    const el = $(contentId);
+    if (!el || start < 0 || end <= start) return;
+    clearHighlight(contentId);
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let offset = 0;
+    let startNode = null, startOff = 0, endNode = null, endOff = 0;
+    while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const len = node.length;
+        if (startNode === null && offset + len > start) {
+            startNode = node; startOff = start - offset;
+        }
+        if (offset + len >= end) {
+            if (startNode === null) { startNode = node; startOff = 0; }
+            endNode = node; endOff = end - offset;
+            break;
+        }
+        offset += len;
+    }
+    if (!startNode || !endNode) return;
+    const range = document.createRange();
+    range.setStart(startNode, startOff);
+    range.setEnd(endNode, endOff);
+    const span = document.createElement('span');
+    span.className = 'tts-underline';
+    try { range.surroundContents(span); } catch (e) { /* 境界の都合で囲めない場合は無視 */ }
+}
+
+function clearHighlight(contentId) {
+    const el = $(contentId);
+    if (!el) return;
+    el.querySelectorAll('.tts-underline').forEach(span => {
+        const parent = span.parentNode;
+        while (span.firstChild) parent.insertBefore(span.firstChild, span);
+        parent.removeChild(span);
+        parent.normalize();
+    });
+}
+
+function setReadBtn(btn, mode = 'reading') {
+    // 全読み上げボタンをリセットしてから対象ボタンのみ状態表示
+    // mode: 'reading'（再生中・発光） / 'paused'（一時停止中・静的表示）
+    ['#btn-read-content', '#btn-read-modal'].forEach(sel => {
+        const el = $(sel);
+        if (!el) return;
+        const s = el.querySelector('[data-i18n]');
+        if (s) { s.setAttribute('data-i18n', 'records.read'); s.textContent = t('records.read'); }
+        el.classList.remove('read-active', 'read-paused');
+    });
+    speakBtn = btn;
+    if (btn) {
+        const s = btn.querySelector('[data-i18n]');
+        const key = mode === 'paused' ? 'records.resume' : 'records.reading';
+        if (s) { s.setAttribute('data-i18n', key); s.textContent = t(key); }
+        btn.classList.add(mode === 'paused' ? 'read-paused' : 'read-active');
+    }
+}
+
+function pauseSpeaking() {
+    // 一時停止：現在の再生位置で停止し、再クリックで再開できる状態にする
+    ttsPaused = true;
+    if (ttsAudio) ttsAudio.pause();
+    setReadBtn(speakBtn, 'paused');
+}
+
+function stopSpeaking() {
+    ttsGen++;                       // 進行中の非同期再生を無効化
+    ttsPaused = false;
+    if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+    ttsQueue = [];
+    lastHi = null;
+    clearHighlight('#record-content');
+    clearHighlight('#record-detail-content');
+    setReadBtn(null);
+}
+
+window.readRecordContent = function(btn, contentId, lang, startOffset = 0) {
+    // 一時停止中なら現在位置から再開
+    if (ttsPaused) {
+        ttsPaused = false;
+        setReadBtn(btn, 'reading');
+        if (ttsAudio) ttsAudio.play().catch(() => {});
+        return;
+    }
+    // 読み上げ中（取得中も含む）なら一時停止
+    if (speakBtn || ttsAudio || ttsQueue.length) {
+        pauseSpeaking();
+        return;
+    }
+    const text = ($(contentId).textContent || '');   // 生の textContent（オフセット照合のため trim しない）
+    if (!text.trim()) return;
+    // ダブルクリックでのジャンプ開始位置をクランプ
+    startOffset = Math.max(0, Math.min(startOffset, text.length));
+    const gen = ++ttsGen;
+    ttsQueue = chunkText(text, TTS_CHUNK_CHARS, startOffset);
+    speakNextChunk(btn, contentId, lang || '', gen);
+};
+
+async function speakNextChunk(btn, contentId, lang, gen) {
+    if (!ttsQueue.length || gen !== ttsGen) { stopSpeaking(); return; }
+    const chunk = ttsQueue.shift();
+    try {
+        const resp = await apiFetch(`${API_BASE}/tts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: chunk.text, lang: lang })
+        });
+        if (gen !== ttsGen) return;                 // 停止されたら再生しない
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        const audioBlob = b64ToBlob(data.audio_base64, 'audio/mpeg');
+        const url = URL.createObjectURL(audioBlob);
+        // 文境界（edge-tts SentenceBoundary の開始秒）と文リストを順対応付ける
+        const sentences = splitSentences(chunk.text);
+        const audio = new Audio(url);
+        ttsAudio = audio;
+        audio.addEventListener('timeupdate', () => {
+            if (gen !== ttsGen) return;
+            const t = audio.currentTime;
+            let idx = -1;
+            const b = data.boundaries || [];
+            for (let i = 0; i < b.length; i++) { if (b[i].t <= t) idx = i; else break; }
+            if (idx >= 0) {
+                const si = Math.min(idx, sentences.length - 1);
+                const st = sentences[si];
+                const key = (chunk.start + st.start) + '_' + (chunk.start + st.end);
+                if (key !== lastHi) {
+                    lastHi = key;
+                    highlightRange(contentId, chunk.start + st.start, chunk.start + st.end);
+                }
+            }
+        });
+        audio.onended = () => {
+            URL.revokeObjectURL(url);
+            ttsAudio = null;
+            lastHi = null;
+            clearHighlight(contentId);
+            speakNextChunk(btn, contentId, lang, gen);
+        };
+        audio.onerror = () => {
+            URL.revokeObjectURL(url);
+            ttsAudio = null;
+            stopSpeaking();
+            showToast(t('records.no_tts'), 'error');
+        };
+        // チャンク取得中に一時停止された場合は再生せずに停止状態を維持（再開時に play）
+        setReadBtn(btn, ttsPaused ? 'paused' : 'reading');
+        if (!ttsPaused) await audio.play();
+    } catch (e) {
+        if (gen === ttsGen) {                        // 停止ではなく実エラーの場合のみ報告
+            stopSpeaking();
+            showToast(t('records.no_tts') + ': ' + (e.message || ''), 'error');
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 本文ダブルクリック：クリック位置の文から読み上げ開始（ジャンプ再生）
+// ---------------------------------------------------------------------------
+// 指定要素内の、現在の選択位置までの文字オフセットを返す（本文全体基準）
+function getCaretOffsetWithin(el) {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return -1;
+    const range = sel.getRangeAt(0);
+    if (!el.contains(range.startContainer)) return -1;
+    const preRange = document.createRange();
+    preRange.selectNodeContents(el);
+    preRange.setEnd(range.startContainer, range.startOffset);
+    return preRange.toString().length;
+}
+
+function startReadingAt(contentId) {
+    const el = $(contentId);
+    if (!el) return;
+    const offset = getCaretOffsetWithin(el);
+    if (offset < 0) return;
+    const isModal = contentId === '#record-detail-content';
+    const btn = isModal ? $('#btn-read-modal') : $('#btn-read-content');
+    const lang = isModal
+        ? ($('#record-detail-modal').dataset.lang || '')
+        : ($('#record-content-panel').dataset.lang || '');
+    if (!btn) return;
+    stopSpeaking();   // 再生中の読み上げを一旦止めて、指定位置の文から開始
+    readRecordContent(btn, contentId, lang, offset);
+}
+
+// 詳細結果のタブ切替：'raw'（変換結果）⇔ 'corrected'（AI校正結果）
+function switchResultTab(view, tab) {
+    stopSpeaking();
+    const pre = $(view === 'content' ? '#record-content' : '#record-detail-content');
+    if (!pre) return;
+    const isCorr = tab === 'corrected';
+    const raw = pre.dataset.raw || '';
+    const corrected = pre.dataset.corrected || raw;
+    pre.textContent = isCorr ? corrected : raw;
+    const rawBtn = $('#btn-tab-' + view + '-raw');
+    const corrBtn = $('#btn-tab-' + view + '-corrected');
+    if (rawBtn) rawBtn.classList.toggle('result-tab-active', !isCorr);
+    if (corrBtn) corrBtn.classList.toggle('result-tab-active', isCorr);
+}
+
+window.showRecordDetail = function(id, encodedResult, lang, encodedRaw) {
+    stopSpeaking();
+    const result = decodeURIComponent(encodedResult || '');
+    const raw = decodeURIComponent(encodedRaw || '') || result;
+    const pre = $('#record-detail-content');
+    pre.dataset.raw = raw;
+    pre.dataset.corrected = result;
+    $('#record-detail-modal').dataset.lang = lang || '';
+    $('#record-detail-chars').textContent = recordCharsText(raw, result);
     $('#record-detail-modal').classList.remove('hidden');
+    switchResultTab('detail', raw !== result ? 'corrected' : 'raw');
 };
 
 // 履历页面：在列表下方显示转换内容（上下布局）
-window.showRecordContent = function(id, encodedResult) {
-    const result = decodeURIComponent(encodedResult);
-    $('#record-content').textContent = result;
-    $('#record-content-meta').textContent = `${t('records.detail')} #${id}`;
+window.showRecordContent = function(id, encodedResult, lang, encodedRaw) {
+    stopSpeaking();
+    const result = decodeURIComponent(encodedResult || '');
+    const raw = decodeURIComponent(encodedRaw || '') || result;
+    const pre = $('#record-content');
+    pre.dataset.raw = raw;
+    pre.dataset.corrected = result;
+    $('#record-content-meta').textContent = `${t('records.detail')} #${id} · ${recordCharsText(raw, result)}`;
     const panel = $('#record-content-panel');
+    panel.dataset.lang = lang || '';
     panel.classList.remove('hidden');
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    switchResultTab('content', raw !== result ? 'corrected' : 'raw');
 };
 
 // ---------------------------------------------------------------------------
@@ -2305,6 +3061,10 @@ function initTrendResize() {
     }
     $('#btn-trend-shrink').addEventListener('click', () => stepWindow(1));    // 缩小 → 显示更长时间
     $('#btn-trend-expand').addEventListener('click', () => stepWindow(-1));  // 放大 → 放大波形
+
+    // リアルタイムロギング 開始/停止トグル
+    const rtLogBtn = $('#btn-realtime-log');
+    if (rtLogBtn) rtLogBtn.addEventListener('click', () => toggleRealtimeLog());
 }
 
 window.copyRecordText = function(id, encodedResult) {
@@ -2920,18 +3680,21 @@ function updateClock() {
 // ---------------------------------------------------------------------------
 // Toast 提示
 // ---------------------------------------------------------------------------
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
+function showToast(message, type = 'info', duration = 3000) {
+    // 既存トーストを除去して重ねない（切替中メッセージの置き換えにも使用）
+    const prev = document.querySelector('.ws-toast');
+    if (prev) prev.remove();
     const colors = {
         success: 'bg-emerald-500',
         error: 'bg-rose-500',
         info: 'bg-amber-500'
     };
-    toast.className = `fixed bottom-6 right-6 ${colors[type] || colors.info} text-white px-5 py-3 rounded-xl shadow-lg shadow-black/30 z-50 animate-bounce`;
-    toast.style.animation = 'cardFadeIn 0.3s ease-out forwards, fadeOut 0.3s ease-out 2.7s forwards';
+    const toast = document.createElement('div');
+    toast.className = `ws-toast fixed bottom-6 right-6 ${colors[type] || colors.info} text-white px-5 py-3 rounded-xl shadow-lg shadow-black/30 z-50 animate-bounce`;
+    toast.style.animation = `cardFadeIn 0.3s ease-out forwards, fadeOut 0.3s ease-out ${Math.max(0, (duration - 300) / 1000)}s forwards`;
     toast.textContent = message;
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    setTimeout(() => toast.remove(), duration);
 }
 
 // ---------------------------------------------------------------------------
@@ -2965,7 +3728,21 @@ function initEventListeners() {
     }
 
     $('#btn-close-modal').addEventListener('click', () => {
+        stopSpeaking();
         $('#record-detail-modal').classList.add('hidden');
+    });
+
+    // 詳細結果の読み上げ（トグル：再生中に押すと一時停止、再クリックで再開）
+    $('#btn-read-modal').addEventListener('click', (e) => {
+        readRecordContent(e.currentTarget, '#record-detail-content', $('#record-detail-modal').dataset.lang);
+    });
+    $('#btn-read-content').addEventListener('click', (e) => {
+        readRecordContent(e.currentTarget, '#record-content', $('#record-content-panel').dataset.lang);
+    });
+    // 本文ダブルクリック：クリックした文の位置から読み上げ開始
+    ['#record-content', '#record-detail-content'].forEach(sel => {
+        const el = $(sel);
+        if (el) el.addEventListener('dblclick', () => startReadingAt(sel));
     });
 
     $('#btn-copy-modal').addEventListener('click', () => {
@@ -2984,6 +3761,7 @@ function initEventListeners() {
 
     // 履历页面内容区：关闭 / 复制
     $('#btn-close-content').addEventListener('click', () => {
+        stopSpeaking();
         $('#record-content-panel').classList.add('hidden');
     });
     $('#btn-copy-content').addEventListener('click', () => {
@@ -3002,6 +3780,7 @@ function initEventListeners() {
 
     $('#record-detail-modal').addEventListener('click', (e) => {
         if (e.target === $('#record-detail-modal')) {
+            stopSpeaking();
             $('#record-detail-modal').classList.add('hidden');
         }
     });
@@ -3069,6 +3848,16 @@ function initEventListeners() {
     $('#toggle-autostart').addEventListener('change', (e) => {
         toggleAutostart(e.target.checked);
     });
+
+    // ログ履歴セクション：一覧更新 / ダウンロード / コピー / 削除
+    const btnRefreshLogs = $('#btn-refresh-logs');
+    if (btnRefreshLogs) btnRefreshLogs.addEventListener('click', () => loadRealtimeLogs());
+    const btnDownloadLog = $('#btn-download-log');
+    if (btnDownloadLog) btnDownloadLog.addEventListener('click', () => downloadRealtimeLog());
+    const btnCopyLog = $('#btn-copy-log');
+    if (btnCopyLog) btnCopyLog.addEventListener('click', () => copyRealtimeLog());
+    const btnDeleteLog = $('#btn-delete-log');
+    if (btnDeleteLog) btnDeleteLog.addEventListener('click', () => deleteRealtimeLog());
 }
 
 // ---------------------------------------------------------------------------
@@ -3092,4 +3881,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // 変換リアルタイム監視のティック（変換中のみ 4 つの時間を滑らかに増加表示）
     setInterval(updateConversionMonitor, 250);
     applyI18n();
+    initRealtimeLogState();
 });

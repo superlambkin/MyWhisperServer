@@ -44,6 +44,12 @@
 | 自動起動 | Windows：スタートアップフォルダ / Linux：`~/.config/autostart` または systemd |
 | 変換中アニメーション | 変換中は CPU / GPU カードが心拍アニメーションで点滅 |
 | グラフの拡大・縮小 | 波形の横スケール（表示時間幅）をボタンで拡大・縮小。カードは常に画面幅いっぱいに表示 |
+| GPU 温度グラフ | リアルタイム推移に **GPU 温度**（赤色）の折れ線を追加 |
+| 変換フェーズ色分け | トレンドチャートに **変換（琥珀）/ AI 校正（マゼンタ）** の帯を表示し、フェーズを色で区別 |
+| リアルタイムロギング | 2 秒毎の CPU / GPU / メモリ / 変換フェーズを **JSONL** で記録。開始 / 停止ボタン＋ログ履歴セクションで一覧・閲覧・ダウンロード・削除 |
+| 音読み（Edge TTS） | 変換履歴の詳細結果を **女性音声** で読み上げ。再クリックで**一時停止 / 再開**、読上げ中の文を**下線表示**、本文**ダブルクリック**で指定位置から再生 |
+| 文字数表示 | 変換履歴一覧・詳細ヘッダーに**変換文と AI 校正文の文字数**を表示 |
+| 原文 / 校正タブ | 詳細結果で**変換文**と **AI 校正文**をタブ切替で表示 |
 
 ---
 
@@ -301,10 +307,11 @@ curl -X POST http://127.0.0.1:9000/asr \
 
 ## Dashboard の使い方
 
-1. **ダッシュボード**：CPU・メモリ・GPU のリアルタイム監視、Whisper 制御（起動 / 停止 / 再起動 / モデル切り替え）、変換中の進捗バー（変換履歴は「変換履歴」画面で確認）
-2. **変換履歴**：一覧（上部）＋ 変換内容（下部）。行の「表示」で内容表示、「コピー」でコピー、「校正」で保存済み結果に再度 AI 校正を実行、「ゴミ箱」で個別削除、ヘッダー右上の「全削除」で一括クリア
-3. **リアルタイムログ**：Whisper / Dashboard のログをリアルタイム表示
-4. **設定**：既定言語・出力形式・更新間隔・GPU 温度しきい値・**Whisper 高速化**・**AI 校正（Deepseek）**・UI 言語・自動起動
+1. **ダッシュボード**：CPU・メモリ・GPU（利用 / VRAM / **温度**）のリアルタイム監視、**変換 / AI 校正フェーズの色帯**付きトレンドチャート、Whisper 制御（起動 / 停止 / 再起動 / モデル切り替え）、**リアルタイムロギングの開始 / 停止**、変換中の進捗バー（変換履歴は「変換履歴」画面で確認）
+2. **変換履歴**：一覧（上部）＋ 変換内容（下部）。行の「表示」で内容表示、「コピー」でコピー、「校正」で保存済み結果に再度 AI 校正を実行、「音読み」で読み上げ、「ゴミ箱」で個別削除、ヘッダー右上の「全削除」で一括クリア。詳細は**変換文 / AI 校正文をタブ切替**でき、**両方の文字数**を確認可能。**本文のダブルクリック**でその文から読み上げ開始（再生中の読み上げは一時停止 / 再開）
+3. **ログ履歴**：リアルタイムロギングで記録した JSONL を一覧・閲覧・ダウンロード・削除。各行は有効な JSON で **AI がそのまま解析可能**
+4. **リアルタイムログ**：Whisper / Dashboard のログをリアルタイム表示
+5. **設定**：既定言語・出力形式・更新間隔・GPU 温度しきい値・**Whisper 高速化**・**AI 校正（Deepseek）**・UI 言語・自動起動
 
 ---
 
@@ -329,9 +336,15 @@ curl -X POST http://127.0.0.1:9000/asr \
 | POST | `/api/v1/whisper/start` | Whisper 起動 |
 | POST | `/api/v1/whisper/stop` | Whisper 停止 |
 | POST | `/api/v1/whisper/restart` | Whisper 再起動 |
-| POST | `/api/v1/whisper/model` | モデル切り替え `{"model":"small"}`（自動で再起動） |
+| POST | `/api/v1/whisper/model` | モデル切り替え `{"model":"small"}`（自動で再起動。**読込完了まで待機**し、失敗時は旧モデルへ自動復元） |
 | POST | `/api/v1/whisper/status_event` | 変換中ステータス受信（内部用） |
 | POST | `/api/v1/whisper/progress` | 変換進捗 0〜100 受信（内部用。`-1` = AI 校正中） |
+| POST | `/api/v1/tts` | 詳細結果の音読み用 Edge TTS 合成 `{"text":"...","lang":"ja"}` → `{"audio_base64":"...","duration":3.5,"boundaries":[{"t":0,"d":12000000}]}`（文境界付き MP3） |
+| POST | `/api/v1/realtime-log/start` | リアルタイムロギング開始（新規 JSONL 作成） |
+| POST | `/api/v1/realtime-log/stop` | リアルタイムロギング停止（要約統計を追記） |
+| GET | `/api/v1/realtime-log` | ログ一覧（各ファイルの要約 + 現在の記録状態） |
+| GET | `/api/v1/realtime-log/{filename}` | 指定 JSONL の内容を返す（`realtime_YYYYMMDD_HHMMSS.jsonl` のみ許可） |
+| DELETE | `/api/v1/realtime-log/{filename}` | ログファイル削除（記録中のファイルは不可） |
 | POST | `/api/v1/ai/test` | LLM 接続テスト `{"api_key":"...","model":"...","base_url":"..."}` → `{"ok":true,"message":"OK","model":"..."}`（API キー任意＝Ollama 対応） |
 | GET | `/api/v1/llm/profiles` | LLM プロファイル一覧（`active` フラグ付き） |
 | POST | `/api/v1/llm/profiles` | LLM プロファイル追加 `{"name","base_url","api_key?","model"}` |
@@ -350,6 +363,17 @@ curl -X POST http://127.0.0.1:9000/asr \
 | GET | `/api/v1/autostart` | 自動起動状態 |
 | POST | `/api/v1/autostart` | 自動起動 ON/OFF `{"enabled":true}` |
 | WS | `/ws` | リアルタイム通知（system_update / whisper_status / log_line / new_record / converting） |
+
+### リアルタイムロギングの保存形式（JSONL / NDJSON）
+
+`dashboard/logs/realtime/realtime_YYYYMMDD_HHMMSS.jsonl` に記録されます。**各行 = 1 つの有効な JSON オブジェクト**なので、Python / AI が `json.loads()` で 1 行ずつそのまま解析できます。
+
+| 行タイプ | 内容 |
+|---|---|
+| `{"type":"meta","event":"session_start",...}` | 先頭。記録開始時刻・モデル名 |
+| `{"type":"sample",...}` | 2 秒毎。CPU / GPU（利用・VRAM・温度・クロック・消費電力）/ メモリ / ディスク / Whisper 稼働 / 変換状態 / フェーズ（idle・transcribe・correct）/ 進捗% |
+| `{"type":"event","event":"converting_start"\|"correct_start"\|"correct_end"\|"converting_end",...}` | 変換 / AI 校正の境界イベント |
+| `{"type":"meta","event":"session_end",...}` | 末尾。サンプル数・記録時間・平均 CPU / GPU 利用 / GPU 温度 |
 
 ---
 
@@ -389,9 +413,12 @@ Dashboard の「Whisper 服务控制」でモデルを選択して「モデル�
 | base | 約 142MB | 低～中 / 高速 | 1GB |
 | small | 約 466MB | 中 / 普通 | 2GB |
 | medium | 約 1.5GB | 高 / 低速 | 5GB |
-| large-v2/v3 | 約 3GB | 最高 / 最遅 | 8GB 以上 |
+| large-v3-turbo | 約 1.6GB | 高 / 高速 | 5GB |
+| large-v3 | 約 3GB | 最高 / 最遅 | 6GB（int8_float16） |
 
-> GTX 1660 Ti 6GB では **small / medium** が安定して動作します。
+> GTX 1660 Ti 6GB では **small / medium / large-v3-turbo** が安定して動作します。
+> **large-v3** は `int8_float16`（約 4GB VRAM）で動作しますが、変換に時間がかかります。`float16` は VRAM 不足で読込に失敗します。
+> モデル切替時は**読込完了まで待機**し、読込に失敗した場合は**自動で前のモデルに復元**します。
 
 ## Whisper 高速化（モード切替 + 詳細設定）
 
@@ -446,6 +473,11 @@ Linux:   bash stop_all.sh を実行
 - 設定で ON + API Key が正しいか確認
 - `server.log` に `[AI correct]` のログが出ているか確認
 
+### モデル切替が失敗する / Whisper が停止したまま
+- 大規模モデル（large-v3 など）は VRAM 不足で読込に失敗することがあります。切替は**自動で前のモデルに復元**します
+- `int8_float16` / `int8` にするか、`large-v3-turbo`・`medium` など小型モデルに切り替えてください
+- `server.log` の `Loading Whisper model...` 以降にエラーが出ていないか確認してください
+
 ---
 
 # ファイル構成
@@ -473,6 +505,7 @@ whisper_server/
     ├── app.py                 # Dashboard バックエンド（ポート 9001）
     ├── data/records.db        # SQLite データベース（自動生成）
     ├── logs/                  # Dashboard ログ（自動生成）
+    │   └── realtime/          # リアルタイムロギング JSONL（自動生成）
     └── static/
         ├── index.html         # メイン画面
         ├── css/style.css      # スタイル

@@ -5,6 +5,7 @@ import json
 import time
 import asyncio
 import secrets
+import base64
 import sqlite3
 import threading
 import subprocess
@@ -16,6 +17,7 @@ from typing import Optional, List, Dict, Any
 
 import psutil
 import aiohttp
+import edge_tts
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Request, Form, Query, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -64,11 +66,25 @@ system_history: Dict[str, List[Any]] = {
     "gpu_util": [],
     "gpu_mem": [],
     "gpu_temp": [],
+    "phase": [],  # 各サンプルの変換フェーズ（idle/transcribe/correct）→ チャート帯描画用
     "timestamps": [],
 }
 MAX_HISTORY = 480  # 趋势图历史点数上限（2s 间隔 ≈ 16 分钟；配合前端 zoom 档位）
 whisper_proc_cache: Optional[dict] = None
 whisper_proc_cache_time: float = 0
+
+# リアルタイムロギング状態（JSONL 記録）
+rt_log: Dict[str, Any] = {
+    "active": False,
+    "file": None,          # 書き込み中のファイルハンドル
+    "path": None,          # 書き込み中のファイル Path
+    "start_ts": None,      # セッション開始 epoch 秒
+    "samples": 0,
+    "agg": {"cpu": 0.0, "gpu_util": 0.0, "gpu_mem": 0.0, "gpu_temp": 0.0},
+    "whisper_model": "",
+    "last_start_ts": None, # 直近の converting_start start_ts（duration 計算用）
+}
+RT_LOG_DIR = LOGS_DIR / "realtime"
 
 # --- 认证（写入・制御系のみ） ---
 _dashboard_token: Optional[str] = None
@@ -173,10 +189,11 @@ def init_db():
                 elapsed_seconds REAL,
                 model TEXT,
                 llm_model TEXT,
-                correct_elapsed REAL
+                correct_elapsed REAL,
+                raw_result TEXT
             )
         """)
-        # 兼容旧数据库：如果没有 model/llm_model/correct_elapsed 列则添加
+        # 兼容旧数据库：如果没有 model/llm_model/correct_elapsed/raw_result 列则添加
         cols = [row[1] for row in conn.execute("PRAGMA table_info(records)")]
         if "model" not in cols:
             conn.execute("ALTER TABLE records ADD COLUMN model TEXT")
@@ -184,6 +201,8 @@ def init_db():
             conn.execute("ALTER TABLE records ADD COLUMN llm_model TEXT")
         if "correct_elapsed" not in cols:
             conn.execute("ALTER TABLE records ADD COLUMN correct_elapsed REAL")
+        if "raw_result" not in cols:
+            conn.execute("ALTER TABLE records ADD COLUMN raw_result TEXT")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS config (
                 key TEXT PRIMARY KEY,
@@ -319,8 +338,8 @@ async def add_record(payload: dict):
     whisper_model = await get_config("whisper_model", "medium")
     async with aiosqlite.connect(str(DB_PATH)) as db:
         await db.execute("""
-            INSERT INTO records (filename, duration, language, output_format, summary, result, timestamp, elapsed_seconds, model, llm_model, correct_elapsed)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO records (filename, duration, language, output_format, summary, result, raw_result, timestamp, elapsed_seconds, model, llm_model, correct_elapsed)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             payload.get("filename"),
             payload.get("duration"),
@@ -328,6 +347,7 @@ async def add_record(payload: dict):
             payload.get("output_format"),
             payload.get("summary"),
             payload.get("result"),
+            payload.get("raw_result") or payload.get("result"),
             payload.get("timestamp"),
             payload.get("elapsed_seconds"),
             whisper_model,
@@ -658,6 +678,41 @@ async def tail_log(file_path: Path, last_size: int = 0) -> tuple:
 
 
 # ---------------------------------------------------------------------------
+# リアルタイムロギング（JSONL / AI 解析可能）
+# ---------------------------------------------------------------------------
+def _rt_current_phase() -> str:
+    """現在の変換フェーズ。AI 校正中は progress が -1 で通知される。"""
+    if _progress_percent == -1:
+        return "correct"
+    if is_converting:
+        return "transcribe"
+    return "idle"
+
+
+def _rt_write(data: dict) -> bool:
+    """ロギング有効時のみ JSONL 1 行を追記。書込んだら True。"""
+    global rt_log
+    if not rt_log["active"] or rt_log["file"] is None:
+        return False
+    try:
+        rt_log["file"].write(json.dumps(data, ensure_ascii=False) + "\n")
+        rt_log["file"].flush()
+        return True
+    except Exception as e:
+        print(f"[realtime-log] write error: {e}")
+        return False
+
+
+def _rt_log_event(event: str, **fields) -> None:
+    """変換/校正の境界イベント行（converting_start / correct_start / correct_end / converting_end）。"""
+    if not rt_log["active"]:
+        return
+    row = {"type": "event", "event": event, "ts": datetime.now().isoformat()}
+    row.update(fields)
+    _rt_write(row)
+
+
+# ---------------------------------------------------------------------------
 # 后台任务
 # ---------------------------------------------------------------------------
 async def monitor_loop():
@@ -677,6 +732,7 @@ async def monitor_loop():
             system_history["gpu_util"].append(gpu.get("utilization", 0) if "error" not in gpu else 0)
             system_history["gpu_mem"].append(round(gpu.get("memory_used_mb", 0) / max(gpu.get("memory_total_mb", 1), 1) * 100, 1) if "error" not in gpu else 0)
             system_history["gpu_temp"].append(gpu.get("temperature", 0) if "error" not in gpu else 0)
+            system_history["phase"].append(_rt_current_phase())
             for key in system_history:
                 if len(system_history[key]) > MAX_HISTORY:
                     system_history[key] = system_history[key][-MAX_HISTORY:]
@@ -702,6 +758,37 @@ async def monitor_loop():
                     "process": proc_info,
                 }
             })
+
+            # リアルタイムロギング：アクティブ時のみ 2 秒毎のサンプル行を追記
+            if rt_log["active"]:
+                phase = _rt_current_phase()
+                g = gpu if "error" not in gpu else {}
+                gpu_mem_pct = round(g.get("memory_used_mb", 0) / max(g.get("memory_total_mb", 1), 1) * 100, 1) if g else 0
+                rt_log["samples"] += 1
+                rt_log["agg"]["cpu"] += snapshot["cpu_percent"]
+                rt_log["agg"]["gpu_util"] += g.get("utilization", 0)
+                rt_log["agg"]["gpu_mem"] += gpu_mem_pct
+                rt_log["agg"]["gpu_temp"] += g.get("temperature", 0)
+                _rt_write({
+                    "type": "sample",
+                    "ts": datetime.now().isoformat(),
+                    "cpu_percent": snapshot["cpu_percent"],
+                    "cpu_freq_mhz": snapshot.get("cpu_freq_mhz"),
+                    "memory_percent": snapshot["memory_percent"],
+                    "memory_used_gb": snapshot.get("memory_used_gb"),
+                    "disk_percent": snapshot.get("disk_percent"),
+                    "gpu_util": g.get("utilization", 0),
+                    "gpu_mem_percent": gpu_mem_pct,
+                    "gpu_mem_used_mb": g.get("memory_used_mb", 0),
+                    "gpu_temp": g.get("temperature", 0),
+                    "gpu_clock_mhz": g.get("clock_mhz", 0),
+                    "gpu_power_w": g.get("power_w", 0),
+                    "whisper_running": health is not None,
+                    "whisper_model": (health or {}).get("model") if health else None,
+                    "converting": is_converting,
+                    "phase": phase,
+                    "progress": _progress_percent,
+                })
 
             # 日志推送
             new_lines, whisper_log_size = await tail_log(WHISPER_LOG, whisper_log_size)
@@ -812,9 +899,21 @@ async def api_whisper_status_event(data: dict):
     converting 時に start_ts / filename を透過し、フロントでリアルタイム監視に利用する。"""
     global is_converting, _progress_percent
     state = str(data.get("state", ""))
+    was_converting = is_converting
+    was_correcting = _progress_percent == -1  # 校正中（progress=-1）に変換終了した場合 correct_end を補完
     is_converting = state == "converting"
     # 转换开始：进度归零；转换结束：进度隐藏
     _progress_percent = 0 if is_converting else None
+    # リアルタイムロギング：変換開始/終了イベント
+    if is_converting and not was_converting:
+        rt_log["last_start_ts"] = data.get("start_ts")
+        _rt_log_event("converting_start", filename=data.get("filename"), start_ts=data.get("start_ts"))
+    elif not is_converting and was_converting:
+        if was_correcting:
+            _rt_log_event("correct_end", reason="converting_end")
+        _rt_log_event("converting_end",
+                      duration_sec=round(time.time() - rt_log["last_start_ts"], 2) if rt_log["last_start_ts"] else None)
+        rt_log["last_start_ts"] = None
     payload = {"type": "converting", "state": state, "percent": _progress_percent}
     for k in ("start_ts", "filename"):
         if data.get(k) is not None:
@@ -829,12 +928,155 @@ async def api_whisper_progress(data: dict):
     phase（transcribe/correct）と duration（音声時間）を透過し、フロントのリアルタイム監視に利用する。"""
     global _progress_percent
     percent = data.get("percent")
+    was_correcting = _progress_percent == -1
     _progress_percent = percent
+    # リアルタイムロギング：AI 校正の開始/終了イベント（校正中は progress=-1 で通知）
+    now_correcting = percent == -1
+    if now_correcting and not was_correcting:
+        _rt_log_event("correct_start")
+    elif was_correcting and not now_correcting:
+        _rt_log_event("correct_end")
     payload = {"type": "progress", "percent": percent}
     for k in ("phase", "duration"):
         if data.get(k) is not None:
             payload[k] = data[k]
     await broadcast(payload)
+    return {"success": True}
+
+
+# ---------------------------------------------------------------------------
+# リアルタイムロギング（JSONL / AI 解析可能）
+# ---------------------------------------------------------------------------
+_RTLOG_NAME_RE = re.compile(r"^realtime_\d{8}_\d{6}\.jsonl$")
+
+
+def _rt_parse_meta(path: Path) -> dict:
+    """JSONL の先頭（session_start）と末尾（session_end）から要約情報を抽出。"""
+    info: Dict[str, Any] = {"name": path.name, "size": path.stat().st_size, "mtime": path.stat().st_mtime}
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            lines = [ln for ln in f if ln.strip()]
+        if lines:
+            first = json.loads(lines[0])
+            if first.get("type") == "meta" and first.get("event") == "session_start":
+                info["started_at"] = first.get("ts")
+                if first.get("whisper_model"):
+                    info["whisper_model"] = first.get("whisper_model")
+        if len(lines) >= 2:
+            last = json.loads(lines[-1])
+            if last.get("type") == "meta" and last.get("event") == "session_end":
+                for k in ("samples", "duration_sec", "avg_cpu", "avg_gpu_util", "avg_gpu_mem", "avg_gpu_temp", "ended_at"):
+                    if last.get(k) is not None:
+                        info[k] = last.get(k)
+    except Exception:
+        pass
+    return info
+
+
+@app.post("/api/v1/realtime-log/start", dependencies=[Depends(require_auth)])
+async def api_rtlog_start():
+    """ロギング開始。新規 JSONL ファイルを作成し meta session_start を書く。"""
+    global rt_log
+    if rt_log["active"]:
+        return JSONResponse({"success": False, "message": "already active"}, status_code=409)
+    RT_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    name = f"realtime_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl"
+    path = RT_LOG_DIR / name
+    health = await whisper_health()
+    model = (health or {}).get("model")
+    rt_log.update({
+        "active": True,
+        "file": None,
+        "path": path,
+        "start_ts": time.time(),
+        "samples": 0,
+        "agg": {"cpu": 0.0, "gpu_util": 0.0, "gpu_mem": 0.0, "gpu_temp": 0.0},
+        "whisper_model": model or "",
+        "last_start_ts": None,
+    })
+    rt_log["file"] = open(path, "w", encoding="utf-8")
+    _rt_write({
+        "type": "meta", "event": "session_start",
+        "ts": datetime.now().isoformat(),
+        "whisper_model": model,
+        "whisper_running": health is not None,
+    })
+    return {"success": True, "filename": name}
+
+
+@app.post("/api/v1/realtime-log/stop", dependencies=[Depends(require_auth)])
+async def api_rtlog_stop():
+    """ロギング終了。meta session_end（要約統計）を書き込み active を解除。"""
+    global rt_log
+    if not rt_log["active"]:
+        return JSONResponse({"success": False, "message": "not active"}, status_code=409)
+    samples = rt_log["samples"]
+    duration_sec = round(time.time() - rt_log["start_ts"], 2) if rt_log["start_ts"] else 0
+    agg = rt_log["agg"]
+    n = max(samples, 1)
+    _rt_write({
+        "type": "meta", "event": "session_end",
+        "ts": datetime.now().isoformat(),
+        "samples": samples,
+        "duration_sec": duration_sec,
+        "avg_cpu": round(agg["cpu"] / n, 1),
+        "avg_gpu_util": round(agg["gpu_util"] / n, 1),
+        "avg_gpu_mem": round(agg["gpu_mem"] / n, 1),
+        "avg_gpu_temp": round(agg["gpu_temp"] / n, 1),
+    })
+    name = rt_log["path"].name if rt_log["path"] else None
+    try:
+        rt_log["file"].close()
+    except Exception:
+        pass
+    rt_log.update({
+        "active": False, "file": None, "path": None, "start_ts": None,
+        "samples": 0, "agg": {"cpu": 0.0, "gpu_util": 0.0, "gpu_mem": 0.0, "gpu_temp": 0.0},
+        "whisper_model": "", "last_start_ts": None,
+    })
+    return {"success": True, "filename": name, "samples": samples, "duration_sec": duration_sec}
+
+
+@app.get("/api/v1/realtime-log")
+async def api_rtlog_list():
+    """ログ一覧（各ファイルの要約 + 現在の active 状態）。認証なしで閲覧可。"""
+    files: List[dict] = []
+    if RT_LOG_DIR.exists():
+        for path in sorted(RT_LOG_DIR.glob("realtime_*.jsonl"), reverse=True):
+            files.append(_rt_parse_meta(path))
+    active = None
+    if rt_log["active"]:
+        active = {
+            "filename": rt_log["path"].name if rt_log["path"] else None,
+            "started_at": datetime.fromtimestamp(rt_log["start_ts"]).isoformat() if rt_log["start_ts"] else None,
+            "samples": rt_log["samples"],
+            "whisper_model": rt_log["whisper_model"],
+        }
+    return {"active": active, "files": files}
+
+
+@app.get("/api/v1/realtime-log/{filename}")
+async def api_rtlog_content(filename: str):
+    """JSONL 内容をそのまま返す（PlainText）。AI が json.loads で 1 行ずつ解析可能。"""
+    if not _RTLOG_NAME_RE.match(filename):
+        raise HTTPException(status_code=400, detail="invalid filename")
+    path = RT_LOG_DIR / filename
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="not found")
+    return PlainTextResponse(path.read_text(encoding="utf-8", errors="ignore"))
+
+
+@app.delete("/api/v1/realtime-log/{filename}", dependencies=[Depends(require_auth)])
+async def api_rtlog_delete(filename: str):
+    """ログファイル削除。記録中のファイルは削除不可。"""
+    if not _RTLOG_NAME_RE.match(filename):
+        raise HTTPException(status_code=400, detail="invalid filename")
+    if rt_log["active"] and rt_log["path"] and rt_log["path"].name == filename:
+        raise HTTPException(status_code=409, detail="active log cannot be deleted")
+    path = RT_LOG_DIR / filename
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="not found")
+    path.unlink()
     return {"success": True}
 
 
@@ -1012,6 +1254,75 @@ async def api_ollama_models(base_url: str = "http://localhost:11434/v1"):
                 return {"success": False, "error": f"Ollama HTTP {resp.status}"}
     except Exception as e:
         return {"success": False, "error": str(e)[:120]}
+
+
+# ---------------------------------------------------------------------------
+# 詳細結果の読み上げ（Microsoft Edge TTS / 女性ニューラル音声）
+# ---------------------------------------------------------------------------
+# 言語（ISO 639-1）→ Edge TTS 女性音声。未対応言語は日本語女性音声にフォールバック
+TTS_VOICES = {
+    "ja": "ja-JP-NanamiNeural",
+    "zh": "zh-CN-XiaoxiaoNeural",
+    "en": "en-US-JennyNeural",
+    "ko": "ko-KR-SunHiNeural",
+    "es": "es-ES-ElviraNeural",
+    "fr": "fr-FR-DeniseNeural",
+    "de": "de-DE-KatjaNeural",
+    "ru": "ru-RU-SvetlanaNeural",
+    "it": "it-IT-ElsaNeural",
+    "pt": "pt-BR-FranciscaNeural",
+    "id": "id-ID-GadisNeural",
+    "vi": "vi-VN-HoaiMyNeural",
+    "th": "th-TH-PremwadeeNeural",
+    "tr": "tr-TR-EmelNeural",
+    "nl": "nl-NL-FennaNeural",
+    "pl": "pl-PL-ZofiaNeural",
+}
+TTS_MAX_CHARS = 5000  # 1 リクエストあたりの最大文字数（クライアント側で分割して連続再生）
+
+
+class TTSRequest(BaseModel):
+    text: str
+    lang: str = ""
+
+
+@app.post("/api/v1/tts", dependencies=[Depends(require_auth)])
+async def api_tts(req: TTSRequest):
+    """Edge TTS でテキストを音声合成し、音声（MP3 base64）＋文境界情報を返却。
+
+    SentenceBoundary（offset/duration）を文単位の読み上げ位置として返し、
+    フロントは再生位置に応じて詳細結果本文の該当文を下線ハイライトする。
+    ブラウザから直接呼べない（CORS 無し）ためバックエンドで合成する。
+    """
+    text = (req.text or "").strip()
+    if not text:
+        raise HTTPException(400, "text is required")
+    if len(text) > TTS_MAX_CHARS:
+        raise HTTPException(400, f"text too long (max {TTS_MAX_CHARS} chars)")
+    key = (req.lang or "").split("-")[0].lower()
+    voice = TTS_VOICES.get(key, TTS_VOICES["ja"])
+    try:
+        communicate = edge_tts.Communicate(text, voice)
+        audio_parts = []
+        boundaries = []  # {t: 開始秒, d: 継続秒}
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_parts.append(chunk["data"])
+            elif chunk["type"] == "SentenceBoundary":
+                boundaries.append({
+                    "t": round(chunk.get("offset", 0) / 1e7, 3),
+                    "d": round(chunk.get("duration", 0) / 1e7, 3),
+                })
+        audio_b64 = base64.b64encode(b"".join(audio_parts)).decode("ascii")
+        duration = round((boundaries[-1]["t"] + boundaries[-1]["d"]), 3) if boundaries else 0.0
+        return {
+            "audio_base64": audio_b64,
+            "duration": duration,
+            "boundaries": boundaries,
+        }
+    except Exception as e:
+        print(f"[tts] Edge TTS error: {e}")
+        raise HTTPException(502, f"Edge TTS synthesis failed: {e}")
 
 
 async def reset_conversion_state():
@@ -1236,15 +1547,39 @@ async def api_download_model(model_name: str):
 
 @app.post("/api/v1/whisper/model", dependencies=[Depends(require_auth)])
 async def api_whisper_model(data: dict):
-    """切换 Whisper 模型：保存配置并重启服务"""
+    """切换 Whisper 模型：保存配置并重启服务。
+
+    モデル読込（large-v3 は 20〜30秒超）が完了して /health が応答するまで
+    ポーリングし、実際の成否を返す。読込失敗時は旧モデルに復元して再起動する
+    （VRAM 不足・モデル破損で whisper が落ちたままにならないよう自動復旧）。
+    """
     model = str(data.get("model", "")).strip()
     if model not in ALLOWED_MODELS:
         return {"success": False, "message": f"unsupported model: {model}"}
+    prev_model = str(await get_config("whisper_model") or "medium")
     await set_config("whisper_model", model)
     stop_whisper_process()
     await asyncio.sleep(1)
     p = start_whisper_process()
-    return {"success": True, "message": f"switching to {model}", "model": model, "pid": p.pid}
+    # モデル読込完了（uvicorn 起動）まで 1 秒間隔でヘルスチェック
+    for _ in range(40):
+        await asyncio.sleep(1)
+        health = await whisper_health()
+        if health is not None:
+            return {"success": True, "message": f"ready ({model})", "model": model, "pid": p.pid, "health": health}
+    # 読込失敗：旧モデルへ復元して再起動（whisper を止めたままにしない）
+    print(f"[model-switch] {model} failed to load, reverting to {prev_model}")
+    await set_config("whisper_model", prev_model)
+    stop_whisper_process()
+    await asyncio.sleep(1)
+    p2 = start_whisper_process()
+    return {
+        "success": False,
+        "message": f"{model} の読込に失敗しました。{prev_model} に復元して再起動しています（VRAM 不足・モデル破損の可能性）",
+        "model": prev_model,
+        "pid": p2.pid,
+        "reverted": True,
+    }
 
 
 class RecordPayload(BaseModel):
@@ -1254,6 +1589,7 @@ class RecordPayload(BaseModel):
     output_format: Optional[str] = None
     summary: Optional[str] = None
     result: Optional[str] = None
+    raw_result: Optional[str] = None
     timestamp: Optional[str] = None
     elapsed_seconds: Optional[float] = None
     llm_model: Optional[str] = None
@@ -1314,7 +1650,7 @@ async def api_correct_record(record_id: int):
             row = await cursor.fetchone()
     if not row:
         return {"success": False, "error": "record not found"}
-    text = row["result"] or ""
+    text = row["raw_result"] or row["result"] or ""
     if not text.strip():
         return {"success": False, "error": "empty result"}
     try:

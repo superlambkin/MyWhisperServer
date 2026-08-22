@@ -66,8 +66,8 @@ async def report_progress(percent: float, phase: str = "transcribe", duration: O
         pass
 
 
-async def report_record(filename: str, duration: float, language: str, output_format: str, result: str, elapsed: float, llm_model: Optional[str] = None, correct_elapsed: float = 0.0):
-    """将转写记录上报到 Dashboard"""
+async def report_record(filename: str, duration: float, language: str, output_format: str, result: str, elapsed: float, llm_model: Optional[str] = None, correct_elapsed: float = 0.0, raw_result: Optional[str] = None):
+    """将转写记录上报到 Dashboard（raw_result=AI校正前の原文。未校正なら result と同じ）"""
     if not DASHBOARD_URL:
         return
     try:
@@ -78,6 +78,7 @@ async def report_record(filename: str, duration: float, language: str, output_fo
             "output_format": output_format,
             "summary": result[:200],
             "result": result,
+            "raw_result": raw_result or result,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "elapsed_seconds": elapsed,
             "llm_model": llm_model,
@@ -319,8 +320,10 @@ async def asr(
                 end = format_srt_time(seg.end)
                 lines.append(f"{i}\n{start} --> {end}\n{seg.text.strip()}\n")
             result_text = "\n".join(lines)
+            raw_result_text = result_text
         else:
             result_text = " ".join(seg.text.strip() for seg in segments)
+            raw_result_text = result_text
             # AI 校正（仅对纯文本结果生效，SRT 含时间轴不做校正）
             # 用 -1 作为"校正中"信号，让 Dashboard 显示"校正中..."而非卡在 100%
             await report_progress(-1, phase="correct")
@@ -330,7 +333,7 @@ async def asr(
 
         elapsed = time.time() - start_time
 
-        # 异步上报到 Dashboard
+        # 异步上报到 Dashboard（raw_result に AI 校正前の原文を記録）
         await report_record(
             filename=audio_file.filename,
             duration=duration,
@@ -340,6 +343,7 @@ async def asr(
             elapsed=elapsed,
             llm_model=llm_model if output == "txt" else None,
             correct_elapsed=correct_elapsed,
+            raw_result=raw_result_text,
         )
 
         return PlainTextResponse(result_text)

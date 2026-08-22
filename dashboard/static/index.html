@@ -10,7 +10,7 @@
     <script src="/static/vendor/tailwind.js?v=30"></script>
     <script src="/static/vendor/chart.umd.min.js?v=30"></script>
     <link rel="stylesheet" href="/static/vendor/fonts.css?v=30">
-    <link rel="stylesheet" href="/static/css/style.css?v=30">
+    <link rel="stylesheet" href="/static/css/style.css?v=37">
 </head>
 <body class="text-stone-100 font-manrope overflow-hidden">
     <div class="flex h-screen">
@@ -44,6 +44,10 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     <span data-i18n="nav.logs">实时日志</span>
                 </a>
+                <a href="#logging" class="nav-link" data-section="logging">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span data-i18n="nav.logging">记录日志</span>
+                </a>
                 <a href="#settings" class="nav-link" data-section="settings">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     <span data-i18n="nav.settings">设置</span>
@@ -58,7 +62,10 @@
                 <div class="glass-card p-4 rounded-xl">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-xs text-stone-400" data-i18n="sidebar.whisper_service">Whisper 服务</span>
-                        <span id="sidebar-status-dot" class="w-2 h-2 rounded-full bg-stone-500"></span>
+                        <div class="flex items-center gap-2">
+                            <span id="sidebar-eq" class="eq hidden" aria-hidden="true"><span class="eq-bar"></span><span class="eq-bar"></span><span class="eq-bar"></span></span>
+                            <span id="sidebar-status-dot" class="w-2 h-2 rounded-full bg-stone-500"></span>
+                        </div>
                     </div>
                     <div id="sidebar-status-text" class="text-sm font-medium" data-i18n="status.checking">检查中...</div>
                 </div>
@@ -323,8 +330,15 @@
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
                         <div id="trend-card" class="glass-card p-6 rounded-2xl flex flex-col min-h-0">
                             <div class="flex items-center justify-between mb-4 shrink-0">
-                                <h3 class="text-lg font-semibold" data-i18n="realtime.trend">实时趋势</h3>
+                                <div class="flex items-center gap-3">
+                                    <h3 class="text-lg font-semibold" data-i18n="realtime.trend">实时趋势</h3>
+                                    <span id="realtime-phase" class="phase-pill phase-idle" data-i18n="realtime.phase_idle">待机</span>
+                                </div>
                                 <div class="flex items-center gap-2">
+                                    <button id="btn-realtime-log" class="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-xs text-stone-300 transition-all flex items-center gap-1.5" title="">
+                                        <span class="rec-dot"></span>
+                                        <span data-i18n="realtime.log_start">开始记录</span>
+                                    </button>
                                     <button id="btn-trend-shrink" class="px-2 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-xs text-stone-300 transition-all" data-i18n="realtime.shrink">缩小</button>
                                     <button id="btn-trend-expand" class="px-2 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-xs text-stone-300 transition-all" data-i18n="realtime.expand">放大</button>
                                 </div>
@@ -368,8 +382,8 @@
                                     </button>
                                 </div>
                             </div>
-                            <div id="model-info" class="text-xs text-stone-500 mb-4"></div>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div id="model-info" class="text-sm text-stone-500 mb-4"></div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-base">
                                 <div class="bg-stone-900/50 rounded-xl p-3">
                                     <span class="text-stone-400 block" data-i18n="whisper.status">状态</span>
                                     <span id="whisper-status" class="font-medium">--</span>
@@ -390,22 +404,22 @@
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
                                     <div class="bg-stone-900/50 rounded-xl p-3 border border-white/10">
                                         <div class="text-stone-400 text-xs mb-1" data-i18n="live.duration">音声時間</div>
-                                        <div id="live-duration" class="font-mono text-xl font-bold text-amber-300">--s</div>
+                                        <div id="live-duration" class="font-mono text-xl font-bold text-amber-300">--:--</div>
                                     </div>
                                     <div class="bg-stone-900/50 rounded-xl p-3 border border-white/10">
                                         <div class="text-stone-400 text-xs mb-1" data-i18n="live.convert">変換時間</div>
-                                        <div id="live-convert" class="font-mono text-xl font-bold text-emerald-300">0.0s</div>
+                                        <div id="live-convert" class="font-mono text-xl font-bold text-emerald-300">0:00</div>
                                     </div>
                                     <div class="bg-stone-900/50 rounded-xl p-3 border border-white/10">
                                         <div class="text-stone-400 text-xs mb-1" data-i18n="live.correct">AI 校正</div>
-                                        <div id="live-correct" class="font-mono text-xl font-bold text-fuchsia-300">0.0s</div>
+                                        <div id="live-correct" class="font-mono text-xl font-bold text-fuchsia-300">0:00</div>
                                     </div>
                                     <div class="bg-stone-900/50 rounded-xl p-3 border border-white/10">
                                         <div class="text-stone-400 text-xs mb-1" data-i18n="live.elapsed">処理時間</div>
-                                        <div id="live-elapsed" class="font-mono text-xl font-bold text-cyan-300">0.0s</div>
+                                        <div id="live-elapsed" class="font-mono text-xl font-bold text-cyan-300">0:00</div>
                                     </div>
                                 </div>
-                                <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-stone-400">
+                                <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-stone-400">
                                     <span class="flex items-center gap-1 min-w-0">
                                         <span data-i18n="live.file">ファイル</span>
                                         <span id="live-file" class="font-mono text-stone-300 truncate max-w-[200px]">--</span>
@@ -494,11 +508,12 @@
                                         <th class="pb-3 font-medium" data-i18n="records.elapsed">処理時間</th>
                                         <th class="pb-3 font-medium" data-i18n="records.speed">转换速度</th>
                                         <th class="pb-3 font-medium" data-i18n="records.summary">结果摘要</th>
+                                        <th class="pb-3 font-medium" data-i18n="records.chars">字数</th>
                                         <th class="pb-3 font-medium" data-i18n="records.action">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody id="records-table-body" class="divide-y divide-white/5">
-                                    <tr><td colspan="11" class="py-8 text-center text-stone-500" data-i18n="records.empty">暂无记录</td></tr>
+                                    <tr><td colspan="12" class="py-8 text-center text-stone-500" data-i18n="records.empty">暂无记录</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -510,11 +525,19 @@
                             <h4 class="font-semibold" data-i18n="records.detail">完整结果</h4>
                             <div class="flex items-center gap-3">
                                 <span id="record-content-meta" class="text-xs text-stone-400"></span>
+                                <button id="btn-read-content" class="px-3 py-1.5 rounded-lg bg-fuchsia-500/20 text-fuchsia-300 text-sm hover:bg-fuchsia-500/30 transition-all flex items-center gap-1.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"></path></svg>
+                                    <span data-i18n="records.read">音読み</span>
+                                </button>
                                 <button id="btn-copy-content" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 text-sm hover:bg-cyan-500/30 transition-all">
                                     <span data-i18n="records.copy">复制文本</span>
                                 </button>
                                 <button id="btn-close-content" class="px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-sm transition-all" data-i18n="records.close">关闭</button>
                             </div>
+                        </div>
+                        <div class="flex items-center gap-2 mb-3">
+                            <button id="btn-tab-content-raw" class="result-tab result-tab-active" onclick="switchResultTab('content', 'raw')" data-i18n="records.tab_raw">转换结果</button>
+                            <button id="btn-tab-content-corrected" class="result-tab" onclick="switchResultTab('content', 'corrected')" data-i18n="records.tab_corrected">AI校正结果</button>
                         </div>
                         <div class="overflow-y-auto custom-scrollbar max-h-[50vh]">
                             <pre id="record-content" class="font-mono text-sm whitespace-pre-wrap text-stone-300 bg-stone-900/50 p-4 rounded-xl"></pre>
@@ -525,8 +548,15 @@
                     <div id="record-detail-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
                         <div class="glass-card max-w-3xl w-full max-h-[55vh] overflow-hidden rounded-2xl flex flex-col">
                             <div class="p-4 border-b border-white/10 flex items-center justify-between">
-                                <h4 class="font-semibold" data-i18n="records.detail">完整结果</h4>
+                                <h4 class="font-semibold flex items-center gap-2">
+                                    <span data-i18n="records.detail">完整结果</span>
+                                    <span id="record-detail-chars" class="text-xs text-stone-400 font-normal"></span>
+                                </h4>
                                 <div class="flex items-center gap-2">
+                                    <button id="btn-read-modal" class="px-3 py-1.5 rounded-lg bg-fuchsia-500/20 text-fuchsia-300 text-sm hover:bg-fuchsia-500/30 transition-all flex items-center gap-1.5">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"></path></svg>
+                                        <span data-i18n="records.read">音読み</span>
+                                    </button>
                                     <button id="btn-copy-modal" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 text-sm hover:bg-cyan-500/30 transition-all">
                                         <span data-i18n="records.copy">复制文本</span>
                                     </button>
@@ -534,6 +564,10 @@
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                     </button>
                                 </div>
+                            </div>
+                            <div class="px-4 pt-4 flex items-center gap-2">
+                                <button id="btn-tab-detail-raw" class="result-tab result-tab-active" onclick="switchResultTab('detail', 'raw')" data-i18n="records.tab_raw">转换结果</button>
+                                <button id="btn-tab-detail-corrected" class="result-tab" onclick="switchResultTab('detail', 'corrected')" data-i18n="records.tab_corrected">AI校正结果</button>
                             </div>
                             <div class="p-4 overflow-y-auto flex-1">
                                 <pre id="record-detail-content" class="font-mono text-sm whitespace-pre-wrap text-stone-300 bg-stone-900/50 p-4 rounded-xl"></pre>
@@ -558,6 +592,33 @@
                         </div>
                         <div id="log-terminal" class="flex-1 bg-stone-950 rounded-xl p-4 font-mono text-xs overflow-y-auto custom-scrollbar border border-white/10">
                             <div class="text-stone-500" data-i18n="logs.waiting">等待日志...</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Realtime Logging Section（JSONL 記録の一覧・閲覧・DL・削除） -->
+                <section id="logging" class="section hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 h-[calc(100vh-140px)]">
+                        <div class="glass-card p-5 rounded-2xl lg:col-span-2 flex flex-col min-h-0">
+                            <div class="flex items-center justify-between mb-4 shrink-0">
+                                <h3 class="text-lg font-semibold" data-i18n="logging.title">记录日志</h3>
+                                <button id="btn-refresh-logs" class="px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-sm transition-all" data-i18n="logging.refresh">刷新</button>
+                            </div>
+                            <div id="rtlog-list" class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                                <div class="text-sm text-stone-500" data-i18n="logging.empty">暂无记录</div>
+                            </div>
+                        </div>
+                        <div class="glass-card p-5 rounded-2xl lg:col-span-3 flex flex-col min-h-0">
+                            <div class="flex items-center justify-between mb-4 shrink-0">
+                                <h3 id="rtlog-detail-title" class="text-base font-semibold text-stone-400 truncate" data-i18n="logging.select_hint">选择左侧日志查看内容</h3>
+                                <div id="rtlog-detail-actions" class="flex items-center gap-2 shrink-0 hidden">
+                                    <button id="btn-download-log" class="px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 text-sm transition-all" data-i18n="logging.download">下载</button>
+                                    <button id="btn-copy-log" class="px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-sm transition-all" data-i18n="logging.copy">复制</button>
+                                    <button id="btn-delete-log" class="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-sm transition-all" data-i18n="logging.delete">删除</button>
+                                </div>
+                            </div>
+                            <div id="rtlog-summary" class="mb-3 shrink-0"></div>
+                            <pre id="rtlog-content" class="flex-1 bg-stone-950 rounded-xl p-4 font-mono text-xs overflow-auto custom-scrollbar border border-white/10 whitespace-pre-wrap break-all"></pre>
                         </div>
                     </div>
                 </section>
@@ -843,6 +904,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=41"></script>
+    <script src="/static/js/app.js?v=54"></script>
 </body>
 </html>

@@ -261,7 +261,153 @@ body::before {
     100% { transform: scale(1);        box-shadow: 0 0 0 0 rgba(255, 176, 32, 0); }
 }
 
-/* Whisper 服务控制カードは変換中もアニメーションしない（CSS ルール削除済み） */
+/* サイドバー：Whisper 変換中のイコライザーアニメーション（バーが上下に動く） */
+.eq {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px;
+    width: 12px;
+}
+.eq-bar {
+    width: 3px;
+    height: 4px;
+    background: #fbbf24;
+    border-radius: 1px;
+    animation: eq-bounce 0.9s ease-in-out infinite;
+}
+.eq-bar:nth-child(2) { animation-delay: 0.15s; }
+.eq-bar:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes eq-bounce {
+    0%, 100% { height: 4px; }
+    50% { height: 12px; }
+}
+
+/* サイドバー：変換中のカード発光グロー（スケール変形はせず柔らかく） */
+.sidebar-converting {
+    border-color: rgba(255, 176, 32, 0.55) !important;
+    background: linear-gradient(160deg, rgba(255, 176, 32, 0.20), rgba(255, 94, 26, 0.12)) !important;
+    animation: sidebarGlow 1.4s ease-in-out infinite;
+}
+
+@keyframes sidebarGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 176, 32, 0.30); }
+    50% { box-shadow: 0 0 18px 2px rgba(255, 176, 32, 0.18); }
+}
+
+/* 詳細結果の読み上げボタン：読み上げ中は発光 */
+.read-active {
+    background: rgba(217, 70, 239, 0.35) !important;
+    animation: readGlow 1.2s ease-in-out infinite;
+}
+
+/* 読み上げ一時停止中：発光は保つがアニメーションは止める（再開待ち状態） */
+.read-paused {
+    background: rgba(217, 70, 239, 0.35) !important;
+    animation: none !important;
+    opacity: 0.85;
+}
+
+@keyframes readGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(217, 70, 239, 0.35); }
+    50% { box-shadow: 0 0 12px 1px rgba(217, 70, 239, 0.25); }
+}
+
+/* 読み上げ中の文：下線＋背景ハイライト */
+.tts-underline {
+    background: rgba(217, 70, 239, 0.16);
+    text-decoration: underline;
+    text-decoration-color: rgba(217, 70, 239, 0.95);
+    text-underline-offset: 3px;
+    border-radius: 2px;
+}
+
+/* 詳細結果のタブ（変換結果 / AI校正結果） */
+.result-tab {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #a8a29e;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.2s;
+    cursor: pointer;
+}
+.result-tab:hover {
+    color: #e7e5e4;
+    border-color: rgba(255, 255, 255, 0.18);
+}
+.result-tab-active {
+    background: rgba(217, 70, 239, 0.18);
+    color: #f0abfc;
+    border-color: rgba(217, 70, 239, 0.4);
+}
+
+/* リアルタイムフェーズピル（待機 / 変換中 / AI 校正中） */
+.phase-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0.7rem;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+}
+.phase-idle {
+    color: #a8a29e;
+    background: rgba(168, 162, 158, 0.10);
+    border-color: rgba(168, 162, 158, 0.25);
+}
+.phase-transcribe {
+    color: #fbbf24;
+    background: rgba(255, 176, 32, 0.14);
+    border-color: rgba(255, 176, 32, 0.45);
+    animation: phasePulse 1.6s ease-in-out infinite;
+}
+.phase-correct {
+    color: #f0abfc;
+    background: rgba(255, 61, 129, 0.16);
+    border-color: rgba(255, 61, 129, 0.5);
+    animation: phasePulse 1.6s ease-in-out infinite;
+}
+@keyframes phasePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 94, 26, 0); }
+    50% { box-shadow: 0 0 10px 1px rgba(255, 94, 26, 0.20); }
+}
+
+/* モデル切替中：ボタン・モデル選択を無効化表示 */
+#btn-switch-model:disabled,
+#select-model:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(0.3);
+}
+
+/* リアルタイムロギングボタン（記録中は赤＋パルス） */
+.rec-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: #78716c;
+    transition: all 0.2s;
+}
+.rec-dot-active {
+    background: #f43f5e;
+    animation: recPulse 1s ease-in-out infinite;
+}
+#btn-realtime-log.recording-active {
+    background: rgba(244, 63, 94, 0.18) !important;
+    border: 1px solid rgba(244, 63, 94, 0.5);
+    color: #fecdd3;
+}
+@keyframes recPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.45); }
+    50% { box-shadow: 0 0 0 5px rgba(244, 63, 94, 0); }
+}
 
 /* GPU 高温警告 */
 .gpu-overheat {
