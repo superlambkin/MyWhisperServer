@@ -41,6 +41,9 @@ async def report_status(state: str, **extra):
 progress_lock = threading.Lock()
 progress_percent = 0.0
 
+# #6: 並行 /asr 直列化（WhisperModel は同時 transcribe 非対応・グローバル progress 共有のため）
+asr_semaphore = asyncio.Semaphore(1)
+
 
 async def report_progress(percent: float, phase: str = "transcribe", duration: Optional[float] = None):
     """将转换进度（0-100）上报到 Dashboard。
@@ -132,7 +135,9 @@ async def ai_correct_text(text: str):
     model_name = str(cfg.get("deepseek_model", "")).strip() or AI_DEFAULT_MODEL
     base_url = str(cfg.get("deepseek_base_url", "")).strip() or AI_DEFAULT_BASE_URL
     base_url = base_url.rstrip("/")
-    if not base_url:
+    # #7 多層防御: scheme が http/https でなければ校正をスキップ（SSRF 防止）
+    from urllib.parse import urlsplit
+    if not base_url or urlsplit(base_url).scheme not in ("http", "https") or not urlsplit(base_url).netloc:
         return text, None
 
     payload = {
@@ -238,6 +243,7 @@ async def asr(
             pass
         raise
 
+    await asr_semaphore.acquire()
     try:
         await report_status("converting", start_ts=start_time, filename=audio_file.filename)
         lang = None if language in (None, "auto", "") else language
@@ -335,6 +341,8 @@ async def asr(
     finally:
         os.unlink(tmp_path)
         await report_status("idle")
+        # #6: 並行 /asr 直列化のセマフォを解放
+        asr_semaphore.release()
 
 
 @app.get("/health")

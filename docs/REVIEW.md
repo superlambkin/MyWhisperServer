@@ -11,16 +11,16 @@
 | 1 | **High** | app.py:790 | LLM プロファイル部分更新で `api_key` が空で上書き（データ消失） | ✅ 修正済み |
 | 2 | **Medium** | whisper_server.py:218 | `/asr` の一時ファイルがアップロード失敗時にリーク | ✅ 修正済み |
 | 3 | **Medium** | whisper_server.py | `/asr` にアップロードサイズ上限なし（ディスク肥大） | ✅ 修正済み（1GB 上限） |
-| 4 | High | app.py 全ルート + 0.0.0.0 | 認証なし・LAN 公開 → 制御系 API を誰でも操作可能 | 要対応（推奨） |
-| 5 | High | app.py:1012 / 748 | API キーが平文で `GET /api/v1/config`・`/api/v1/llm/profiles` に返る | 要対応（推奨） |
-| 6 | Medium | whisper_server.py:41 | 並行 `/asr` でグローバル `progress_percent` を共有、`WhisperModel` 非スレッドセーフ | 要対応（推奨） |
-| 7 | Medium | whisper_server.py:136 | `deepseek_base_url` が攻撃者制御可能 → SSRF / キー流出経路 | 要対応（推奨） |
-| 8 | Low | app.py:263 | LIKE 検索の `%` `_` がワイルドカードとして解釈される | 任意 |
-| 9 | Low | app.py:1006 | `api_logs` がアルファベット順ソートで時系列を壊す | 任意 |
-| 10 | Low | app.py:601 | `auto_start_whisper` タスクの孤立 / `whisper_log_handle` 未クローズ | 任意 |
-| 11 | Low | app.py:545 | `system_history` 可変 dict を WS 送信（レース） | 任意 |
-| 12 | Medium | index.html:10-13 | Tailwind / Chart.js / フォントを CDN 依存 → オフラインで UI 崩壊 | 任意 |
-| 13 | Low | app.js:1397 | records 表の `language` が `escapeHtml` 未適用 | 任意 |
+| 4 | High | app.py 全ルート + 0.0.0.0 | 認証なし・LAN 公開 → 制御系 API を誰でも操作可能 | ✅ 修正済み（トークン認証） |
+| 5 | High | app.py:1012 / 748 | API キーが平文で `GET /api/v1/config`・`/api/v1/llm/profiles` に返る | ✅ 修正済み（マスク化） |
+| 6 | Medium | whisper_server.py:41 | 並行 `/asr` でグローバル `progress_percent` を共有、`WhisperModel` 非スレッドセーフ | ✅ 修正済み（Semaphore(1)） |
+| 7 | Medium | whisper_server.py:136 | `deepseek_base_url` が攻撃者制御可能 → SSRF / キー流出経路 | ✅ 修正済み（base_url 検証） |
+| 8 | Low | app.py:263 | LIKE 検索の `%` `_` がワイルドカードとして解釈される | ✅ 修正済み（ESCAPE） |
+| 9 | Low | app.py:1006 | `api_logs` がアルファベット順ソートで時系列を壊す | ✅ 修正済み（タイムスタンプ基準） |
+| 10 | Low | app.py:601 | `auto_start_whisper` タスクの孤立 / `whisper_log_handle` 未クローズ | ✅ 修正済み（lifespan 解放） |
+| 11 | Low | app.py:545 | `system_history` 可変 dict を WS 送信（レース） | ✅ 修正済み（スナップショット） |
+| 12 | Medium | index.html:10-13 | Tailwind / Chart.js / フォントを CDN 依存 → オフラインで UI 崩壊 | ✅ 修正済み（vendor ローカル化） |
+| 13 | Low | app.js:1397 | records 表の `language` が `escapeHtml` 未適用 | ✅ 修正済み |
 
 ## 良好点（指摘なし）
 
@@ -86,79 +86,81 @@ except Exception:
 
 ---
 
-## 要対応（推奨）
+## 修正済みの指摘（4〜13）
 
-### 4. 認証なし + 0.0.0.0 バインド（High）
+### 4. トークン認証（High）— ✅ 修正
 
-`dashboard/app.py` は `uvicorn.run(..., host="0.0.0.0")` で LAN 公開。全ルートに認証が無く、LAN 上の任意端末が以下を実行可能:
+書き込み・制御系 API（全 `POST` / `PUT` / `DELETE` + `/ws`）に共有トークンを要求する方式を導入。読み取り（GET）は従来通り閲覧可。
 
-- `POST /api/v1/config` — 任意設定の書き換え
-- `POST /api/v1/whisper/start|stop|restart|model` — Whisper の起動停止・モデル切替
-- `DELETE /api/v1/records` / `records/{id}` — 履歴の全削除
-- `POST /api/v1/llm/profiles*` — LLM プロファイルの CRUD
+- **トークン解決順**: env `DASHBOARD_TOKEN` > config DB > `secrets.token_urlsafe(24)` 自動生成・保存（遅延初期化、初回アクセスで確定）。
+- **`require_auth`**: ループバック（`127.0.0.1` / `::1` / `localhost`）は免除（whisper_server 内部通信とローカル閲覧を維持）。それ以外は `Authorization: Bearer` または `X-Auth-Token` を照合、不一致なら `401`。
+- **`/ws`**: `accept()` 前に `?token=` を照合。ループバック以外で不一致なら close。
+- **`GET /api/v1/auth/token`**（ループバック自動取得可）と **`POST /api/v1/auth/token/regenerate`** を新設。
+- フロント: `apiFetch()` ラッパー（全 20 箇所の `fetch` を置換）でヘッダ注入 + 401 時にトークン入力モーダル表示。設定画面「界面设置」に接続トークン表示・コピー・再生成ボタンを追加。
 
-**推奨**: 共有トークン（`Authorization: Bearer` ヘッダ）を読み取り API 以外のルートに要求する、または基本 `127.0.0.1` バインドにし LAN 公開時のみ明示的に公開する設計にする。
+**検証**: LAN IP（192.168.0.88）から GET=200 / POST 無トークン=401 / 正トークン=200 / 誤トークン=401 / ループバック無トークン=200。WS はループバック接続可・LAN 無トークン拒否（403）・LAN 正トークン接続可。
 
-### 5. API キーの平文暴露（High）
+### 5. API キーのマスク化（High）— ✅ 修正
 
-`GET /api/v1/config` は `deepseek_api_key`、`GET /api/v1/llm/profiles` は各プロファイルの `api_key` を**平文で返却**する。無認証（指摘 4）と組み合わせると LAN 上の誰でも読める。
+`GET /api/v1/config` は `deepseek_api_key` を返さず `deepseek_has_key`（bool）+ `deepseek_key_masked`（末尾 4 桁）に置換。`/api/v1/llm/profiles` の各プロファイルも同様に `api_key` → `has_key` + `key_masked`。
 
-**推奨**: レスポンスでは `has_key: bool` + 末尾 4 桁だけ返し、フロントには完全なキーを返さない設計に変更する（編集時に再入力不要とするため「保持」セマンティクスは指摘 1 の修正で担保）。
+- フロントはキー欄をプリフィルせず「保存済み …（未入力なら維持）」のプレースホルダ表示。
+- 保存時にキー欄が空なら payload から省略（`saveSettings` / `saveProfile` / `syncActiveProfileFromFields`）。バックエンドはフィールド未送信なら既存キーを維持。
 
-### 6. 並行 /asr での共有状態（Medium）
+**検証**: `GET /api/v1/config`・`/api/v1/llm/profiles` に平文キー・`api_key` キーが含まれないことを確認。キー保持（PUT で api_key 省略 → 長さ 40 維持）も動作確認。
 
-`progress_percent` / `progress_lock` がモジュールグローバル。2 つの `/asr` が同時に来ると:
-- 進行度がリクエスト A/B で混線する
-- 同じ `WhisperModel` インスタンスで同時 `transcribe`（CUDA のスレッドセーフは保証されない）
+### 6. 並行 /asr の直列化（Medium）— ✅ 修正
 
-**推奨**: `asyncio.Semaphore(1)` で転写を直列化するか、進行度をリクエスト毎のローカル変数に分離する。
+`whisper_server.py` に `asr_semaphore = asyncio.Semaphore(1)` を追加。`/asr` の転写〜校正〜報告ブロックを `acquire` / `finally: release` で直列化（WhisperModel の同時 transcribe と progress 共有を防止）。
 
-### 7. deepseek_base_url 経由の SSRF / キー流出（Medium）
+### 7. base_url 検証（SSRF 対策）（Medium）— ✅ 修正
 
-`ai_correct_text()` は `f"{base_url}/chat/completions"` へ `Authorization: Bearer {api_key}` を付けて POST する。base_url は無認証で書き換え可能（指摘 4）なため、LAN の攻撃者が「自分の URL」を設定して校正を発火させ、**認証キーを自分のサーバへ送らせる**ことが可能。あわせて社内ホストへの SSRF にもなる。
+`dashboard/app.py` に `validate_base_url()` を新設（scheme が `http://` / `https://` のみ許可、userinfo 拒否）。`POST /api/v1/config` の `deepseek_base_url` と LLM プロファイルの作成・更新に適用し、不正なら `400`。
 
-**推奨**: 指摘 4 の認証を入れた上で、`https://` と既知ホストへの許可リスト検証を追加する。
+多層防御として `whisper_server.py` の `ai_correct_text` も scheme が http/https でなければ校正をスキップ。
 
-### 8. LIKE 検索ワイルドカード（Low）
+**検証**: `POST /api/v1/config` に `file:///etc/passwd` → 400、正常 URL → 200。
 
-`app.py:263` で `pattern = f"%{search}%"` をパラメータ渡ししているため注入は不可だが、ユーザー入力の `%` / `_` がワイルドカードとして解釈され、意図しないレコードがヒットする。`ESCAPE '\'` でエスケープ推奨。
+### 8. LIKE 検索ワイルドカード（Low）— ✅ 修正
 
-### 9. api_logs のソート（Low）
+`get_records` で検索文字列の `\` `%` `_` をエスケープし、SQL に `LIKE ? ESCAPE '\'` を付与。
 
-`app.py:1006` の `result.sort(key=lambda x: x["line"])` は whisper / dashboard のログ行を**アルファベット順**に混ぜてしまい時系列を壊す。ただし現状のログ行は先頭にパース可能な ISO タイムスタンプが無いため、正しい時系列マージにはログ出力側へのタイムスタンプ付与が必要（要改善、規模あり）。
+**検証**: `%` / `_` を検索しても全件ヒットせず、実際にリテラルを含む 1 件のみヒットすることを DB レベルで確認。
 
-### 10. シャットダウン時のリソース処理（Low）
+### 9. api_logs の時系列化（Low）— ✅ 修正
 
-`auto_start_whisper` タスクが `asyncio.create_task` で作成されるが保存・キャンセルされない。シャットダウン中に 3s/30s の sleep 中だと破棄されたループ上で走り続ける可能性。また `start_whisper_process` で開いた `whisper_log_handle` がライフスパン終了時に閉じられない。
+各行の先頭 ISO タイムスタンプ（`\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}`）をパースしてソートキーに使用。パース不可の行は安定ソートで挿入順を維持（whisper ログへタイムスタンプ付与は別途）。
 
-### 11. system_history の可変 dict 共有（Low）
+### 10. シャットダウン時のリソース解放（Low）— ✅ 修正
 
-`monitor_loop` が `system_history` を in-place で trim しながら、同じ参照を `broadcast()` と WS ハンドシェイクへ渡すため、シリアライズ中に長さが変わりチャートが揺れる可能性（軽微）。送信前に `dict(system_history)` のコピー推奨。
+`auto_start_whisper` タスクを保存し、`lifespan` 終了時に cancel + await。`whisper_log_handle` が非 None なら close。
+
+### 11. system_history の送信レース（Low）— ✅ 修正
+
+`snapshot_history()`（`{k: list(v)}` のコピー）を新設し、`monitor_loop` の broadcast と WS ハンドシェイクで使用。
+
+### 12. CDN のローカル化（Medium）— ✅ 修正
+
+`dashboard/static/vendor/` にベンダリング:
+
+- `vendor/tailwind.js`（`https://cdn.tailwindcss.com`）
+- `vendor/chart.umd.min.js`（Chart.js v4.5.1, jsDelivr）
+- `vendor/fonts.css` + `vendor/fonts/font-*.woff2`（Google Fonts: Syne / Manrope / JetBrains Mono 全 15 ファイル、URL をローカル相対パスに書き換え）
+
+`index.html` の CDN 参照を `/static/vendor/...` に置換。**検証**: 3 ファイルとも HTTP 200。
+
+### 13. records 表の language エスケープ（Low）— ✅ 修正
+
+`app.js` の `${r.language || 'auto'}` → `${escapeHtml(r.language || 'auto')}` に置換。
 
 ---
 
-## フロントエンド補足
+## 検証サマリ（E2E, 2026-08-22）
 
-### 12. CDN 依存（Medium）
-
-`index.html` は **Tailwind CSS / Chart.js / Google Fonts を CDN** から読込む。この PC がオフライン（または CDN 到達不可）だと:
-- Tailwind のユーティリティクラスが効かず **画面レイアウトが崩壊**
-- Chart.js が無く **リアルタイム推移グラフが描画不能**
-- フォントが代替フォントに置換
-
-ローカル完結サーバとしては、3 ファイルを `static/vendor/` にベンダリング（ローカル配信）するのが望ましい。
-
-### 13. records 表の language 未エスケープ（Low）
-
-`app.js:1397` の `${r.language || 'auto'}` は `escapeHtml` 未適用。language はサーバ側の固定セット（auto/zh/ja/en）由来のため現実的リスクは低いが、DB が改ざんされた場合の XSS 経路になり得る。`escapeHtml` 適用を推奨。
-
----
-
-## 推奨対応の優先順位
-
-1. **認証の導入**（指摘 4・5・7 を一括解決）— 共有トークン方式が最小
-2. **並行 /asr の直列化**（指摘 6）— `asyncio.Semaphore(1)`
-3. **CDN のローカル化**（指摘 12）— オフライン運用の耐性
-4. 軽微な指摘（8〜13）は随時
-
-> 指摘 4・5・7 は設計判断（LAN 公開の可否・トークン方式）を含むため、本レビューでは修正せず推奨に留めた。
+- 認証: LAN 読み取り 200 / 書き込み 401→トークンで 200 / ループバック免除 200 / 誤トークン 401 / WS 拒否・接続
+- マスク: config・profiles に平文キー非含有
+- base_url: `file://` → 400
+- `/asr`: test.mp3 で変換成功（7.4s, モデル medium）
+- 検索: `%` / `_` エスケープ正常
+- vendor: tailwind.js / chart.umd.min.js / fonts.css 200 配信
+- キャッシュ: index.html / app.js とも v30 配信

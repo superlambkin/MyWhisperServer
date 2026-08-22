@@ -7,10 +7,10 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>MyWhisperServer Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/css/style.css?v=25">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="/static/vendor/tailwind.js?v=30"></script>
+    <script src="/static/vendor/chart.umd.min.js?v=30"></script>
+    <link rel="stylesheet" href="/static/vendor/fonts.css?v=30">
+    <link rel="stylesheet" href="/static/css/style.css?v=30">
 </head>
 <body class="text-stone-100 font-manrope overflow-hidden">
     <div class="flex h-screen">
@@ -653,6 +653,15 @@
                                             <option value="en">English</option>
                                         </select>
                                     </div>
+                                    <div>
+                                        <label class="block text-sm text-stone-400 mb-2" data-i18n="settings.conn_token">连接令牌（LAN 控制用）</label>
+                                        <div class="flex gap-2">
+                                            <input id="auth-token-display" type="text" readonly class="flex-1 px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:outline-none font-mono text-xs" placeholder="---">
+                                            <button id="btn-auth-token-copy" type="button" class="px-3 py-2 rounded-xl bg-stone-800/80 hover:bg-stone-700 text-sm text-stone-300 transition-all" title="复制">复制</button>
+                                            <button id="btn-auth-token-regenerate" type="button" class="px-3 py-2 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-sm font-medium transition-all" data-i18n="settings.regenerate">重新生成</button>
+                                        </div>
+                                        <p class="mt-1 text-xs text-stone-500" data-i18n="settings.conn_token_desc">在其他设备的写入/控制请求与 WebSocket 连接中使用此令牌。本机访问无需令牌。</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -756,6 +765,21 @@
         </main>
     </div>
 
-    <script src="/static/js/app.js?v=29"></script>
+    <!-- 接続トークン入力モーダル（401 時・LAN からの初回アクセスで表示） -->
+    <div id="auth-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-stone-900 border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold" data-i18n="auth.title">需要连接令牌</h3>
+                <button id="btn-auth-modal-close" class="text-stone-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <p class="text-sm text-stone-400 mb-4" data-i18n="auth.desc">写入・控制操作需要连接令牌。请在设置 → 界面设置中查看令牌，或由本机浏览器自动取得。</p>
+            <input id="auth-token-input" type="password" placeholder="连接令牌" class="w-full px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none mb-4">
+            <button id="btn-auth-token-save" class="w-full px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-sm font-medium transition-all" data-i18n="auth.save">保存</button>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js?v=30"></script>
 </body>
 </html>

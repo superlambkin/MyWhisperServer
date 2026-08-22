@@ -1,9 +1,12 @@
 import os
+import re
 import sys
 import json
 import time
 import asyncio
+import secrets
 import sqlite3
+import threading
 import subprocess
 import platform
 from pathlib import Path
@@ -13,7 +16,7 @@ from typing import Optional, List, Dict, Any
 
 import psutil
 import aiohttp
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Form, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Request, Form, Query, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -66,6 +69,70 @@ system_history: Dict[str, List[Any]] = {
 MAX_HISTORY = 480  # 趋势图历史点数上限（2s 间隔 ≈ 16 分钟；配合前端 zoom 档位）
 whisper_proc_cache: Optional[dict] = None
 whisper_proc_cache_time: float = 0
+
+# --- 认证（写入・制御系のみ） ---
+_dashboard_token: Optional[str] = None
+_dashboard_token_lock = threading.Lock()
+LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
+
+
+def _is_loopback(host: str) -> bool:
+    return host in LOOPBACK_HOSTS
+
+
+async def get_dashboard_token() -> str:
+    """环境变量 DASHBOARD_TOKEN > config 存储 > 自动生成・保存（遅延初期化）。"""
+    global _dashboard_token
+    if _dashboard_token:
+        return _dashboard_token
+    with _dashboard_token_lock:
+        if _dashboard_token:
+            return _dashboard_token
+        env_token = os.environ.get("DASHBOARD_TOKEN", "").strip()
+        if env_token:
+            _dashboard_token = env_token
+            return _dashboard_token
+        stored = await get_config("dashboard_token")
+        if stored:
+            _dashboard_token = stored
+            return _dashboard_token
+        generated = secrets.token_urlsafe(24)
+        await set_config("dashboard_token", generated)
+        _dashboard_token = generated
+        print(f"[auth] Dashboard 接続トークンを生成: {generated}")
+        return generated
+
+
+async def require_auth(request: Request):
+    """ループバック以外の POST/PUT/DELETE・/ws にトークンを要求する依存関数。"""
+    if _is_loopback(request.client.host if request.client else ""):
+        return
+    token = await get_dashboard_token()
+    header = request.headers.get("Authorization", "")
+    supplied = header[7:].strip() if header.startswith("Bearer ") else request.headers.get("X-Auth-Token", "").strip()
+    if not token or supplied != token:
+        raise HTTPException(status_code=401, detail="unauthorized")
+
+
+def mask_api_key(secret: str) -> Dict[str, Any]:
+    """API キーを平文で返さず has_key / 末尾4文字 で返す。"""
+    if not secret:
+        return {"has_key": False, "key_masked": ""}
+    return {"has_key": True, "key_masked": "..." + secret[-4:]}
+
+
+def validate_base_url(url: str) -> str:
+    """#7 SSRF 対策: scheme が http/https のみ許可、userinfo 拒否。不正なら HTTPException(400)。"""
+    url = str(url).strip().rstrip("/")
+    if not url:
+        return url
+    from urllib.parse import urlsplit
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        raise HTTPException(status_code=400, detail="base_url must be http:// or https://")
+    if parts.username is not None or parts.password is not None:
+        raise HTTPException(status_code=400, detail="base_url must not contain userinfo")
+    return url
 
 # NVML 初始化尝试
 nvml_available = False
@@ -148,6 +215,7 @@ def init_db():
             "deepseek_model": "deepseek-chat",
             "deepseek_base_url": "https://api.deepseek.com/v1",
             "active_llm_profile": "",
+            "dashboard_token": "",  # 接続トークン（初回アクセス時に自動生成）
             # Whisper 高速化設定
             "whisper_mode": "balanced",
             "whisper_compute_type": "int8_float16",
@@ -260,9 +328,11 @@ async def get_records(limit: int = 50, offset: int = 0, search: str = "") -> Lis
     async with aiosqlite.connect(str(DB_PATH)) as db:
         db.row_factory = aiosqlite.Row
         if search:
-            pattern = f"%{search}%"
+            # #8: LIKE ワイルドカード（% _ \）をエスケープして意図通りの文字列検索にする
+            escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            pattern = f"%{escaped}%"
             async with db.execute(
-                "SELECT * FROM records WHERE filename LIKE ? OR result LIKE ? OR summary LIKE ? ORDER BY id DESC LIMIT ? OFFSET ?",
+                "SELECT * FROM records WHERE filename LIKE ? ESCAPE '\\' OR result LIKE ? ESCAPE '\\' OR summary LIKE ? ESCAPE '\\' ORDER BY id DESC LIMIT ? OFFSET ?",
                 (pattern, pattern, pattern, limit, offset)
             ) as cursor:
                 rows = await cursor.fetchall()
@@ -509,6 +579,11 @@ async def broadcast(data: dict):
         print(f"[broadcast] Removed {len(dead)} dead websocket(s), remaining: {len(connected_websockets)}")
 
 
+def snapshot_history() -> Dict[str, List[Any]]:
+    """system_history のコピー（#11: 送信中に trim されてもレースしないよう値も複製）。"""
+    return {k: list(v) for k, v in system_history.items()}
+
+
 # ---------------------------------------------------------------------------
 # 日志跟踪
 # ---------------------------------------------------------------------------
@@ -555,7 +630,7 @@ async def monitor_loop():
 
             snapshot["converting"] = is_converting
             snapshot["progress"] = _progress_percent
-            await broadcast({"type": "system_update", "data": snapshot, "history": system_history})
+            await broadcast({"type": "system_update", "data": snapshot, "history": snapshot_history()})
 
             # Whisper 状态
             t2 = time.time()
@@ -622,13 +697,23 @@ async def auto_start_whisper():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     task = asyncio.create_task(monitor_loop())
-    asyncio.create_task(auto_start_whisper())
+    auto_start_task = asyncio.create_task(auto_start_whisper())
     yield
+    # #10: 起動タスクを明示的にキャンセルし、ログハンドルを閉じる
     task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        pass
+    auto_start_task.cancel()
+    for t in (task, auto_start_task):
+        try:
+            await t
+        except asyncio.CancelledError:
+            pass
+    global whisper_log_handle
+    if whisper_log_handle is not None:
+        try:
+            whisper_log_handle.close()
+        except Exception:
+            pass
+        whisper_log_handle = None
     if nvml_available:
         try:
             nvmlShutdown()
@@ -668,7 +753,7 @@ async def api_whisper_status():
     }
 
 
-@app.post("/api/v1/whisper/status_event")
+@app.post("/api/v1/whisper/status_event", dependencies=[Depends(require_auth)])
 async def api_whisper_status_event(data: dict):
     """接收 whisper_server 上报的转换状态（converting/idle）。
     converting 時に start_ts / filename を透過し、フロントでリアルタイム監視に利用する。"""
@@ -685,7 +770,7 @@ async def api_whisper_status_event(data: dict):
     return {"success": True}
 
 
-@app.post("/api/v1/whisper/progress")
+@app.post("/api/v1/whisper/progress", dependencies=[Depends(require_auth)])
 async def api_whisper_progress(data: dict):
     """接收 whisper_server 上报的转换进度（percent: 0-100）。
     phase（transcribe/correct）と duration（音声時間）を透過し、フロントのリアルタイム監視に利用する。"""
@@ -700,7 +785,7 @@ async def api_whisper_progress(data: dict):
     return {"success": True}
 
 
-@app.post("/api/v1/ai/test")
+@app.post("/api/v1/ai/test", dependencies=[Depends(require_auth)])
 async def api_ai_test(data: dict):
     """LLM 接続テスト（AI 校正設定ページの「LLM 接続テスト」ボタン）。
     OpenAI 互換エンドポイント（Deepseek / Ollama 等）に対応。API キーは任意。
@@ -752,16 +837,18 @@ async def api_list_llm_profiles():
     profiles = []
     for row in rows:
         p = dict(row)
+        # #5: api_key は平文で返さず has_key / key_masked に置換
+        p.update(mask_api_key(p.pop("api_key", "")))
         p["active"] = str(p["id"]) == active
         profiles.append(p)
     return {"profiles": profiles}
 
 
-@app.post("/api/v1/llm/profiles")
+@app.post("/api/v1/llm/profiles", dependencies=[Depends(require_auth)])
 async def api_create_llm_profile(data: dict):
     import aiosqlite
     name = str(data.get("name", "")).strip()
-    base_url = str(data.get("base_url", "")).strip().rstrip("/")
+    base_url = validate_base_url(str(data.get("base_url", "")).strip())
     api_key = str(data.get("api_key", "")).strip()
     model = str(data.get("model", "")).strip() or "deepseek-chat"
     if not name or not base_url:
@@ -776,7 +863,7 @@ async def api_create_llm_profile(data: dict):
     return {"success": True, "id": new_id}
 
 
-@app.put("/api/v1/llm/profiles/{profile_id}")
+@app.put("/api/v1/llm/profiles/{profile_id}", dependencies=[Depends(require_auth)])
 async def api_update_llm_profile(profile_id: int, data: dict):
     import aiosqlite
     async with aiosqlite.connect(str(DB_PATH)) as db:
@@ -786,7 +873,7 @@ async def api_update_llm_profile(profile_id: int, data: dict):
         if not row:
             return {"success": False, "error": "profile not found"}
         name = str(data.get("name", "")).strip() or row["name"]
-        base_url = str(data.get("base_url", "")).strip().rstrip("/") or row["base_url"]
+        base_url = validate_base_url(str(data.get("base_url", "")).strip()) or row["base_url"]
         # api_key はフィールドが明示的に送られた場合のみ上書きする（未送信なら既存キーを維持）
         if "api_key" in data:
             api_key = str(data.get("api_key", "")).strip()  # 明示的な空文字はキー削除として許可
@@ -803,11 +890,13 @@ async def api_update_llm_profile(profile_id: int, data: dict):
     # アクティブ中なら config スナップショットを再同期
     if str(profile_id) == await get_config("active_llm_profile"):
         updated = await activate_llm_profile(profile_id)
+        if updated:
+            updated = {**updated, **mask_api_key(updated.pop("api_key", ""))}
         return {"success": True, "profile": updated}
     return {"success": True}
 
 
-@app.delete("/api/v1/llm/profiles/{profile_id}")
+@app.delete("/api/v1/llm/profiles/{profile_id}", dependencies=[Depends(require_auth)])
 async def api_delete_llm_profile(profile_id: int):
     import aiosqlite
     active = await get_config("active_llm_profile")
@@ -829,11 +918,12 @@ async def api_delete_llm_profile(profile_id: int):
     return {"success": True, "deleted": deleted, "cleared_active": cleared_active}
 
 
-@app.post("/api/v1/llm/profiles/{profile_id}/activate")
+@app.post("/api/v1/llm/profiles/{profile_id}/activate", dependencies=[Depends(require_auth)])
 async def api_activate_llm_profile(profile_id: int):
     profile = await activate_llm_profile(profile_id)
     if profile is None:
         return {"success": False, "error": "profile not found"}
+    profile = {**profile, **mask_api_key(profile.pop("api_key", ""))}
     return {"success": True, "profile": profile}
 
 
@@ -847,7 +937,7 @@ async def reset_conversion_state():
         await broadcast({"type": "converting", "state": "idle", "percent": None})
 
 
-@app.post("/api/v1/whisper/start")
+@app.post("/api/v1/whisper/start", dependencies=[Depends(require_auth)])
 async def api_whisper_start():
     await reset_conversion_state()
     proc = await asyncio.to_thread(find_whisper_process)
@@ -857,14 +947,14 @@ async def api_whisper_start():
     return {"success": True, "message": "Whisper started", "pid": p.pid}
 
 
-@app.post("/api/v1/whisper/stop")
+@app.post("/api/v1/whisper/stop", dependencies=[Depends(require_auth)])
 async def api_whisper_stop():
     await reset_conversion_state()
     stop_whisper_process()
     return {"success": True, "message": "Whisper stop requested"}
 
 
-@app.post("/api/v1/whisper/restart")
+@app.post("/api/v1/whisper/restart", dependencies=[Depends(require_auth)])
 async def api_whisper_restart():
     # 重启会中断当前转换：先清除卡死的"转换中"状态，避免 UI 一直显示转换中
     await reset_conversion_state()
@@ -877,7 +967,7 @@ async def api_whisper_restart():
 ALLOWED_MODELS = ["tiny", "base", "small", "medium", "large-v2", "large-v3"]
 
 
-@app.post("/api/v1/whisper/model")
+@app.post("/api/v1/whisper/model", dependencies=[Depends(require_auth)])
 async def api_whisper_model(data: dict):
     """切换 Whisper 模型：保存配置并重启服务"""
     model = str(data.get("model", "")).strip()
@@ -903,7 +993,7 @@ class RecordPayload(BaseModel):
     correct_elapsed: Optional[float] = None
 
 
-@app.post("/api/v1/records")
+@app.post("/api/v1/records", dependencies=[Depends(require_auth)])
 async def api_create_record(payload: RecordPayload):
     data = payload.dict()
     if not data.get("timestamp"):
@@ -920,7 +1010,7 @@ async def api_get_records(limit: int = Query(50, ge=1), offset: int = Query(0, g
     return {"records": records}
 
 
-@app.delete("/api/v1/records/{record_id}")
+@app.delete("/api/v1/records/{record_id}", dependencies=[Depends(require_auth)])
 async def api_delete_record(record_id: int):
     import aiosqlite
     async with aiosqlite.connect(str(DB_PATH)) as db:
@@ -934,7 +1024,7 @@ async def api_delete_record(record_id: int):
     return {"success": True, "deleted": deleted}
 
 
-@app.delete("/api/v1/records")
+@app.delete("/api/v1/records", dependencies=[Depends(require_auth)])
 async def api_clear_records():
     import aiosqlite
     async with aiosqlite.connect(str(DB_PATH)) as db:
@@ -947,7 +1037,7 @@ async def api_clear_records():
     return {"success": True, "deleted": count}
 
 
-@app.post("/api/v1/records/{record_id}/correct")
+@app.post("/api/v1/records/{record_id}/correct", dependencies=[Depends(require_auth)])
 async def api_correct_record(record_id: int):
     """对已保存的转换结果重新执行 AI 校正并覆盖保存（通过 whisper_server /correct）"""
     import aiosqlite
@@ -1003,7 +1093,12 @@ async def api_logs(lines: int = Query(100, ge=1, le=1000), source: str = Query("
     if source in ("all", "dashboard") and DASHBOARD_LOG.exists():
         with open(DASHBOARD_LOG, "r", encoding="utf-8", errors="ignore") as f:
             result.extend([{"source": "dashboard", "line": l} for l in f.read().splitlines()[-lines:]])
-    result.sort(key=lambda x: x["line"])
+    # #9: 先頭の ISO タイムスタンプがあれば時系列で、無ければ挿入順（安定ソート）で整列
+    _TS_RE = re.compile(r"^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?")
+    for item in result:
+        m = _TS_RE.match(item["line"])
+        item["_ts"] = m.group(0) if m else ""
+    result.sort(key=lambda x: x["_ts"])
     return {"logs": result[-lines:]}
 
 
@@ -1012,7 +1107,7 @@ async def api_get_config():
     keys = [
         "default_language", "default_output", "refresh_interval", "gpu_temp_threshold",
         "theme", "ui_language", "whisper_model",
-        "ai_correct_enabled", "deepseek_api_key", "deepseek_model", "deepseek_base_url",
+        "ai_correct_enabled", "deepseek_model", "deepseek_base_url",
         "active_llm_profile",
         "whisper_mode", "whisper_compute_type", "whisper_beam_size",
         "whisper_temperature", "whisper_vad_min_silence_ms",
@@ -1020,12 +1115,41 @@ async def api_get_config():
     result = {}
     for k in keys:
         result[k] = await get_config(k)
+    # #5: API キーは平文で返さず has_key / 末尾4文字 のみ返す
+    key_val = await get_config("deepseek_api_key")
+    result["deepseek_has_key"] = bool(key_val)
+    result["deepseek_key_masked"] = "..." + key_val[-4:] if key_val else ""
     return result
 
 
-@app.post("/api/v1/config")
+@app.get("/api/v1/auth/token", dependencies=[Depends(require_auth)])
+async def api_get_auth_token():
+    """接続トークンの取得（ループバックはトークン不要で取得可 → フロントが自動保存）。"""
+    return {"token": await get_dashboard_token()}
+
+
+@app.post("/api/v1/auth/token/regenerate", dependencies=[Depends(require_auth)])
+async def api_regenerate_auth_token():
+    """接続トークンの再生成（ループバック以外の全クライアントに即時反映）。"""
+    global _dashboard_token
+    env_token = os.environ.get("DASHBOARD_TOKEN", "").strip()
+    if env_token:
+        return {"success": False, "error": "DASHBOARD_TOKEN 環境変数が設定されているため再生成できません（env 優先）"}
+    generated = secrets.token_urlsafe(24)
+    with _dashboard_token_lock:
+        await set_config("dashboard_token", generated)
+        _dashboard_token = generated
+    print(f"[auth] Dashboard 接続トークンを再生成: {generated}")
+    return {"success": True, "token": generated}
+
+
+@app.post("/api/v1/config", dependencies=[Depends(require_auth)])
 async def api_set_config(data: dict):
     for k, v in data.items():
+        if k == "dashboard_token":
+            continue  # トークンは env / 自動生成 / 専用エンドポイントでのみ管理
+        if k == "deepseek_base_url":
+            v = validate_base_url(v)
         await set_config(k, str(v))
     return {"success": True}
 
@@ -1035,7 +1159,7 @@ async def api_get_autostart():
     return {"enabled": AUTOSTART_TARGET.exists(), "path": str(AUTOSTART_TARGET)}
 
 
-@app.post("/api/v1/autostart")
+@app.post("/api/v1/autostart", dependencies=[Depends(require_auth)])
 async def api_set_autostart(data: dict):
     enabled = bool(data.get("enabled"))
     if enabled:
@@ -1081,14 +1205,20 @@ X-GNOME-Autostart-enabled=true
 # ---------------------------------------------------------------------------
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    # 认证：ループバック以外は ?token= を要求（不一致なら 4401 で切断）
+    if not _is_loopback(websocket.client.host if websocket.client else ""):
+        token = await get_dashboard_token()
+        if websocket.query_params.get("token", "") != token:
+            await websocket.close(code=4401)
+            return
     await websocket.accept()
     connected_websockets.append(websocket)
     try:
-        # 发送初始历史数据
+        # 发送初始历史数据（#11: system_history はコピーを送信）
         snapshot = await asyncio.to_thread(get_system_snapshot)
         snapshot["converting"] = is_converting
         snapshot["progress"] = _progress_percent
-        await websocket.send_json({"type": "system_update", "data": snapshot, "history": system_history})
+        await websocket.send_json({"type": "system_update", "data": snapshot, "history": snapshot_history()})
         health = await whisper_health()
         proc = await asyncio.to_thread(find_whisper_process)
         status = {

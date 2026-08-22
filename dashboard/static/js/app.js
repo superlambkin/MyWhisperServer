@@ -676,8 +676,154 @@ let conversionTiming = {
     filename: '',
 };
 
-const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
 const API_BASE = '/api/v1';
+
+// ---------------------------------------------------------------------------
+// 認証（接続トークン）
+// ---------------------------------------------------------------------------
+function getToken() {
+    return localStorage.getItem('dashboard_token') || '';
+}
+
+function setToken(tok) {
+    if (tok) localStorage.setItem('dashboard_token', tok);
+    else localStorage.removeItem('dashboard_token');
+}
+
+function buildWsUrl() {
+    const base = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+    const tok = getToken();
+    return tok ? `${base}?token=${encodeURIComponent(tok)}` : base;
+}
+
+let _tokenPrompting = false;
+function promptToken() {
+    if (_tokenPrompting) return;
+    _tokenPrompting = true;
+    const modal = $('#auth-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        const input = $('#auth-token-input');
+        if (input) input.focus();
+    } else {
+        // フォールバック：modal が無い場合は native prompt
+        const tok = window.prompt('接続トークンを入力してください:');
+        _tokenPrompting = false;
+        if (tok) {
+            setToken(tok.trim());
+            location.reload();
+        }
+    }
+}
+
+// 認証ヘッダーを注入した fetch ラッパー（401 ならトークン入力を促す）
+async function apiFetch(url, options = {}) {
+    const headers = { ...(options.headers || {}), ...authHeaders() };
+    const resp = await fetch(url, { ...options, headers });
+    if (resp.status === 401) {
+        promptToken();
+    }
+    return resp;
+}
+
+function authHeaders() {
+    const tok = getToken();
+    return tok ? { 'Authorization': 'Bearer ' + tok } : {};
+}
+
+// ページロード時：トークンを取得（ループバックは自動、LAN は 401 → 入力モーダル）
+async function initAuth() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/auth/token`);
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.token && data.token !== getToken()) {
+                setToken(data.token);
+                if (ws) { try { ws.close(); } catch (e) {} }
+                connectWebSocket();
+            }
+        }
+    } catch (e) {
+        console.error('auth init failed:', e);
+    }
+}
+
+// トークン関連 UI（モーダル保存・設定画面の表示/コピー/再生成）
+function closeAuthModal() {
+    const modal = $('#auth-modal');
+    if (modal) modal.classList.add('hidden');
+    _tokenPrompting = false;
+}
+
+async function loadAuthTokenDisplay() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/auth/token`);
+        if (resp.ok) {
+            const data = await resp.json();
+            const display = $('#auth-token-display');
+            if (display && data.token) display.value = data.token;
+        }
+    } catch (e) {
+        console.error('load auth token failed:', e);
+    }
+}
+
+async function regenerateAuthToken() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/auth/token/regenerate`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) {
+            setToken(data.token);
+            const display = $('#auth-token-display');
+            if (display) display.value = data.token;
+            if (ws) { try { ws.close(); } catch (e) {} }
+            connectWebSocket();
+            showToast('接続トークンを再生成しました', 'success');
+        } else {
+            showToast(data.error || '再生成に失敗しました', 'error');
+        }
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+}
+
+async function copyAuthToken() {
+    const display = $('#auth-token-display');
+    if (!display || !display.value) return;
+    try {
+        await navigator.clipboard.writeText(display.value);
+        showToast('トークンをコピーしました', 'success');
+    } catch (e) {
+        showToast('コピーに失敗しました: ' + e.message, 'error');
+    }
+}
+
+function setupAuthUI() {
+    const saveBtn = $('#btn-auth-token-save');
+    if (saveBtn) saveBtn.addEventListener('click', () => {
+        const input = $('#auth-token-input');
+        const tok = input ? input.value.trim() : '';
+        if (tok) {
+            setToken(tok);
+            closeAuthModal();
+            if (ws) { try { ws.close(); } catch (e) {} }
+            connectWebSocket();
+            loadRecords();
+        } else {
+            showToast('トークンを入力してください', 'error');
+        }
+    });
+    const closeBtn = $('#btn-auth-modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', closeAuthModal);
+    const modal = $('#auth-modal');
+    if (modal) modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeAuthModal();
+    });
+    const copyBtn = $('#btn-auth-token-copy');
+    if (copyBtn) copyBtn.addEventListener('click', copyAuthToken);
+    const regenBtn = $('#btn-auth-token-regenerate');
+    if (regenBtn) regenBtn.addEventListener('click', regenerateAuthToken);
+}
 
 // ---------------------------------------------------------------------------
 // 工具函数
@@ -741,7 +887,7 @@ function connectWebSocket() {
         return;
     }
 
-    ws = new WebSocket(WS_URL);
+    ws = new WebSocket(buildWsUrl());
 
     ws.onopen = () => {
         updateConnectionStatus(true);
@@ -1152,7 +1298,7 @@ function updateWhisperStatus(data) {
 
 async function controlWhisper(action) {
     try {
-        const resp = await fetch(`${API_BASE}/whisper/${action}`, { method: 'POST' });
+        const resp = await apiFetch(`${API_BASE}/whisper/${action}`, { method: 'POST' });
         const data = await resp.json();
         if (data.success) {
             const key = action === 'start' ? 'toast.starting' : action === 'stop' ? 'toast.stopping' : 'toast.restarting';
@@ -1170,7 +1316,7 @@ async function switchModel() {
     if (!model) return;
     try {
         showToast(t('whisper.switching'), 'info');
-        const resp = await fetch(`${API_BASE}/whisper/model`, {
+        const resp = await apiFetch(`${API_BASE}/whisper/model`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ model })
@@ -1356,7 +1502,7 @@ function showSection(name) {
 async function loadRecords(search = '') {
     try {
         const url = `${API_BASE}/records?limit=50&search=${encodeURIComponent(search)}`;
-        const resp = await fetch(url);
+        const resp = await apiFetch(url);
         const data = await resp.json();
         renderRecords(data.records || []);
     } catch (e) {
@@ -1394,7 +1540,7 @@ function renderRecords(records) {
         <tr>
             <td class="py-3 text-slate-400 font-mono text-xs">${formatDateTime(r.timestamp)}</td>
             <td class="py-3">${escapeHtml(r.filename || '--')}</td>
-            <td class="py-3"><span class="px-2 py-0.5 rounded-md bg-slate-800 text-xs">${r.language || 'auto'}</span></td>
+            <td class="py-3"><span class="px-2 py-0.5 rounded-md bg-slate-800 text-xs">${escapeHtml(r.language || 'auto')}</span></td>
             <td class="py-3">${modelTag}${llmTag}</td>
             <td class="py-3 text-slate-400">${formatTime(r.duration)}</td>
             <td class="py-3 text-slate-400">${formatTime(convert)}</td>
@@ -1439,7 +1585,7 @@ function handleNewRecord(record) {
 window.correctRecord = async function(id) {
     showToast(t('records.correcting'), 'info');
     try {
-        const resp = await fetch(`${API_BASE}/records/${id}/correct`, { method: 'POST' });
+        const resp = await apiFetch(`${API_BASE}/records/${id}/correct`, { method: 'POST' });
         const data = await resp.json();
         if (data.success) {
             showToast(t('records.corrected') + (data.llm_model ? ` (AI: ${data.llm_model})` : ''), 'success');
@@ -1456,7 +1602,7 @@ window.correctRecord = async function(id) {
 window.deleteRecord = async function(id) {
     if (!confirm(t('records.delete_confirm'))) return;
     try {
-        const resp = await fetch(`${API_BASE}/records/${id}`, { method: 'DELETE' });
+        const resp = await apiFetch(`${API_BASE}/records/${id}`, { method: 'DELETE' });
         const data = await resp.json();
         if (data.success) {
             showToast(t('records.deleted'), 'success');
@@ -1474,7 +1620,7 @@ window.deleteRecord = async function(id) {
 window.clearRecords = async function() {
     if (!confirm(t('records.clear_confirm'))) return;
     try {
-        const resp = await fetch(`${API_BASE}/records`, { method: 'DELETE' });
+        const resp = await apiFetch(`${API_BASE}/records`, { method: 'DELETE' });
         const data = await resp.json();
         if (data.success) {
             showToast(t('records.cleared'), 'success');
@@ -1578,7 +1724,7 @@ function appendLogLine(source, line) {
 
 async function loadLogs() {
     try {
-        const resp = await fetch(`${API_BASE}/logs?lines=200`);
+        const resp = await apiFetch(`${API_BASE}/logs?lines=200`);
         const data = await resp.json();
         const terminal = $('#log-terminal');
         terminal.innerHTML = '';
@@ -1593,7 +1739,7 @@ async function loadLogs() {
 // ---------------------------------------------------------------------------
 async function loadStats() {
     try {
-        const resp = await fetch(`${API_BASE}/stats`);
+        const resp = await apiFetch(`${API_BASE}/stats`);
         const data = await resp.json();
         $('#stat-today').textContent = data.today || 0;
         $('#stat-total').textContent = data.total || 0;
@@ -1613,7 +1759,7 @@ async function loadStats() {
 // ---------------------------------------------------------------------------
 async function loadSettings() {
     try {
-        const resp = await fetch(`${API_BASE}/config`);
+        const resp = await apiFetch(`${API_BASE}/config`);
         const data = await resp.json();
         config = { ...config, ...data };
 
@@ -1648,14 +1794,19 @@ async function loadSettings() {
         if ($('#setting-deepseek-base-url')) {
             $('#setting-deepseek-base-url').value = config.deepseek_base_url || '';
         }
+        // #5: API キーは平文で返されない。保存済みならプレースホルダーで維持を促す
         if ($('#setting-deepseek-key')) {
-            $('#setting-deepseek-key').value = config.deepseek_api_key || '';
+            $('#setting-deepseek-key').value = '';
+            $('#setting-deepseek-key').placeholder = config.deepseek_has_key
+                ? `保存済み ${config.deepseek_key_masked || ''}（未入力なら維持）`
+                : '';
         }
         if ($('#setting-deepseek-model')) {
             $('#setting-deepseek-model').value = config.deepseek_model || 'deepseek-chat';
         }
         updateActiveProfileLabel();
         await loadLLMProfiles();
+        await loadAuthTokenDisplay();
     } catch (e) {
         console.error('Failed to load settings:', e);
     }
@@ -1684,7 +1835,6 @@ async function saveSettings() {
         gpu_temp_threshold: $('#setting-temp').value,
         ui_language: newUiLanguage,
         ai_correct_enabled: $('#toggle-ai-correct').checked,
-        deepseek_api_key: $('#setting-deepseek-key').value,
         deepseek_model: $('#setting-deepseek-model').value,
         deepseek_base_url: $('#setting-deepseek-base-url').value,
         whisper_mode: $('#setting-speed-mode').value,
@@ -1693,9 +1843,12 @@ async function saveSettings() {
         whisper_temperature: $('#setting-temperature').value,
         whisper_vad_min_silence_ms: $('#setting-vad-ms').value,
     };
+    // #5: キー欄が空なら送信しない（既存キーを維持）
+    const newKey = $('#setting-deepseek-key').value.trim();
+    if (newKey) data.deepseek_api_key = newKey;
 
     try {
-        const resp = await fetch(`${API_BASE}/config`, {
+        const resp = await apiFetch(`${API_BASE}/config`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -1748,7 +1901,7 @@ async function testAIConnection() {
     result.className = 'mt-2 text-sm text-slate-400';
     result.textContent = t('ai.testing');
     try {
-        const resp = await fetch(`${API_BASE}/ai/test`, {
+        const resp = await apiFetch(`${API_BASE}/ai/test`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ api_key: apiKey, model: model, base_url: baseUrl })
@@ -1777,12 +1930,14 @@ async function testAIConnection() {
 async function saveAICorrectEnabled() {
     const data = {
         ai_correct_enabled: $('#toggle-ai-correct').checked,
-        deepseek_api_key: $('#setting-deepseek-key').value,
         deepseek_model: $('#setting-deepseek-model').value,
         deepseek_base_url: $('#setting-deepseek-base-url').value,
     };
+    // #5: キー欄が空なら送信しない（既存キーを維持）
+    const newKey = $('#setting-deepseek-key').value.trim();
+    if (newKey) data.deepseek_api_key = newKey;
     try {
-        await fetch(`${API_BASE}/config`, {
+        await apiFetch(`${API_BASE}/config`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -1826,7 +1981,7 @@ function renderLLMProfiles(profiles) {
 
 async function loadLLMProfiles() {
     try {
-        const resp = await fetch(`${API_BASE}/llm/profiles`);
+        const resp = await apiFetch(`${API_BASE}/llm/profiles`);
         const data = await resp.json();
         renderLLMProfiles(data.profiles || []);
         updateActiveProfileLabel();
@@ -1841,7 +1996,11 @@ function openProfileForm(profile) {
     editingProfileId = profile ? profile.id : null;
     $('#llm-f-name').value = profile ? (profile.name || '') : '';
     $('#llm-f-base').value = profile ? (profile.base_url || '') : '';
-    $('#llm-f-key').value = profile ? (profile.api_key || '') : '';
+    // #5: キーは平文で返されない。保存済みならプレースホルダーで維持を促す
+    $('#llm-f-key').value = '';
+    $('#llm-f-key').placeholder = profile && profile.has_key
+        ? `保存済み ${profile.key_masked || ''}（未入力なら維持）`
+        : '';
     $('#llm-f-model').value = profile ? (profile.model || '') : '';
     $('#llm-profile-form').classList.remove('hidden');
     $('#llm-f-name').focus();
@@ -1856,9 +2015,11 @@ async function saveProfile() {
     const payload = {
         name: $('#llm-f-name').value.trim(),
         base_url: $('#llm-f-base').value.trim(),
-        api_key: $('#llm-f-key').value.trim(),
         model: $('#llm-f-model').value.trim(),
     };
+    // #5: キー欄が空なら送信しない（既存キーを維持）。空文字での明示クリアは不可
+    const newKey = $('#llm-f-key').value.trim();
+    if (newKey) payload.api_key = newKey;
     if (!payload.name || !payload.base_url) {
         showToast(t('llm.need_name_url'), 'error');
         return;
@@ -1866,7 +2027,7 @@ async function saveProfile() {
     try {
         const url = editingProfileId ? `${API_BASE}/llm/profiles/${editingProfileId}` : `${API_BASE}/llm/profiles`;
         const method = editingProfileId ? 'PUT' : 'POST';
-        const resp = await fetch(url, {
+        const resp = await apiFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1891,12 +2052,14 @@ async function syncActiveProfileFromFields() {
     const payload = {
         name: active.name,
         base_url: $('#setting-deepseek-base-url').value.trim(),
-        api_key: $('#setting-deepseek-key').value.trim(),
         model: $('#setting-deepseek-model').value.trim(),
     };
+    // #5: キー欄が空なら api_key を送信しない（既存キーを維持。空文字はバックエンドでキー削除扱いのため）
+    const newKey = $('#setting-deepseek-key').value.trim();
+    if (newKey) payload.api_key = newKey;
     if (!payload.base_url || !payload.model) return;
     try {
-        await fetch(`${API_BASE}/llm/profiles/${active.id}`, {
+        await apiFetch(`${API_BASE}/llm/profiles/${active.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1909,7 +2072,7 @@ async function syncActiveProfileFromFields() {
 
 window.activateLLMProfile = async function (id) {
     try {
-        const resp = await fetch(`${API_BASE}/llm/profiles/${id}/activate`, { method: 'POST' });
+        const resp = await apiFetch(`${API_BASE}/llm/profiles/${id}/activate`, { method: 'POST' });
         const data = await resp.json();
         if (data.success) {
             showToast(t('llm.activate_success'), 'success');
@@ -1931,7 +2094,7 @@ window.editLLMProfile = function (id) {
 window.deleteLLMProfile = async function (id) {
     if (!confirm(t('llm.delete_confirm'))) return;
     try {
-        const resp = await fetch(`${API_BASE}/llm/profiles/${id}`, { method: 'DELETE' });
+        const resp = await apiFetch(`${API_BASE}/llm/profiles/${id}`, { method: 'DELETE' });
         const data = await resp.json();
         if (data.success) {
             showToast(t('llm.deleted'), 'success');
@@ -1950,7 +2113,7 @@ window.deleteLLMProfile = async function (id) {
 // ---------------------------------------------------------------------------
 async function loadAutostartStatus() {
     try {
-        const resp = await fetch(`${API_BASE}/autostart`);
+        const resp = await apiFetch(`${API_BASE}/autostart`);
         const data = await resp.json();
         $('#toggle-autostart').checked = data.enabled;
         $('#autostart-status').textContent = t(data.enabled ? 'autostart.status.enabled' : 'autostart.status.disabled');
@@ -1962,7 +2125,7 @@ async function loadAutostartStatus() {
 
 async function toggleAutostart(enabled) {
     try {
-        const resp = await fetch(`${API_BASE}/autostart`, {
+        const resp = await apiFetch(`${API_BASE}/autostart`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ enabled })
@@ -2111,7 +2274,7 @@ function initEventListeners() {
             if (speedModeSelect) speedModeSelect.value = v;
             config.whisper_mode = v;
             try {
-                await fetch(`${API_BASE}/config`, {
+                await apiFetch(`${API_BASE}/config`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ whisper_mode: v }),
@@ -2149,6 +2312,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initChart();
     initEventListeners();
     initTrendResize();
+    initAuth();
+    setupAuthUI();
     connectWebSocket();
     loadStats();
     loadRecords();
