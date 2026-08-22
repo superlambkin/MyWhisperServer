@@ -1578,7 +1578,8 @@ function updateModelInfo() {
 }
 
 async function switchModel(modelName) {
-    const model = modelName || $('#select-model').value;
+    // click イベント等が渡された場合を弾く（文字列モデル名のみ受け付ける）
+    const model = typeof modelName === 'string' && modelName ? modelName : $('#select-model').value;
     if (!model) return;
     // 危険モデルは切替前に確認（未キャッシュなら大容量 DL + VRAM 不足で OOM の恐れ）
     const vram = modelName ? modelVramFromCatalog(modelName) : selectedModelVram();
@@ -2805,7 +2806,8 @@ function initEventListeners() {
     $('#btn-start-whisper').addEventListener('click', () => controlWhisper('start'));
     $('#btn-stop-whisper').addEventListener('click', () => controlWhisper('stop'));
     $('#btn-restart-whisper').addEventListener('click', () => controlWhisper('restart'));
-    $('#btn-switch-model').addEventListener('click', switchModel);
+    // 引数無しで呼ぶ（click イベントが modelName に渡るのを防ぐ。switchToModel は文字列を渡す）
+    $('#btn-switch-model').addEventListener('click', () => switchModel());
     const modelSel = $('#select-model');
     if (modelSel) modelSel.addEventListener('change', updateModelInfo);
 
