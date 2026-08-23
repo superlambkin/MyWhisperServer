@@ -15,3 +15,8 @@ edge-tts>=7.0.0
 kokoro>=0.9.4
 misaki[ja]>=0.8
 soundfile>=0.12
+# PaddleOCR（画像OCR + PDF→Markdown）。GPU wheel は PyPI に無いため公式インデックスから導入:
+#   python -m pip install paddlepaddle-gpu==3.3.1 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
+# 下記は PyPI で導入可能な依存（PP-StructureV3 には paddlex[ocr] が必要）
+paddleocr>=3.7.0
+paddlex[ocr]>=3.7.2

@@ -14,7 +14,15 @@ const I18N = {
         "nav.logging": "记录日志",
         "nav.settings": "设置",
         "nav.readme": "Readme",
+        "nav.ocr": "OCR",
         "sidebar.whisper_service": "Whisper 服务",
+        "sidebar.ocr_service": "OCR 服务",
+        "sidebar.tts_service": "TTS 服务",
+        "sidebar.llm_service": "LLM 活用",
+        "sidebar.llm_processing": "AI 校正中...",
+        "sidebar.llm_idle": "待机中",
+        "sidebar.start": "开始",
+        "sidebar.stop": "停止",
         "status.checking": "检查中...",
         "status.running": "待机中",
         "status.stopped": "已停止",
@@ -68,6 +76,11 @@ const I18N = {
         "gpu.model_total": "合计",
         "gpu.tts_cpu": "CPU",
         "gpu.tts_cloud": "云",
+        "gpu.model_whisper": "Whisper 模型",
+        "gpu.model_tts": "TTS 模型",
+        "gpu.model_ocr": "OCR 模型",
+        "gpu.vram_pct": "占总比",
+        "gpu.other": "其他",
         "realtime.trend": "实时趋势",
         "realtime.shrink": "缩小",
         "realtime.expand": "放大",
@@ -78,6 +91,13 @@ const I18N = {
         "realtime.log_stop": "停止记录",
         "realtime.log_recording": "记录中",
         "realtime.log_recording_tip": "正在记录实时数据...",
+        "realtime.auto_start": "自动记录",
+        "realtime.auto_tip": "任一服务（Whisper/TTS/OCR/LLM）从待机变为活动时自动开始，全部待机或活动中的服务停止时自动结束",
+        "realtime.auto_start_on": "自动记录已开启（服务活动时自动开始）",
+        "realtime.auto_start_off": "自动记录已关闭",
+        "realtime.sample_period": "采样周期",
+        "realtime.wave_span": "波形跨度",
+        "realtime.point_unit": "点",
         "logging.title": "记录日志",
         "logging.refresh": "刷新",
         "logging.empty": "暂无记录",
@@ -86,6 +106,7 @@ const I18N = {
         "logging.copy": "复制",
         "logging.delete": "删除",
         "logging.copied": "已复制",
+        "logging.copy_failed": "复制失败",
         "logging.delete_confirm": "删除此日志？",
         "logging.deleted": "已删除",
         "logging.active_badge": "记录中",
@@ -96,7 +117,33 @@ const I18N = {
         "logging.avg_temp": "平均温度",
         "logging.lines": "行数",
         "logging.size": "大小",
+        "logging.graph": "图",
+        "logging.data": "数据",
+        "logging.select_tip": "点击可多选并叠加波形",
+        "logging.clear_select": "清除选择",
+        "logging.select_all": "全选",
+        "logging.batch_delete": "批量删除",
+        "logging.delete_selected_confirm": "确定删除选中的 {n} 个日志吗？",
+        "logging.batch_deleted": "已删除 {n} 个日志",
+        "logging.sel_count": "已选 {n} 个",
+        "logging.monitors": "监控显示",
+        "logging.download_as": "按当前显示格式（JSONL/CSV）下载",
         "whisper.control": "Whisper 服务控制",
+        "control.title": "服务控制",
+        "control.whisper": "Whisper",
+        "control.tts": "TTS",
+        "control.ocr": "OCR",
+        "tts.engine": "引擎",
+        "tts.device": "设备",
+        "tts.load": "读入",
+        "tts.unload": "释放",
+        "tts.reload": "重读",
+        "tts.status_loaded": "TTS 模型已读入",
+        "tts.status_idle": "未读入",
+        "tts.resident": "常驻",
+        "tts.edge_cloud": "云端",
+        "tts.speaking": "朗读中",
+        "tts.paused": "已暂停",
         "whisper.start": "启动服务",
         "whisper.stop": "停止服务",
         "whisper.restart": "重启服务",
@@ -109,6 +156,56 @@ const I18N = {
         "whisper.switch_model": "切换模型",
         "whisper.switching": "模型切换中，服务重启...",
         "whisper.switch_done": "模型已切换",
+        "ocr.control": "OCR 服务控制",
+        "ocr.start": "启动服务",
+        "ocr.stop": "停止服务",
+        "ocr.restart": "重启服务",
+        "ocr.status": "状态",
+        "ocr.pid": "进程 ID",
+        "ocr.uptime": "启动时间",
+        "ocr.elapsed_time": "经时时间",
+        "ocr.engine": "引擎",
+        "ocr.managed": "Dashboard 托管",
+        "ocr.external": "外部启动",
+        "ocr.device": "执行设备",
+        "ocr.device.gpu": "GPU（CUDA）",
+        "ocr.device.cpu": "CPU",
+        "ocr.lang": "语言",
+        "ocr.lang.japan": "日本語",
+        "ocr.lang.en": "English",
+        "ocr.lang.ch": "中文",
+        "ocr.lang.ko": "한국어",
+        "ocr.execute": "OCR 执行",
+        "ocr.mode_ocr": "图像 OCR",
+        "ocr.mode_pdf": "PDF → Markdown",
+        "ocr.run": "执行",
+        "ocr.result": "结果",
+        "ocr.download_md": "下载 Markdown",
+        "ocr.vram_warn": "警告：6GB VRAM 同时运行 Whisper + Kokoro + PaddleOCR 时可能 VRAM 不足。PDF 结构解析（PP-StructureV3）仅在用时加载模型。",
+        "ocr.settings": "OCR 设置",
+        "ocr.autostart": "启动时自动启动 OCR 服务",
+        "ocr.autostart_desc": "Dashboard 启动时也自动启动 PaddleOCR 服务（默认: 关闭）",
+        "ocr.not_running": "OCR 服务未运行",
+        "ocr.no_file": "请选择文件",
+        "ocr.running_task": "OCR 处理中...",
+        "ocr.done": "处理完成",
+        "ocr.copied": "已复制",
+        "ocr.copy_failed": "复制失败",
+        "ocr.error": "OCR 失败",
+        "ocr.format": "输出格式",
+        "ocr.format_md": "MD",
+        "ocr.format_txt": "TXT",
+        "ocr.ai_correct": "AI 校正",
+        "ocr.ai_correct_on": "校正",
+        "ocr.ai_correct_off": "不校正",
+        "ocr.converting": "转换中",
+        "ocr.elapsed": "已用时",
+        "ocr.pages": "页数",
+        "ocr.speed": "转换速度",
+        "ocr.time": "转换时间",
+        "ocr.page_unit": "页",
+        "ocr.corrected": "已 AI 校正",
+        "ocr.download": "下载",
         "model.vram_ok": "✓ VRAM 充足",
         "model.vram_warn": "⚠️ VRAM 偏紧",
         "model.vram_danger": "🔴 不推荐（6GB VRAM 可能不足）",
@@ -131,6 +228,8 @@ const I18N = {
         "model.download_start": "开始下载",
         "model.vibevoice_manage": "VibeVoice 模型",
         "model.kokoro_manage": "Kokoro 模型",
+        "model.paddleocr_manage": "PaddleOCR 模型",
+        "model.cache_dir": "保存位置",
         "model.delete": "删除",
         "model.delete_confirm": "确定删除该模型？模型文件将从磁盘删除。",
         "model.deleted": "已删除",
@@ -151,6 +250,7 @@ const I18N = {
         "records.model": "模型",
         "records.copy": "复制文本",
         "records.copied": "已复制到剪贴板",
+        "records.copy_failed": "复制失败（未获得剪贴板权限等）",
         "records.view_all": "查看全部",
         "records.close": "关闭",
         "records.llm_corrected": "LLM AI 校正",
@@ -173,9 +273,10 @@ const I18N = {
         "records.delete": "删除",
         "records.delete_confirm": "确定删除这条记录吗？",
         "records.deleted": "记录已删除",
-        "records.clear_all": "清空全部",
-        "records.clear_confirm": "确定清空全部转换记录吗？此操作不可撤销。",
-        "records.cleared": "记录已全部清空",
+        "records.batch_delete": "批量删除",
+        "records.select_all": "全选",
+        "records.batch_delete_confirm": "确定删除选中的 {n} 条记录吗？",
+        "records.batch_deleted": "已删除 {n} 条记录",
         "records.correct": "校正",
         "records.correcting": "AI 校正中，请稍候...",
         "records.corrected": "校正完成",
@@ -247,6 +348,18 @@ const I18N = {
         "settings.save": "保存设置",
         "settings.saved": "设置已保存",
         "settings.save_failed": "保存失败",
+        "settings.copy": "复制",
+        "settings.token_save": "保存令牌",
+        "settings.token_saved": "令牌已保存",
+        "settings.token_save_failed": "令牌保存失败",
+        "settings.token_required": "请输入令牌",
+        "settings.conn_token": "连接令牌（LAN 控制用）",
+        "settings.conn_token_desc": "在其他设备的写入/控制请求与 WebSocket 连接中使用此令牌。本机访问无需令牌。",
+        "settings.auth_enabled": "连接令牌认证",
+        "settings.auth_enabled_desc": "关闭后，其他设备无需令牌即可执行写入・控制操作",
+        "settings.auth_enabled_on": "已启用连接令牌认证",
+        "settings.auth_enabled_off": "已禁用连接令牌认证",
+        "settings.regenerate": "重新生成",
         "settings.hint": "更改后点击保存。Whisper 高速化・模型相关设置需重启 Whisper 服务生效。",
         "settings.tts": "朗读 TTS",
         "settings.tts_engine": "TTS 引擎",
@@ -284,6 +397,10 @@ const I18N = {
         "toast.restarting": "服务重启中",
         "toast.action_failed": "操作失败",
         "toast.network_error": "网络错误",
+        "toast.saved": "已保存",
+        "auth.title": "需要连接令牌",
+        "auth.desc": "写入・控制操作需要连接令牌。请在设置 → 界面设置中查看令牌，或由本机浏览器自动取得。",
+        "auth.save": "保存",
     },
     ja: {
         "nav.dashboard": "ダッシュボード",
@@ -292,7 +409,15 @@ const I18N = {
         "nav.logging": "ログ履歴",
         "nav.settings": "設定",
         "nav.readme": "Readme",
+        "nav.ocr": "OCR",
         "sidebar.whisper_service": "Whisper サービス",
+        "sidebar.ocr_service": "OCR サービス",
+        "sidebar.tts_service": "TTS サービス",
+        "sidebar.llm_service": "LLM 活用",
+        "sidebar.llm_processing": "AI 校正中...",
+        "sidebar.llm_idle": "待機中",
+        "sidebar.start": "開始",
+        "sidebar.stop": "停止",
         "status.checking": "確認中...",
         "status.running": "待機中",
         "status.stopped": "停止中",
@@ -346,6 +471,11 @@ const I18N = {
         "gpu.model_total": "合計",
         "gpu.tts_cpu": "CPU",
         "gpu.tts_cloud": "クラウド",
+        "gpu.model_whisper": "Whisper モデル",
+        "gpu.model_tts": "TTS モデル",
+        "gpu.model_ocr": "OCR モデル",
+        "gpu.vram_pct": "全体割合",
+        "gpu.other": "その他",
         "realtime.trend": "リアルタイム推移",
         "realtime.shrink": "縮小",
         "realtime.expand": "拡大",
@@ -356,6 +486,13 @@ const I18N = {
         "realtime.log_stop": "記録停止",
         "realtime.log_recording": "記録中",
         "realtime.log_recording_tip": "リアルタイム計測を記録中...",
+        "realtime.auto_start": "自動記録",
+        "realtime.auto_tip": "各サービス（Whisper/TTS/OCR/LLM）が待機から稼働に変わった瞬間に自動開始し、全サービスが待機、または今回のセッションで活動中のサービスが停止した時に自動終了します",
+        "realtime.auto_start_on": "自動記録を有効化（サービス稼働時に自動開始）",
+        "realtime.auto_start_off": "自動記録を無効化しました",
+        "realtime.sample_period": "サンプリング周期",
+        "realtime.wave_span": "波形間隔",
+        "realtime.point_unit": "点",
         "logging.title": "ログ履歴",
         "logging.refresh": "更新",
         "logging.empty": "記録がありません",
@@ -364,6 +501,7 @@ const I18N = {
         "logging.copy": "コピー",
         "logging.delete": "削除",
         "logging.copied": "コピーしました",
+        "logging.copy_failed": "コピーに失敗しました",
         "logging.delete_confirm": "このログを削除しますか？",
         "logging.deleted": "削除しました",
         "logging.active_badge": "記録中",
@@ -374,7 +512,33 @@ const I18N = {
         "logging.avg_temp": "平均温度",
         "logging.lines": "行数",
         "logging.size": "サイズ",
+        "logging.graph": "グラフ",
+        "logging.data": "実データ",
+        "logging.select_tip": "クリックで複数選択・波形を重ね合わせ可能",
+        "logging.clear_select": "選択解除",
+        "logging.select_all": "すべて選択",
+        "logging.batch_delete": "選択削除",
+        "logging.delete_selected_confirm": "選択した {n} 件のログを削除しますか？",
+        "logging.batch_deleted": "{n} 件のログを削除しました",
+        "logging.sel_count": "{n} 件選択中",
+        "logging.monitors": "モニタ表示",
+        "logging.download_as": "表示中の形式（JSONL/CSV）でダウンロード",
         "whisper.control": "Whisper サービス制御",
+        "control.title": "サービス制御",
+        "control.whisper": "Whisper",
+        "control.tts": "TTS",
+        "control.ocr": "OCR",
+        "tts.engine": "エンジン",
+        "tts.device": "デバイス",
+        "tts.load": "読込",
+        "tts.unload": "解放",
+        "tts.reload": "再読込",
+        "tts.status_loaded": "TTS モデル読込済み",
+        "tts.status_idle": "未読込",
+        "tts.resident": "常駐",
+        "tts.edge_cloud": "クラウド",
+        "tts.speaking": "読み上げ中",
+        "tts.paused": "一時停止中",
         "whisper.start": "サービス開始",
         "whisper.stop": "サービス停止",
         "whisper.restart": "サービス再起動",
@@ -387,6 +551,56 @@ const I18N = {
         "whisper.switch_model": "モデル切替",
         "whisper.switching": "モデル切替中、サービス再起動...",
         "whisper.switch_done": "モデルを切り替えました",
+        "ocr.control": "OCR サービス制御",
+        "ocr.start": "サービス開始",
+        "ocr.stop": "サービス停止",
+        "ocr.restart": "再起動",
+        "ocr.status": "状態",
+        "ocr.pid": "プロセス ID",
+        "ocr.uptime": "起動時間",
+        "ocr.elapsed_time": "経過時間",
+        "ocr.engine": "エンジン",
+        "ocr.managed": "Dashboard 管理",
+        "ocr.external": "外部起動",
+        "ocr.device": "実行デバイス",
+        "ocr.device.gpu": "GPU（CUDA）",
+        "ocr.device.cpu": "CPU",
+        "ocr.lang": "言語",
+        "ocr.lang.japan": "日本語",
+        "ocr.lang.en": "English",
+        "ocr.lang.ch": "中文",
+        "ocr.lang.ko": "한국어",
+        "ocr.execute": "OCR 実行",
+        "ocr.mode_ocr": "画像 OCR",
+        "ocr.mode_pdf": "PDF → Markdown",
+        "ocr.run": "実行",
+        "ocr.result": "結果",
+        "ocr.download_md": "Markdown ダウンロード",
+        "ocr.vram_warn": "警告: 6GB VRAM では Whisper + Kokoro + PaddleOCR の同時稼働で VRAM が不足する可能性があります。PDF 構造解析（PP-StructureV3）は使用時のみモデルをロードします。",
+        "ocr.settings": "OCR 設定",
+        "ocr.autostart": "起動時に OCR サービスを自動起動",
+        "ocr.autostart_desc": "Dashboard 起動時に PaddleOCR サービスも自動起動（既定: オフ）",
+        "ocr.not_running": "OCR サービスが起動していません",
+        "ocr.no_file": "ファイルを選択してください",
+        "ocr.running_task": "OCR 処理中...",
+        "ocr.done": "処理が完了しました",
+        "ocr.copied": "コピーしました",
+        "ocr.copy_failed": "コピーに失敗しました",
+        "ocr.error": "OCR 処理に失敗しました",
+        "ocr.format": "出力形式",
+        "ocr.format_md": "MD",
+        "ocr.format_txt": "TXT",
+        "ocr.ai_correct": "AI 校正",
+        "ocr.ai_correct_on": "校正する",
+        "ocr.ai_correct_off": "校正しない",
+        "ocr.converting": "変換中",
+        "ocr.elapsed": "経過",
+        "ocr.pages": "ページ数",
+        "ocr.speed": "変換速度",
+        "ocr.time": "変換時間",
+        "ocr.page_unit": "枚",
+        "ocr.corrected": "AI 校正済み",
+        "ocr.download": "ダウンロード",
         "model.vram_ok": "✓ VRAM に収まる",
         "model.vram_warn": "⚠️ VRAM に注意",
         "model.vram_danger": "🔴 非推奨（6GB VRAM に収まらない恐れ）",
@@ -395,7 +609,7 @@ const I18N = {
         "model.vram_label": "VRAM 目安",
         "model.dl_label": "DL",
         "model.confirm_danger": "このモデルは 6GB カードの VRAM に収まらない恐れがあります。それでも切替えますか？",
-        "model.manage": "モデル管理",
+        "model.manage": "音声モデル管理",
         "model.dir": "モデル保存先",
         "model.dir_hint": "モデル切替・新規ダウンロード時の保存先（空欄=既定）",
         "model.downloaded": "✓ DL済",
@@ -409,6 +623,8 @@ const I18N = {
         "model.download_start": "ダウンロードを開始しました",
         "model.vibevoice_manage": "VibeVoice モデル",
         "model.kokoro_manage": "Kokoro モデル",
+        "model.paddleocr_manage": "PaddleOCR モデル",
+        "model.cache_dir": "保存先",
         "model.delete": "削除",
         "model.delete_confirm": "このモデルを削除しますか？モデルファイルがディスクから削除されます。",
         "model.deleted": "削除しました",
@@ -429,6 +645,7 @@ const I18N = {
         "records.model": "モデル",
         "records.copy": "テキストをコピー",
         "records.copied": "クリップボードにコピーしました",
+        "records.copy_failed": "コピーに失敗しました（クリップボード権限がない等）",
         "records.view_all": "すべて表示",
         "records.close": "閉じる",
         "records.llm_corrected": "LLM AI 校正",
@@ -451,9 +668,10 @@ const I18N = {
         "records.delete": "削除",
         "records.delete_confirm": "この記録を削除しますか？",
         "records.deleted": "記録を削除しました",
-        "records.clear_all": "全削除",
-        "records.clear_confirm": "すべての変換履歴を削除しますか？この操作は元に戻せません。",
-        "records.cleared": "履歴をすべて削除しました",
+        "records.batch_delete": "選択削除",
+        "records.select_all": "すべて選択",
+        "records.batch_delete_confirm": "選択した {n} 件の記録を削除しますか？",
+        "records.batch_deleted": "{n} 件の記録を削除しました",
         "records.correct": "校正",
         "records.correcting": "AI 校正中、お待ちください...",
         "records.corrected": "校正が完了しました",
@@ -461,14 +679,14 @@ const I18N = {
         "logs.all": "すべて",
         "logs.clear": "表示をクリア",
         "logs.waiting": "ログを待っています...",
-        "settings.transcription": "変換の既定設定",
+        "settings.transcription": "変換設定",
         "settings.interface": "インターフェース設定",
-        "settings.language": "既定の言語",
+        "settings.language": "言語",
         "settings.language.auto": "自動検出",
         "settings.language.zh": "中文",
         "settings.language.en": "English",
         "settings.language.ja": "日本語",
-        "settings.output": "既定の出力形式",
+        "settings.output": "出力形式",
         "settings.output.txt": "テキスト (txt)",
         "settings.output.srt": "字幕 (srt)",
         "settings.refresh": "更新間隔 (ミリ秒)",
@@ -525,6 +743,18 @@ const I18N = {
         "settings.save": "設定を保存",
         "settings.saved": "設定を保存しました",
         "settings.save_failed": "保存に失敗しました",
+        "settings.copy": "コピー",
+        "settings.token_save": "トークンを保存",
+        "settings.token_saved": "トークンを保存しました",
+        "settings.token_save_failed": "トークンの保存に失敗しました",
+        "settings.token_required": "トークンを入力してください",
+        "settings.conn_token": "接続トークン（LAN 制御用）",
+        "settings.conn_token_desc": "他のデバイスからの書き込み・制御リクエストと WebSocket 接続で使用します。本機からのアクセスはトークン不要です。",
+        "settings.auth_enabled": "接続トークン認証",
+        "settings.auth_enabled_desc": "オフにすると、他のデバイスはトークンなしで書き込み・制御操作を実行できます",
+        "settings.auth_enabled_on": "接続トークン認証を有効化しました",
+        "settings.auth_enabled_off": "接続トークン認証を無効化しました",
+        "settings.regenerate": "再生成",
         "settings.hint": "変更後は「保存」を押してください。Whisper 高速化・モデル関連の設定は Whisper サービスの再起動で反映されます。",
         "settings.tts": "読み上げ TTS",
         "settings.tts_engine": "TTS エンジン",
@@ -562,6 +792,10 @@ const I18N = {
         "toast.restarting": "サービスを再起動しています",
         "toast.action_failed": "操作に失敗しました",
         "toast.network_error": "ネットワークエラー",
+        "toast.saved": "保存しました",
+        "auth.title": "接続トークンが必要です",
+        "auth.desc": "書き込み・制御操作には接続トークンが必要です。設定 → インターフェースで確認するか、本機のブラウザで自動取得してください。",
+        "auth.save": "保存",
     },
     en: {
         "nav.dashboard": "Dashboard",
@@ -570,7 +804,15 @@ const I18N = {
         "nav.logging": "Log History",
         "nav.settings": "Settings",
         "nav.readme": "Readme",
+        "nav.ocr": "OCR",
         "sidebar.whisper_service": "Whisper Service",
+        "sidebar.ocr_service": "OCR Service",
+        "sidebar.tts_service": "TTS Service",
+        "sidebar.llm_service": "LLM Activity",
+        "sidebar.llm_processing": "AI correcting...",
+        "sidebar.llm_idle": "Idle",
+        "sidebar.start": "Start",
+        "sidebar.stop": "Stop",
         "status.checking": "Checking...",
         "status.running": "Standby",
         "status.stopped": "Stopped",
@@ -624,6 +866,11 @@ const I18N = {
         "gpu.model_total": "Total",
         "gpu.tts_cpu": "CPU",
         "gpu.tts_cloud": "Cloud",
+        "gpu.model_whisper": "Whisper Model",
+        "gpu.model_tts": "TTS Model",
+        "gpu.model_ocr": "OCR Model",
+        "gpu.vram_pct": "Share of total",
+        "gpu.other": "Other",
         "realtime.trend": "Real-time Trend",
         "realtime.shrink": "Shrink",
         "realtime.expand": "Expand",
@@ -634,6 +881,13 @@ const I18N = {
         "realtime.log_stop": "Stop Logging",
         "realtime.log_recording": "Recording",
         "realtime.log_recording_tip": "Recording real-time metrics...",
+        "realtime.auto_start": "Auto-record",
+        "realtime.auto_tip": "Auto-starts when any service (Whisper/TTS/OCR/LLM) becomes active, and auto-ends when all are idle or an active service stops",
+        "realtime.auto_start_on": "Auto-record enabled (starts when a service becomes active)",
+        "realtime.auto_start_off": "Auto-record disabled",
+        "realtime.sample_period": "Sample Period",
+        "realtime.wave_span": "Wave Span",
+        "realtime.point_unit": "pt",
         "logging.title": "Log History",
         "logging.refresh": "Refresh",
         "logging.empty": "No logs yet",
@@ -642,6 +896,7 @@ const I18N = {
         "logging.copy": "Copy",
         "logging.delete": "Delete",
         "logging.copied": "Copied",
+        "logging.copy_failed": "Copy failed",
         "logging.delete_confirm": "Delete this log?",
         "logging.deleted": "Deleted",
         "logging.active_badge": "Recording",
@@ -652,7 +907,33 @@ const I18N = {
         "logging.avg_temp": "Avg Temp",
         "logging.lines": "Lines",
         "logging.size": "Size",
+        "logging.graph": "Graph",
+        "logging.data": "Data",
+        "logging.select_tip": "Click to select (multiple) and overlay waveforms",
+        "logging.clear_select": "Clear selection",
+        "logging.select_all": "Select All",
+        "logging.batch_delete": "Delete Selected",
+        "logging.delete_selected_confirm": "Delete {n} selected log(s)?",
+        "logging.batch_deleted": "Deleted {n} log(s)",
+        "logging.sel_count": "{n} selected",
+        "logging.monitors": "Monitors",
+        "logging.download_as": "Download in current display format (JSONL/CSV)",
         "whisper.control": "Whisper Service Control",
+        "control.title": "Service Control",
+        "control.whisper": "Whisper",
+        "control.tts": "TTS",
+        "control.ocr": "OCR",
+        "tts.engine": "Engine",
+        "tts.device": "Device",
+        "tts.load": "Load",
+        "tts.unload": "Unload",
+        "tts.reload": "Reload",
+        "tts.status_loaded": "TTS model loaded",
+        "tts.status_idle": "Not loaded",
+        "tts.resident": "resident",
+        "tts.edge_cloud": "cloud",
+        "tts.speaking": "Speaking...",
+        "tts.paused": "Paused",
         "whisper.start": "Start Service",
         "whisper.stop": "Stop Service",
         "whisper.restart": "Restart Service",
@@ -665,6 +946,56 @@ const I18N = {
         "whisper.switch_model": "Switch Model",
         "whisper.switching": "Switching model, restarting service...",
         "whisper.switch_done": "Model switched",
+        "ocr.control": "OCR Service Control",
+        "ocr.start": "Start Service",
+        "ocr.stop": "Stop Service",
+        "ocr.restart": "Restart",
+        "ocr.status": "Status",
+        "ocr.pid": "Process ID",
+        "ocr.uptime": "Start Time",
+        "ocr.elapsed_time": "Elapsed",
+        "ocr.engine": "Engine",
+        "ocr.managed": "Dashboard managed",
+        "ocr.external": "External",
+        "ocr.device": "Device",
+        "ocr.device.gpu": "GPU (CUDA)",
+        "ocr.device.cpu": "CPU",
+        "ocr.lang": "Language",
+        "ocr.lang.japan": "日本語",
+        "ocr.lang.en": "English",
+        "ocr.lang.ch": "中文",
+        "ocr.lang.ko": "한국어",
+        "ocr.execute": "Run OCR",
+        "ocr.mode_ocr": "Image OCR",
+        "ocr.mode_pdf": "PDF → Markdown",
+        "ocr.run": "Run",
+        "ocr.result": "Result",
+        "ocr.download_md": "Download Markdown",
+        "ocr.vram_warn": "Warning: On 6GB VRAM, running Whisper + Kokoro + PaddleOCR together may exhaust VRAM. PDF structure analysis (PP-StructureV3) loads models only on demand.",
+        "ocr.settings": "OCR Settings",
+        "ocr.autostart": "Auto-start OCR service on launch",
+        "ocr.autostart_desc": "Also start the PaddleOCR service when Dashboard launches (default: off)",
+        "ocr.not_running": "OCR service is not running",
+        "ocr.no_file": "Please select a file",
+        "ocr.running_task": "Processing...",
+        "ocr.done": "Done",
+        "ocr.copied": "Copied",
+        "ocr.copy_failed": "Copy failed",
+        "ocr.error": "OCR failed",
+        "ocr.format": "Output format",
+        "ocr.format_md": "MD",
+        "ocr.format_txt": "TXT",
+        "ocr.ai_correct": "AI correction",
+        "ocr.ai_correct_on": "Correct",
+        "ocr.ai_correct_off": "No correction",
+        "ocr.converting": "Converting",
+        "ocr.elapsed": "Elapsed",
+        "ocr.pages": "Pages",
+        "ocr.speed": "Speed",
+        "ocr.time": "Time",
+        "ocr.page_unit": "pg",
+        "ocr.corrected": "AI corrected",
+        "ocr.download": "Download",
         "model.vram_ok": "✓ Fits in VRAM",
         "model.vram_warn": "⚠️ Tight VRAM",
         "model.vram_danger": "🔴 Not recommended (may exceed 6GB VRAM)",
@@ -687,6 +1018,8 @@ const I18N = {
         "model.download_start": "Download started",
         "model.vibevoice_manage": "VibeVoice Models",
         "model.kokoro_manage": "Kokoro Model",
+        "model.paddleocr_manage": "PaddleOCR Models",
+        "model.cache_dir": "Save location",
         "model.delete": "Delete",
         "model.delete_confirm": "Delete this model? Model files will be removed from disk.",
         "model.deleted": "Deleted",
@@ -707,6 +1040,7 @@ const I18N = {
         "records.model": "Model",
         "records.copy": "Copy Text",
         "records.copied": "Copied to clipboard",
+        "records.copy_failed": "Copy failed (no clipboard permission, etc.)",
         "records.view_all": "View All",
         "records.close": "Close",
         "records.llm_corrected": "LLM AI corrected",
@@ -729,9 +1063,10 @@ const I18N = {
         "records.delete": "Delete",
         "records.delete_confirm": "Delete this record?",
         "records.deleted": "Record deleted",
-        "records.clear_all": "Clear All",
-        "records.clear_confirm": "Delete all conversion history? This cannot be undone.",
-        "records.cleared": "All history cleared",
+        "records.batch_delete": "Delete Selected",
+        "records.select_all": "Select All",
+        "records.batch_delete_confirm": "Delete {n} selected record(s)?",
+        "records.batch_deleted": "Deleted {n} record(s)",
         "records.correct": "Correct",
         "records.correcting": "AI correcting, please wait...",
         "records.corrected": "Corrected",
@@ -803,6 +1138,18 @@ const I18N = {
         "settings.save": "Save Settings",
         "settings.saved": "Settings saved",
         "settings.save_failed": "Failed to save",
+        "settings.copy": "Copy",
+        "settings.token_save": "Save Token",
+        "settings.token_saved": "Token saved",
+        "settings.token_save_failed": "Failed to save token",
+        "settings.token_required": "Please enter a token",
+        "settings.conn_token": "Connection Token (LAN control)",
+        "settings.conn_token_desc": "Used for write/control requests and WebSocket connections from other devices. Access from this machine does not require a token.",
+        "settings.auth_enabled": "Connection token authentication",
+        "settings.auth_enabled_desc": "When off, other devices can perform write/control operations without a token",
+        "settings.auth_enabled_on": "Connection token authentication enabled",
+        "settings.auth_enabled_off": "Connection token authentication disabled",
+        "settings.regenerate": "Regenerate",
         "settings.hint": "Save after making changes. Speed & model-related settings apply after restarting the Whisper service.",
         "settings.tts": "Read-aloud TTS",
         "settings.tts_engine": "TTS Engine",
@@ -840,6 +1187,10 @@ const I18N = {
         "toast.restarting": "Service restarting",
         "toast.action_failed": "Operation failed",
         "toast.network_error": "Network error",
+        "toast.saved": "Saved",
+        "auth.title": "Connection token required",
+        "auth.desc": "Write/control operations require a connection token. View it in Settings → Interface, or obtain it automatically from this device's browser.",
+        "auth.save": "Save",
     }
 };
 
@@ -882,6 +1233,11 @@ function applyI18n() {
         const key = el.getAttribute('data-i18n-placeholder');
         el.placeholder = t(key, el.placeholder);
     });
+    // data-i18n-title（ツールチップ）
+    $all('[data-i18n-title]').forEach(el => {
+        const key = el.getAttribute('data-i18n-title');
+        el.title = t(key, el.title);
+    });
     // 页面标题
     const active = document.querySelector('.nav-link.active');
     if (active) {
@@ -891,6 +1247,7 @@ function applyI18n() {
     // 刷新动态区域
     updateConnectionStatus(ws && ws.readyState === WebSocket.OPEN);
     updateWhisperStatus(lastWhisperStatus || { running: false });
+    if (typeof lastOcrStatus !== 'undefined') updateOcrStatus(lastOcrStatus || { running: false });
     renderRecords(lastRecords || []);
     renderLLMProfiles(llmProfiles || []);
     renderReadme(); // Readme セクション（言語切替・初期化時に再描画）
@@ -945,6 +1302,8 @@ function applySpeedMode(mode) {
 
 let lastWhisperStatus = null;
 let lastRecords = null;
+let recordsSortKey = null; // 履历列ソートキー（null=未ソート）
+let recordsSortDir = 1;    // 1=昇順 / -1=降順
 let llmProfiles = []; // LLM プロファイル一覧
 let activeLlmModel = ''; // アクティブな LLM プロファイルのモデル名（AI 校正バー表示用）
 let currentConverting = false; // 是否正在转换（驱动状态显示与进度条）
@@ -952,6 +1311,7 @@ let currentModel = ''; // 実行中 Whisper モデル（リアルタイム監視
 let currentPhase = 'idle'; // 現在フェーズ: 'idle' | 'transcribe' | 'correct'（チャート帯・ピル表示用）
 let chartPhases = []; // チャート帯描画用の履歴フェーズ配列（system_history.phase のスライス）
 let realtimeLogActive = false; // リアルタイムロギング記録中か
+let realtimeLogAuto = false;   // 現在の記録セッションが自動開始（rtl_auto_start）か
 let trendWindow = parseInt(localStorage.getItem('trend_window') || '60', 10); // 趋势图横向显示点数
 let timeUnit = localStorage.getItem('records_time_unit') || 'sec'; // 履历时间显示单位: 'sec' | 'minsec'
 
@@ -1090,6 +1450,71 @@ async function copyAuthToken() {
     }
 }
 
+// 設定画面: 接続トークンを手動入力して保存
+async function saveAuthToken() {
+    const display = $('#auth-token-display');
+    if (!display) return;
+    const tok = display.value.trim();
+    if (!tok) { showToast(t('settings.token_required'), 'error'); return; }
+    try {
+        const resp = await apiFetch(`${API_BASE}/auth/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: tok })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            setToken(data.token);
+            if (ws) { try { ws.close(); } catch (e) {} }
+            connectWebSocket();
+            showToast(t('settings.token_saved'), 'success');
+        } else {
+            showToast(data.error || t('settings.token_save_failed'), 'error');
+        }
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+}
+
+// 接続トークン認証の有効/無効を UI に反映（無効時はトークン操作を不可視化）
+function applyAuthEnabledState(enabled) {
+    const toggle = $('#toggle-auth-enabled');
+    if (toggle) toggle.checked = !!enabled;
+    const controls = $('#auth-token-controls');
+    if (controls) {
+        controls.classList.toggle('opacity-40', !enabled);
+        controls.classList.toggle('pointer-events-none', !enabled);
+    }
+}
+
+// トグル切替: 設定画面のトグルで認証の有効/無効を即時保存
+async function toggleAuthEnabled() {
+    const toggle = $('#toggle-auth-enabled');
+    if (!toggle) return;
+    const enabled = toggle.checked;
+    try {
+        const resp = await apiFetch(`${API_BASE}/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ auth_enabled: enabled ? 'on' : 'off' })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            config.auth_enabled = enabled ? 'on' : 'off';
+            applyAuthEnabledState(enabled);
+            showToast(enabled ? t('settings.auth_enabled_on') : t('settings.auth_enabled_off'), 'success');
+            if (ws) { try { ws.close(); } catch (e) {} }
+            connectWebSocket();
+        } else {
+            applyAuthEnabledState(!enabled);  // 失敗時は元の状態へ
+            showToast(data.error || t('toast.action_failed'), 'error');
+        }
+    } catch (e) {
+        applyAuthEnabledState(!enabled);
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+}
+
 function setupAuthUI() {
     const saveBtn = $('#btn-auth-token-save');
     if (saveBtn) saveBtn.addEventListener('click', () => {
@@ -1115,6 +1540,10 @@ function setupAuthUI() {
     if (copyBtn) copyBtn.addEventListener('click', copyAuthToken);
     const regenBtn = $('#btn-auth-token-regenerate');
     if (regenBtn) regenBtn.addEventListener('click', regenerateAuthToken);
+    const saveSettingBtn = $('#btn-auth-token-save-setting');
+    if (saveSettingBtn) saveSettingBtn.addEventListener('click', saveAuthToken);
+    const authToggle = $('#toggle-auth-enabled');
+    if (authToggle) authToggle.addEventListener('change', toggleAuthEnabled);
 }
 
 // ---------------------------------------------------------------------------
@@ -1158,6 +1587,27 @@ function setRingProgress(elementId, percent, maxOffset = 283) {
     if (!ring) return;
     const offset = maxOffset - (percent / 100) * maxOffset;
     ring.style.strokeDashoffset = offset;
+}
+
+// VRAM リングを 4 セグメント（Whisper / TTS / OCR / その他）で描画。
+// segments: [{ id, frac }]  … frac は全体（0..1）に対する割合で、先頭から時計回りに並ぶ
+function setRingSegments(segments, maxOffset = 283) {
+    let start = 0;
+    for (const seg of segments) {
+        const el = $(seg.id);
+        if (!el) { start += seg.frac; continue; }
+        if (!seg.frac || seg.frac <= 0) {
+            el.style.strokeDasharray = '0 ' + maxOffset;
+            el.style.strokeDashoffset = maxOffset;
+            start += seg.frac;
+            continue;
+        }
+        const len = seg.frac * maxOffset;
+        el.style.strokeDasharray = len + ' ' + (maxOffset - len);
+        // セグメント開始位置（path 原点）まで dash パターンを後方へシフト
+        el.style.strokeDashoffset = (maxOffset - start * maxOffset).toFixed(3);
+        start += seg.frac;
+    }
 }
 
 function truncate(str, len = 50) {
@@ -1231,6 +1681,23 @@ function handleWebSocketMessage(msg) {
         case 'whisper_status':
             updateWhisperStatus(msg.data);
             break;
+        case 'ocr_status':
+            updateOcrStatus(msg.data);
+            break;
+        case 'tts_status':
+            updateTtsStatus(msg.data);
+            break;
+        case 'llm_status':
+            updateSidebarLlmStatus(msg.data);
+            break;
+        case 'realtime_log':
+            // 自動/手動で記録が開始・終了した（セッション状態の同期）
+            if (msg.data) {
+                realtimeLogActive = !!msg.data.active;
+                realtimeLogAuto = !!(msg.data.active && msg.data.auto);
+                refreshRealtimeLogBtn();
+            }
+            break;
         case 'converting':
             updateConverting(msg.state);
             handleConvertingTiming(msg);
@@ -1250,6 +1717,7 @@ function handleWebSocketMessage(msg) {
         case 'record_deleted':
         case 'records_cleared':
         case 'record_updated':
+        case 'record_added':
             loadRecords($('#records-search').value);
             loadStats();
             break;
@@ -1505,6 +1973,8 @@ function updateSystemDisplay(data, history) {
     // GPU
     const gpu = data.gpu;
     gpuAvailable = !!(gpu && !gpu.error);
+    gpuUsedMb = gpu && !gpu.error ? (gpu.memory_used_mb || 0) : 0;
+    gpuTotalMb = gpu && !gpu.error ? (gpu.memory_total_mb || 1) : 1;
     if (gpu && !gpu.error) {
         $('#gpu-name').textContent = gpu.name || 'NVIDIA GPU';
         const util = gpu.utilization || 0;
@@ -1512,21 +1982,18 @@ function updateSystemDisplay(data, history) {
 
         // 表盘
         $('#gpu-util-value').textContent = util + '%';
-        setRingProgress('#gpu-util-ring', util);
+        gpuUtil = util;
+        gpuUtilBreakdown = gpu.util_breakdown || {};
+        renderGpuUtilBreakdown(); // 使用率リングは 4 セグメント描画
         $('#gpu-mem-value').textContent = memPercent + '%';
-        setRingProgress('#gpu-mem-ring', memPercent);
+        renderGpuVramBreakdown(); // VRAM リングは 4 セグメント描画
 
         // 温度リング（100% = 100°C）
         const temp = gpu.temperature || 0;
         $('#gpu-temp-ring-value').textContent = temp + '°C';
         setRingProgress('#gpu-temp-ring', temp);
 
-        // 文本卡片（リングとは重複しない補足情報：クロック / VRAM 容量 / 消費電力）
-        $('#gpu-util-text').textContent = (gpu.clock_mhz || 0) + ' MHz';
-        $('#gpu-mem-text').textContent = `${gpu.memory_used_mb} / ${gpu.memory_total_mb} MB`;
-        $('#gpu-temp').textContent = (gpu.power_w || 0) + ' W';
-
-        // オーバーヒート表示：温度リングを赤点滅（ボックスは消費電力表示のため対象外）
+        // オーバーヒート表示：温度リングを赤点滅（3 ボックスはモデル情報表示のため対象外）
         const tempRingWrap = $('#gpu-temp-ring-wrap');
         const gpuCard = $('#gpu-card');
         if (gpu.temperature >= config.gpu_temp_threshold) {
@@ -1540,13 +2007,12 @@ function updateSystemDisplay(data, history) {
         $('#gpu-name').textContent = gpu && gpu.error ? t('gpu.not_available') : t('gpu.not_detected');
         $('#gpu-util-value').textContent = '0%';
         $('#gpu-mem-value').textContent = '0%';
-        setRingProgress('#gpu-util-ring', 0);
-        setRingProgress('#gpu-mem-ring', 0);
+        gpuUtil = 0;
+        gpuUtilBreakdown = {};
+        renderGpuUtilBreakdown(); // セグメントは全消去
+        renderGpuVramBreakdown(); // セグメントは全消去
         $('#gpu-temp-ring-value').textContent = '0°C';
         setRingProgress('#gpu-temp-ring', 0);
-        $('#gpu-util-text').textContent = '-- MHz';
-        $('#gpu-mem-text').textContent = '-- / -- MB';
-        $('#gpu-temp').textContent = '-- W';
     }
 
     // 图表
@@ -1556,6 +2022,7 @@ function updateSystemDisplay(data, history) {
 
     // GPU 有無に応じて TTS の VRAM 目安（device=auto）を再評価
     renderGpuTtsDisplay();
+    syncMonitors(); // OCR 画面の複製モニターにも反映
 }
 
 // ---------------------------------------------------------------------------
@@ -1570,32 +2037,33 @@ function sameModel(a, b) {
     return MODEL_ALIASES[a] === b || MODEL_ALIASES[b] === a;
 }
 
-// GPU モニタ「显存」下: Whisper と TTS の搭載モデル・各 VRAM 目安・合計を表示
+// GPU モニタ「显存」: リング 4 セグメント（Whisper / TTS / OCR / その他）と各モデル詳細
 let gpuAvailable = false;   // updateSystemDisplay で NVIDIA GPU 情報が取得できたか（TTS の device 判定に使用）
-let gpuWhisperVram = 0;     // 現在表示中の Whisper VRAM 目安（合計算出用）
+let gpuWhisperVram = 0;     // Whisper VRAM 目安（GB）
+let gpuOcrVram = 0;         // OCR モデル VRAM 目安（GB）
+let gpuUsedMb = 0;          // NVML 実測: 使用中 VRAM（MB）
+let gpuTotalMb = 1;         // NVML 実測: 全 VRAM（MB）
+let gpuUtil = 0;            // GPU 総合使用率（%）
+let gpuUtilBreakdown = {};  // 使用率の PID 別内訳 {whisper, tts, ocr, other}（バックエンドの GPU Engine カウンタ由来）
 
 function updateGpuModelDisplay(model) {
     const memModel = $('#gpu-mem-model');
-    const memSize = $('#gpu-mem-size');
     gpuWhisperVram = 0;
     if (!model) {
-        if (memModel) memModel.textContent = '--';
-        if (memSize) { memSize.textContent = '--'; memSize.title = ''; }
-    } else {
-        if (memModel) memModel.textContent = model;
+        if (memModel) { memModel.textContent = '--'; memModel.title = ''; }
+    } else if (memModel) {
+        memModel.textContent = model;
         const info = modelCatalog && modelCatalog[model];
-        if (info && memSize) {
+        if (info) {
             const ct = (config.whisper_compute_type || 'int8_float16').toLowerCase();
             gpuWhisperVram = parseFloat(ct.includes('int8') ? info.vram_int8 : info.vram_fp16) || 0;
-            const text = `VRAM ${gpuWhisperVram.toFixed(1)}GB`;
-            memSize.textContent = text;
-            memSize.title = `Whisper ${model}: ${text}`;
-        } else if (memSize) {
-            memSize.textContent = '';
-            memSize.title = '';
+            memModel.title = `Whisper ${model}: VRAM ${gpuWhisperVram.toFixed(1)}GB`;
+        } else {
+            memModel.title = '';
         }
     }
     renderGpuTtsDisplay();
+    syncMonitors(); // OCR 画面の複製モニターにも反映
 }
 
 // 現在の TTS 設定から実行モデル名と VRAM 目安を返す（GPU 実行のみ vram>0、CPU/クラウドは 0）
@@ -1619,32 +2087,147 @@ function ttsVramEstimate() {
     return null;
 }
 
-// GPU モニタの TTS モデル行と合計を描画
+// 現在の OCR 稼働状態からモデル名と VRAM 目安（GB）を返す（GPU 実行・読込済みのみ vram>0）
+function ocrVramEstimate() {
+    const ocr = lastOcrStatus;
+    if (!ocr || !ocr.running) return { label: '', vram: 0 };
+    const health = ocr.health || {};
+    if (String(health.device).toLowerCase() === 'cpu') return { label: 'PP-OCR', vram: 0 };
+    const label = [];
+    let vram = 0;
+    if (health.ocr_ready) { label.push('PP-OCR'); vram += 0.6; }
+    if (health.structure_ready) { label.push('PP-StructureV3'); vram += 1.2; }
+    return { label: label.join(' + '), vram };
+}
+
+// GPU モニタの TTS モデル行（VRAM 容量下の折り畳み）を描画
 function renderGpuTtsDisplay() {
-    const wrap = $('#gpu-mem-tts');
-    const totalLine = $('#gpu-mem-total-line');
-    const totalEl = $('#gpu-mem-total');
     const tts = ttsVramEstimate();
+    const ttsModel = $('#gpu-mem-tts-model');
     if (!tts) {
-        if (wrap) wrap.classList.add('hidden');
-        if (totalLine) totalLine.classList.add('hidden');
-        if (totalEl) totalEl.textContent = '--';
+        if (ttsModel) { ttsModel.textContent = '--'; ttsModel.title = ''; }
+        renderGpuVramBreakdown();
         return;
     }
-    const ttsModel = $('#gpu-mem-tts-model');
-    const ttsSize = $('#gpu-mem-tts-size');
-    if (ttsModel) ttsModel.textContent = tts.label;
-    const sizeText = tts.mode === 'vram' ? `VRAM ${tts.vram.toFixed(1)}GB` : (tts.mode === 'cloud' ? t('gpu.tts_cloud') : t('gpu.tts_cpu'));
-    if (ttsSize) { ttsSize.textContent = sizeText; ttsSize.title = `${tts.label}: ${sizeText}`; }
-    if (wrap) wrap.classList.remove('hidden');
+    if (ttsModel) {
+        ttsModel.textContent = tts.label;
+        const sizeText = tts.mode === 'vram' ? `VRAM ${tts.vram.toFixed(1)}GB` : (tts.mode === 'cloud' ? t('gpu.tts_cloud') : t('gpu.tts_cpu'));
+        ttsModel.title = `${tts.label}: ${sizeText}`;
+    }
+    renderGpuVramBreakdown();
+    syncMonitors(); // OCR 画面の複製モニターにも反映
+}
 
-    const total = (gpuWhisperVram || 0) + (tts.vram || 0);
-    if (totalEl) totalEl.textContent = total.toFixed(1) + 'GB';
-    if (totalLine) totalLine.classList.remove('hidden');
+// GPU モニタの OCR モデル行（消費電力下の折り畳み）を描画
+function renderGpuOcrDisplay() {
+    const ocr = lastOcrStatus;
+    const ocrV = ocrVramEstimate();
+    gpuOcrVram = ocrV.vram;
+    const modelEl = $('#gpu-mem-ocr-model');
+    if (!ocr || !ocr.running) {
+        if (modelEl) { modelEl.textContent = '--'; modelEl.title = ''; }
+    } else if (modelEl) {
+        modelEl.textContent = ocrV.label || '...';
+        const health = ocr.health || {};
+        if (String(health.device).toLowerCase() === 'cpu') {
+            modelEl.title = t('gpu.tts_cpu');
+        } else if (ocrV.vram > 0) {
+            modelEl.title = `OCR: VRAM ${ocrV.vram.toFixed(1)}GB`;
+        } else {
+            modelEl.title = '';
+        }
+    }
+    renderGpuVramBreakdown();
+    syncMonitors(); // OCR 画面の複製モニターにも反映
+}
+
+// GPU 使用率リング（4 セグメント）を一括描画（100% = 全周）
+function renderGpuUtilBreakdown() {
+    const bd = gpuUtilBreakdown || {};
+    const total = Math.max(0, gpuUtil || 0);
+    let w = Math.max(0, bd.whisper || 0);
+    let t = Math.max(0, bd.tts || 0);
+    let o = Math.max(0, bd.ocr || 0);
+    // PID 別合計が総合使用率を上回る場合は比例縮小（VRAM リングと同じ整合ロジック）
+    const known = w + t + o;
+    if (known > total && total > 0) {
+        const s = total / known;
+        w *= s; t *= s; o *= s;
+    }
+    const other = Math.max(0, total - (w + t + o));
+    const frac = v => Math.max(0, Math.min(1, v / 100));
+    setRingSegments([
+        { id: '#gpu-util-whisper', frac: frac(w) },
+        { id: '#gpu-util-tts', frac: frac(t) },
+        { id: '#gpu-util-ocr', frac: frac(o) },
+        { id: '#gpu-util-other', frac: frac(other) },
+    ]);
+}
+
+// VRAM リング（4 セグメント）と各モデルの「全体割合」行を一括描画
+function renderGpuVramBreakdown() {
+    const whisperMb = (gpuWhisperVram || 0) * 1024;
+    const tts = ttsVramEstimate();
+    const ttsMb = ((tts && tts.vram) || 0) * 1024;
+    const ocrMb = (gpuOcrVram || 0) * 1024;
+    const usedMb = gpuUsedMb;
+    const totalMb = Math.max(gpuTotalMb, 1);
+    const known = whisperMb + ttsMb + ocrMb;
+
+    // モデル推定（カタログのピーク値）が実測使用量を上回る場合は比例縮小し、
+    // 「その他」（デスクトップ・他プロセスの使用分）が常に確保されるようにする。
+    let w = whisperMb, t = ttsMb, o = ocrMb;
+    if (known > usedMb) {
+        const s = (usedMb * 0.75) / known;
+        w *= s; t *= s; o *= s;
+    }
+    const otherMb = Math.max(0, usedMb - (w + t + o));
+
+    // リング: 各セグメントは全体容量に対する割合（未使用分はベース色のまま）
+    const frac = mb => totalMb > 0 ? mb / totalMb : 0;
+    const pct = mb => frac(mb) * 100;
+    setRingSegments([
+        { id: '#gpu-mem-whisper', frac: frac(w) },
+        { id: '#gpu-mem-tts-ring', frac: frac(t) },
+        { id: '#gpu-mem-ocr-ring', frac: frac(o) },
+        { id: '#gpu-mem-other-ring', frac: frac(otherMb) },
+    ]);
+
+    // 詳細行: 各モデルの VRAM使用容量（MB）と「全体割合」。リング描画と同じ縮小後値で一致させる
+    const setDetail = (vramId, pctId, mb) => {
+        const vramEl = vramId ? $(vramId) : null;
+        if (vramEl) vramEl.textContent = mb > 0 ? `${Math.round(mb)} MB` : '--';
+        const pctEl = pctId ? $(pctId) : null;
+        if (pctEl) pctEl.textContent = mb > 0 ? `${pct(mb).toFixed(1)}%` : '';
+    };
+    setDetail('#gpu-mem-vram', '#gpu-mem-pct', w);
+    setDetail('#gpu-mem-tts-vram', '#gpu-mem-tts-pct', t);
+    setDetail('#gpu-mem-ocr-vram', '#gpu-mem-ocr-pct', o);
+}
+
+// ---------------------------------------------------------------------------
+// モニター同期: OCR 画面の複製カードへダッシュボードの値をコピー
+// （data-monitor-sync="<dashboard-id>" で紐付いた要素を更新）
+// ---------------------------------------------------------------------------
+function syncMonitors() {
+    document.querySelectorAll('[data-monitor-sync]').forEach(dst => {
+        const src = document.getElementById(dst.dataset.monitorSync);
+        if (!src) return;
+        if (dst.tagName === 'circle') {
+            dst.style.strokeDasharray = src.style.strokeDasharray;
+            dst.style.strokeDashoffset = src.style.strokeDashoffset;
+        } else {
+            // 子要素を持つコンテナ（例: gpu-temp-ring-wrap）は innerHTML を破壊しない
+            if (!dst.querySelector('*')) dst.textContent = src.textContent;
+            dst.className = src.className;
+        }
+    });
 }
 
 function updateWhisperStatus(data) {
     lastWhisperStatus = data;
+    // LLM（AI 校正）状態: whisper_status に同梱（WS 再接続後の初期状態復元用）
+    if (data.llm_status) updateSidebarLlmStatus(data.llm_status);
     const running = data.running;
     // 状态优先级：转换中 > 运行中 > 启动中（进程存在但健康检查未通过） > 已停止
     const converting = currentConverting;
@@ -1689,6 +2272,12 @@ function updateWhisperStatus(data) {
     if (eq) eq.classList.toggle('hidden', !converting);
     if (sidebarCard) sidebarCard.classList.toggle('sidebar-converting', converting);
 
+    // サイドバー開始/停止ボタン（稼働中:停止表示 / 停止中:開始表示）
+    const sbStart = $('#sidebar-btn-start-whisper');
+    const sbStop = $('#sidebar-btn-stop-whisper');
+    if (sbStart) sbStart.classList.toggle('hidden', running || starting);
+    if (sbStop) sbStop.classList.toggle('hidden', !(running || starting));
+
     const proc = data.process;
     if (data.health && data.health.model) {
         currentModel = data.health.model;
@@ -1707,8 +2296,10 @@ function updateWhisperStatus(data) {
     if (proc) {
         pid.textContent = proc.pid;
         uptime.textContent = formatDateTime(proc.start_time);
-        managed.textContent = t('whisper.managed');
-        managed.className = 'text-xs mt-1 block text-emerald-400';
+        // 外部起動（ポート検出）は managed=false → 「外部起動」ラベルを維持
+        const isManaged = proc.managed !== false;
+        managed.textContent = isManaged ? t('whisper.managed') : t('whisper.external');
+        managed.className = 'text-xs mt-1 block ' + (isManaged ? 'text-emerald-400' : 'text-amber-400');
     } else {
         pid.textContent = '--';
         uptime.textContent = '--';
@@ -1729,6 +2320,440 @@ async function controlWhisper(action) {
         if (data.success) {
             const key = action === 'start' ? 'toast.starting' : action === 'stop' ? 'toast.stopping' : 'toast.restarting';
             showToast(t(key), 'success');
+        } else {
+            showToast(data.message || t('toast.action_failed'), 'error');
+        }
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+}
+
+// ---------------------------------------------------------------------------
+// PaddleOCR サービス
+// ---------------------------------------------------------------------------
+let lastOcrStatus = null;
+let ocrResultText = '';
+let ocrResultIsMd = false;
+let ocrTimer = null;   // OCR 実行中の経過時間表示タイマー
+let ocrBusyOverrideUntil = 0;   // 変換完了後、ocr_server の busy ホールド中も「実行中」を維持する猶予（ms）
+
+function updateOcrStatus(data) {
+    lastOcrStatus = data;
+    const running = data.running;
+    const starting = !running && !!data.process;
+    const health = data.health || {};
+    // OCR 変換実行中（busy）。変換完了直後は busy ホールド（_BUSY_HOLD）で「変換中」が残るため、
+    // runOcr 完了時に設定した猶予期間中は busy とみなさず「実行中」を維持する
+    const busy = running && !!health.busy && Date.now() > ocrBusyOverrideUntil;
+    const dot = $('#sidebar-ocr-dot');
+    const status = $('#ocr-status');
+    const pid = $('#ocr-pid');
+    const uptime = $('#ocr-uptime');
+    const engine = $('#ocr-engine');
+    const managed = $('#ocr-managed');
+
+    if (busy) {
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-500 status-pulse';
+        if (status) { status.textContent = t('ocr.converting'); status.className = 'font-medium text-amber-400'; }
+    } else if (running) {
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500 status-pulse';
+        if (status) { status.textContent = t('status.running'); status.className = 'font-medium text-emerald-400'; }
+    } else if (starting) {
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-400 status-pulse';
+        if (status) { status.textContent = t('status.starting'); status.className = 'font-medium text-amber-400'; }
+    } else {
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-rose-500';
+        if (status) { status.textContent = t('status.stopped'); status.className = 'font-medium text-rose-400'; }
+    }
+
+    // サイドバー（OCR 状態テキスト + 開始/停止ボタン）
+    const sbText = $('#sidebar-ocr-status-text');
+    if (sbText) {
+        sbText.textContent = busy ? t('ocr.converting') : running ? t('status.running') : starting ? t('status.starting') : t('status.stopped');
+        sbText.className = 'text-sm font-medium ' + (busy ? 'text-amber-400' : running ? 'text-emerald-400' : starting ? 'text-amber-400' : 'text-rose-400');
+    }
+    const sbOcrStart = $('#sidebar-btn-start-ocr');
+    const sbOcrStop = $('#sidebar-btn-stop-ocr');
+    if (sbOcrStart) sbOcrStart.classList.toggle('hidden', running || starting);
+    if (sbOcrStop) sbOcrStop.classList.toggle('hidden', !(running || starting));
+
+    const proc = data.process;
+    if (pid) pid.textContent = proc ? proc.pid : '--';
+    if (uptime) uptime.textContent = proc ? formatDateTime(proc.start_time) : '--';
+    if (engine) {
+        const dev = health.device ? ` (${health.device})` : '';
+        const ready = health.ocr_ready ? ' ✓' : (running ? ' ⏳' : '');
+        engine.textContent = (health.engine || 'paddleocr') + dev + ready;
+    }
+    if (managed) {
+        if (proc) {
+            managed.textContent = t('ocr.managed');
+            managed.className = 'text-xs mt-1 block text-emerald-400';
+        } else if (running) {
+            managed.textContent = t('ocr.external');
+            managed.className = 'text-xs mt-1 block text-amber-400';
+        } else {
+            managed.textContent = '';
+            managed.className = 'text-xs mt-1 block';
+        }
+    }
+
+    // サービス制御カード（OCR グループ）にも反映
+    const svcStatus = $('#svc-ocr-status');
+    if (svcStatus) {
+        if (busy) { svcStatus.textContent = t('ocr.converting'); svcStatus.className = 'text-sm font-medium text-amber-400'; }
+        else if (running) { svcStatus.textContent = t('status.running'); svcStatus.className = 'text-sm font-medium text-emerald-400'; }
+        else if (starting) { svcStatus.textContent = t('status.starting'); svcStatus.className = 'text-sm font-medium text-amber-400'; }
+        else { svcStatus.textContent = t('status.stopped'); svcStatus.className = 'text-sm font-medium text-rose-400'; }
+    }
+    const svcPid = $('#svc-ocr-pid');
+    if (svcPid) svcPid.textContent = proc ? proc.pid : '--';
+    const svcUptime = $('#svc-ocr-uptime');
+    if (svcUptime) svcUptime.textContent = proc ? formatDateTime(proc.start_time) : '--';
+    const svcEngine = $('#svc-ocr-engine');
+    if (svcEngine) {
+        const dev = health.device ? ` (${health.device})` : '';
+        const ready = health.ocr_ready ? ' ✓' : (running ? ' ⏳' : '');
+        svcEngine.textContent = (health.engine || 'paddleocr') + dev + ready;
+    }
+    const svcManaged = $('#svc-ocr-managed');
+    if (svcManaged) {
+        if (proc) { svcManaged.textContent = t('ocr.managed'); svcManaged.className = 'text-xs text-emerald-400'; }
+        else if (running) { svcManaged.textContent = t('ocr.external'); svcManaged.className = 'text-xs text-amber-400'; }
+        else { svcManaged.textContent = ''; svcManaged.className = 'text-xs'; }
+    }
+
+    // GPU モニタ「消費電力下」の OCR モデル行を更新
+    renderGpuOcrDisplay();
+}
+
+// サイドバー「LLM 活用」: AI 校正（LLM）の実行状態を表示
+function updateSidebarLlmStatus(data) {
+    const dot = $('#sidebar-llm-dot');
+    const text = $('#sidebar-llm-status-text');
+    const modelEl = $('#sidebar-llm-model');
+    if (!dot || !text) return;
+    const processing = !!(data && data.processing);
+    const model = (data && data.model) || '';
+    if (processing) {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-500 status-pulse';
+        text.textContent = t('sidebar.llm_processing');
+        text.className = 'text-sm font-medium text-amber-400';
+    } else {
+        dot.className = 'w-2 h-2 rounded-full bg-stone-500';
+        text.textContent = t('sidebar.llm_idle');
+        text.className = 'text-sm font-medium text-stone-400';
+    }
+    if (modelEl) {
+        modelEl.textContent = model;
+        modelEl.title = model;
+    }
+}
+
+async function loadOcrStatus() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/ocr/status`);
+        if (resp.ok) updateOcrStatus(await resp.json());
+    } catch (e) { /* WebSocket 状態が引き継ぐ */ }
+}
+
+async function controlOcr(action) {
+    try {
+        const resp = await apiFetch(`${API_BASE}/ocr/${action}`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) {
+            const key = action === 'start' ? 'toast.starting' : action === 'stop' ? 'toast.stopping' : 'toast.restarting';
+            showToast(t(key), 'success');
+        } else {
+            showToast(data.message || t('toast.action_failed'), 'error');
+        }
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+}
+
+// OCR 実行中状態を制御カード/サイドバーへ即時反映する
+// active=true: 変換中表示（WS の busy を待たずに即時） / active=false: 実行中へ戻す（busy ホールドを猶予）
+function setOcrConverting(active, elapsedSec) {
+    const dot = $('#sidebar-ocr-dot');
+    const status = $('#ocr-status');
+    const sbText = $('#sidebar-ocr-status-text');
+    const svc = $('#svc-ocr-status');
+    const elEl = $('#ocr-elapsed');
+    if (active) {
+        ocrBusyOverrideUntil = 0;
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-500 status-pulse';
+        if (status) { status.textContent = t('ocr.converting'); status.className = 'font-medium text-amber-400'; }
+        if (sbText) { sbText.textContent = t('ocr.converting'); sbText.className = 'text-sm font-medium text-amber-400'; }
+        if (svc) { svc.textContent = t('ocr.converting'); svc.className = 'text-sm font-medium text-amber-400'; }
+        if (elEl) elEl.textContent = `${elapsedSec || 0}s`;
+    } else {
+        // 完了/失敗: 経過時間を確定値で表示し、最新の status を再取得（busy ホールド中も実行中表示）
+        if (elEl && elapsedSec != null) elEl.textContent = `${elapsedSec}s`;
+        ocrBusyOverrideUntil = Date.now() + 4000;
+        loadOcrStatus();
+    }
+}
+
+async function runOcr() {
+    const fileInput = $('#ocr-file');
+    const status = $('#ocr-exec-status');
+    const btn = $('#btn-run-ocr');
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+        showToast(t('ocr.no_file'), 'error');
+        return;
+    }
+    const format = $('#ocr-format') ? $('#ocr-format').value : 'md';
+    const aiCorrect = $('#ocr-ai-correct') ? $('#ocr-ai-correct').value : 'off';
+    const form = new FormData();
+    form.append('file', fileInput.files[0]);
+    form.append('lang', $('#select-ocr-lang').value || 'japan');
+    form.append('format', format);
+    form.append('ai_correct', aiCorrect);
+
+    if (btn) btn.disabled = true;
+    if (status) { status.textContent = t('ocr.converting'); status.className = 'text-sm text-amber-400'; }
+    const t0 = Date.now();
+    if (ocrTimer) clearInterval(ocrTimer);
+    // 変換中状態を制御カード/サイドバーへ即時反映し、経過時間を 1 秒毎に更新
+    setOcrConverting(true, 0);
+    const updateElapsed = () => {
+        const el = Math.round((Date.now() - t0) / 1000);
+        if (status) status.textContent = `${t('ocr.converting')} ・ ${t('ocr.elapsed')} ${el}s`;
+        const elEl = $('#ocr-elapsed');
+        if (elEl) elEl.textContent = `${el}s`;
+    };
+    updateElapsed();
+    ocrTimer = setInterval(updateElapsed, 1000);
+
+    try {
+        const resp = await apiFetch(`${API_BASE}/ocr/convert`, { method: 'POST', body: form });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || resp.statusText);
+        ocrResultText = data.text || '';
+        ocrResultIsMd = data.format === 'md';
+        renderOcrResult();
+        const info = [];
+        if (data.pages != null) info.push(`${t('ocr.pages')}: ${data.pages}`);
+        if (data.elapsed != null) info.push(`${t('ocr.time')}: ${data.elapsed}s`);
+        if (data.speed != null) info.push(`${t('ocr.speed')}: ${data.speed}s/${t('ocr.page_unit')}`);
+        if (data.corrected) info.push(t('ocr.corrected'));
+        if (status) {
+            status.textContent = t('ocr.done') + (info.length ? ' ・ ' + info.join(' / ') : '');
+            status.className = 'text-sm text-emerald-400';
+        }
+        showToast(t('ocr.done'), 'success');
+        // 完了: 経過時間を確定し、状態を実行中へ戻す
+        setOcrConverting(false, data.elapsed);
+        // 変換履歴（records）を更新
+        if (typeof handleNewRecord === 'function') handleNewRecord();
+    } catch (e) {
+        if (status) { status.textContent = t('ocr.error'); status.className = 'text-sm text-rose-400'; }
+        showToast(t('ocr.error') + ': ' + e.message, 'error');
+        setOcrConverting(false, null);
+    } finally {
+        if (ocrTimer) { clearInterval(ocrTimer); ocrTimer = null; }
+        if (btn) btn.disabled = false;
+    }
+}
+
+function renderOcrResult() {
+    const block = $('#ocr-result-block');
+    const pre = $('#ocr-result');
+    const mdBtn = $('#btn-download-ocr-md');
+    if (!block || !pre) return;
+    block.classList.remove('hidden');
+    setResultContent(pre, ocrResultText || '--');
+    if (mdBtn) mdBtn.classList.toggle('hidden', !ocrResultText);
+}
+
+function copyOcrResult() {
+    if (!ocrResultText) return;
+    copyToClipboard(ocrResultText).then((ok) => {
+        showToast(ok ? t('ocr.copied') : t('ocr.copy_failed'), ok ? 'success' : 'error');
+    });
+}
+
+// 表示中の形式（MD/TXT）でダウンロード
+function downloadOcrResult() {
+    if (!ocrResultText) return;
+    const type = ocrResultIsMd ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8';
+    const ext = ocrResultIsMd ? '.md' : '.txt';
+    const blob = new Blob([ocrResultText], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ocr_result_${Date.now()}${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// OCR 設定（device/lang/autostart）をロードして UI に反映
+async function loadOcrSettings() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/config`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+        config = { ...config, ...data };
+        const dev = $('#select-ocr-device');
+        if (dev) dev.value = config.ocr_device || 'cuda';
+        const svcDev = $('#svc-select-ocr-device');
+        if (svcDev) svcDev.value = config.ocr_device || 'cuda';
+        const lang = $('#select-ocr-lang');
+        if (lang) lang.value = config.ocr_lang || 'japan';
+        const svcLang = $('#svc-select-ocr-lang');
+        if (svcLang) svcLang.value = config.ocr_lang || 'japan';
+        const toggle = $('#toggle-ocr-autostart');
+        if (toggle) toggle.checked = (config.ocr_autostart || 'off') === 'on';
+        const fmt = $('#ocr-format');
+        if (fmt) fmt.value = config.ocr_format || 'md';
+        const ai = $('#ocr-ai-correct');
+        if (ai) ai.value = config.ocr_ai_correct || 'off';
+    } catch (e) { /* ignore */ }
+}
+
+// OCR 実行カードの出力形式 / AI校正 を即保存（選択保存）
+async function saveOcrRunSettings() {
+    const data = {};
+    const fmt = $('#ocr-format');
+    if (fmt) data.ocr_format = fmt.value;
+    const ai = $('#ocr-ai-correct');
+    if (ai) data.ocr_ai_correct = ai.value;
+    try {
+        const resp = await apiFetch(`${API_BASE}/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            config = { ...config, ...data };
+        }
+    } catch (e) { /* 保存失敗は静かに無視（次回実行時も値を維持） */ }
+}
+
+// OCR 設定の変更を即保存（device/lang は OCR 再起動で反映）
+async function saveOcrSettings() {
+    const data = {};
+    const dev = $('#select-ocr-device');
+    if (dev) data.ocr_device = dev.value;
+    const lang = $('#select-ocr-lang');
+    if (lang) data.ocr_lang = lang.value;
+    const toggle = $('#toggle-ocr-autostart');
+    if (toggle) data.ocr_autostart = toggle.checked ? 'on' : 'off';
+    try {
+        const resp = await apiFetch(`${API_BASE}/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            config = { ...config, ...data };
+            showToast(t('settings.saved'), 'success');
+        } else {
+            showToast(result.error || t('settings.save_failed'), 'error');
+        }
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+}
+
+// ---------------------------------------------------------------------------
+// TTS サービス（ダッシュボード内蔵・モデルの読込/解放で制御）
+// ---------------------------------------------------------------------------
+let lastTtsStatus = null;
+
+// TTS の通常表示（モデル読込状態）を制御カードとサイドバーへ描画
+function renderTtsStatus(data) {
+    const el = $('#svc-tts-status');
+    if (el) {
+        const engine = (data.engine || 'edge').toUpperCase();
+        if (data.loaded) {
+            el.textContent = `${engine}${data.active_device ? ' ' + data.active_device : ''}${data.resident ? ' ◉' : ''}`;
+            el.className = 'text-sm font-medium text-fuchsia-400';
+            el.title = t('tts.status_loaded');
+        } else if (engine === 'EDGE') {
+            el.textContent = `${engine}（${t('tts.edge_cloud')}）`;
+            el.className = 'text-sm font-medium text-stone-400';
+            el.title = '';
+        } else {
+            el.textContent = `${engine}（${t('tts.status_idle')}）`;
+            el.className = 'text-sm font-medium text-stone-400';
+            el.title = '';
+        }
+    }
+    updateSidebarTtsStatus(data);
+}
+
+function updateTtsStatus(data) {
+    lastTtsStatus = data;
+    renderTtsStatus(data);
+    syncTtsSpeakingUi();
+}
+
+// 読み上げ中/一時停止中の状態をサイドバー・制御カードへ反映。停止時は通常表示へ戻す
+function syncTtsSpeakingUi() {
+    const speaking = !!speakBtn && !ttsPaused;
+    const paused = !!speakBtn && ttsPaused;
+    const dot = $('#sidebar-tts-dot');
+    const text = $('#sidebar-tts-status-text');
+    const svc = $('#svc-tts-status');
+    if (speaking) {
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-500 status-pulse';
+        if (text) { text.textContent = t('tts.speaking'); text.className = 'text-sm font-medium text-amber-400'; text.title = ''; }
+        if (svc) { svc.textContent = `${t('tts.speaking')}…`; svc.className = 'text-sm font-medium text-amber-400'; svc.title = ''; }
+    } else if (paused) {
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-stone-500';
+        if (text) { text.textContent = t('tts.paused'); text.className = 'text-sm font-medium text-stone-300'; text.title = ''; }
+        if (svc) { svc.textContent = `${t('tts.paused')}…`; svc.className = 'text-sm font-medium text-stone-300'; svc.title = ''; }
+    } else if (lastTtsStatus) {
+        renderTtsStatus(lastTtsStatus);   // 停止: 通常表示へ戻す
+    }
+}
+
+// サイドバー「TTS サービス」: モデル読込状態を表示（内蔵サービスのためボタンなし）
+function updateSidebarTtsStatus(data) {
+    const dot = $('#sidebar-tts-dot');
+    const text = $('#sidebar-tts-status-text');
+    if (!dot || !text) return;
+    data = data || {};
+    const engine = (data.engine || 'edge').toUpperCase();
+    if (data.loaded) {
+        dot.className = 'w-2 h-2 rounded-full bg-fuchsia-400 status-pulse';
+        text.textContent = `${engine}${data.active_device ? ' ' + data.active_device : ''}${data.resident ? ' ◉' : ''}`;
+        text.className = 'text-sm font-medium text-fuchsia-400';
+        text.title = t('tts.status_loaded');
+    } else if (engine === 'EDGE') {
+        dot.className = 'w-2 h-2 rounded-full bg-stone-500';
+        text.textContent = `${engine}（${t('tts.edge_cloud')}）`;
+        text.className = 'text-sm font-medium text-stone-400';
+        text.title = '';
+    } else {
+        dot.className = 'w-2 h-2 rounded-full bg-stone-500';
+        text.textContent = `${engine}（${t('tts.status_idle')}）`;
+        text.className = 'text-sm font-medium text-stone-400';
+        text.title = '';
+    }
+}
+
+async function loadTtsStatus() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/tts/status`);
+        if (resp.ok) updateTtsStatus(await resp.json());
+    } catch (e) { /* WebSocket 状態が引き継ぐ */ }
+}
+
+async function controlTts(action) {
+    try {
+        const resp = await apiFetch(`${API_BASE}/tts/${action}`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) {
+            const key = action === 'preload' ? 'tts.load' : action === 'unload' ? 'tts.unload' : 'tts.reload';
+            showToast(t(key) + ' ✓', 'success');
+            loadTtsStatus();
         } else {
             showToast(data.message || t('toast.action_failed'), 'error');
         }
@@ -1794,7 +2819,6 @@ async function populateModelSelect() {
     if (config.whisper_model && Array.from(sel.options).some(o => o.value === config.whisper_model)) {
         sel.value = config.whisper_model;
     }
-    updateModelInfo();
     renderModelManageList();
 }
 
@@ -1917,6 +2941,11 @@ function _startDownloadPolling() {
         if (kk) {
             renderKokoroModelList();
             anyDl = anyDl || kk.download_state === 'downloading';
+        }
+        const po = await fetchPaddleocrModelCatalog();
+        if (po) {
+            renderPaddleocrModelList();
+            anyDl = anyDl || Object.values(po).some(m => m.download_state === 'downloading');
         }
         if (!anyDl) {
             clearInterval(_pollDownload);
@@ -2242,51 +3271,153 @@ async function downloadKokoroModel() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// PaddleOCR モデル管理（DL・状態・削除。保存先 models/paddlex、PaddleX と同一レイアウト）
+// ---------------------------------------------------------------------------
+let paddleocrCatalog = null;
+let paddleocrCacheDir = '';
+
+async function fetchPaddleocrModelCatalog() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/paddleocr/models`);
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        paddleocrCatalog = data.models || {};
+        paddleocrCacheDir = data.cache_dir || '';
+        return paddleocrCatalog;
+    } catch (e) {
+        console.error('Failed to fetch PaddleOCR model catalog:', e);
+        return null;
+    }
+}
+
+// 設定画面「模型管理」カードの PaddleOCR モデルリストを描画
+function renderPaddleocrModelList() {
+    const list = $('#paddleocr-model-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const cache = $('#paddleocr-cache-dir');
+    if (cache) cache.textContent = paddleocrCacheDir ? t('model.cache_dir') + ': ' + paddleocrCacheDir : '';
+    if (!paddleocrCatalog) {
+        list.innerHTML = '<div class="p-2 text-xs text-stone-500">--</div>';
+        return;
+    }
+    Object.keys(paddleocrCatalog).forEach((name) => {
+        const info = paddleocrCatalog[name];
+        const downloading = info.download_state === 'downloading';
+        const failed = info.download_state === 'error';
+
+        const row = document.createElement('div');
+        row.className = 'p-2 rounded-lg bg-stone-900/50 hover:bg-stone-800 transition-colors duration-150 text-sm';
+        const top = document.createElement('div');
+        top.className = 'flex items-center justify-between gap-2';
+
+        const left = document.createElement('div');
+        left.className = 'flex items-center gap-2 min-w-0 flex-wrap';
+        const nameTitle = info.path ? ` title="${escapeHtml(info.path)}"` : '';
+        const sizeTxt = info.disk_gb ? `DL ${info.disk_gb}GB` : '';
+        left.innerHTML = `<span class="font-mono text-xs"${nameTitle}>${escapeHtml(name)}</span><span class="text-xs text-stone-500">${sizeTxt}</span>`;
+
+        const right = document.createElement('div');
+        right.className = 'flex items-center gap-2 shrink-0';
+        let btn;
+
+        if (downloading) {
+            const pct = Math.min(100, Math.max(0, info.download_progress || 0));
+            const state = document.createElement('span');
+            state.className = 'text-xs text-amber-400';
+            state.textContent = `${t('model.downloading')} ${pct}%`;
+            left.appendChild(state);
+            btn = document.createElement('button');
+            btn.disabled = true;
+            btn.className = 'px-3 py-1 rounded-lg bg-stone-800 text-stone-400 text-xs';
+            btn.textContent = t('model.downloading_short');
+            const bar = document.createElement('div');
+            bar.className = 'w-full h-1.5 bg-stone-800 rounded-full overflow-hidden mt-1.5';
+            const fill = document.createElement('div');
+            fill.className = 'h-full bg-amber-500 rounded-full transition-all duration-500';
+            fill.style.width = pct + '%';
+            bar.appendChild(fill);
+            row.appendChild(top);
+            row.appendChild(bar);
+        } else if (info.downloaded) {
+            const state = document.createElement('span');
+            state.className = 'text-xs text-emerald-400';
+            state.textContent = t('model.downloaded');
+            left.appendChild(state);
+            row.appendChild(top);
+            btn = makeDeleteBtn(name, deletePaddleocrModel);
+        } else if (failed) {
+            const state = document.createElement('span');
+            state.className = 'text-xs text-rose-400';
+            state.textContent = t('model.download_failed');
+            left.appendChild(state);
+            btn = document.createElement('button');
+            btn.className = 'px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs font-medium transition-all';
+            btn.textContent = t('model.retry_download');
+            btn.addEventListener('click', () => downloadPaddleocrModel(name));
+            row.appendChild(top);
+        } else {
+            const state = document.createElement('span');
+            state.className = 'text-xs text-stone-500';
+            state.textContent = t('model.not_downloaded');
+            left.appendChild(state);
+            btn = document.createElement('button');
+            btn.className = 'px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 text-xs font-medium transition-all';
+            btn.textContent = t('model.download');
+            btn.addEventListener('click', () => downloadPaddleocrModel(name));
+            row.appendChild(top);
+        }
+
+        right.appendChild(btn);
+        top.appendChild(left);
+        top.appendChild(right);
+        list.appendChild(row);
+    });
+}
+
+// PaddleOCR モデルのダウンロードを開始（PaddleX と同じ official_models/<name> へ保存）
+async function downloadPaddleocrModel(name) {
+    try {
+        const resp = await apiFetch(`${API_BASE}/paddleocr/models/${encodeURIComponent(name)}/download`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) {
+            showToast(t('model.download_start') + ': ' + name, 'success');
+            await fetchPaddleocrModelCatalog();
+            renderPaddleocrModelList();
+            _startDownloadPolling();
+        } else {
+            showToast(data.message || t('toast.action_failed'), 'error');
+        }
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+}
+
+async function deletePaddleocrModel(name) {
+    try {
+        const resp = await apiFetch(`${API_BASE}/paddleocr/models/${encodeURIComponent(name)}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.success) {
+            showToast(t('model.deleted') + ': ' + name, 'success');
+            await fetchPaddleocrModelCatalog();
+            renderPaddleocrModelList();
+            return true;
+        }
+        showToast(data.message || t('toast.action_failed'), 'error', 8000);
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+    return false;
+}
+
 // 管理リストの「使用」からモデル切替（ドロップダウン選択を伴う）
 async function switchToModel(name) {
     const sel = $('#select-model');
     if (sel) {
         sel.value = name;
-        updateModelInfo();
     }
     await switchModel(name);
-}
-
-// 選択中モデルの VRAM 目安と 6GB カードでの警告を表示
-function updateModelInfo() {
-    const sel = $('#select-model');
-    const info = $('#model-info');
-    if (!sel || !info) return;
-    const opt = sel.options[sel.selectedIndex];
-    if (!opt) return;
-    const ct = (config.whisper_compute_type || 'int8_float16').toLowerCase();
-    const useInt8 = ct.includes('int8');
-    const vram = useInt8 ? (parseFloat(opt.dataset.vramInt8) || 0) : (parseFloat(opt.dataset.vramFp16) || 0);
-    const disk = parseFloat(opt.dataset.diskGb) || 0;
-    const lang = opt.dataset.lang === 'en' ? t('model.lang_en') : t('model.lang_multi');
-    // 6GB カード基準: CUDA コンテキスト等 ~1.2GB を控除した実利用上限 ~4.8GB
-    const WARN_GB = 4.5;
-    const DANGER_GB = 5.5;
-    let status, cls;
-    if (vram > DANGER_GB) {
-        status = t('model.vram_danger');
-        cls = 'text-rose-400';
-    } else if (vram > WARN_GB) {
-        status = t('model.vram_warn') + ` (${vram.toFixed(1)}GB)`;
-        cls = 'text-amber-400';
-    } else {
-        status = t('model.vram_ok');
-        cls = 'text-emerald-400';
-    }
-    const vramLine = useInt8
-        ? `${t('model.vram_label')}: int8 ${opt.dataset.vramInt8}GB / fp16 ${opt.dataset.vramFp16}GB`
-        : `${t('model.vram_label')}: fp16 ${opt.dataset.vramFp16}GB`;
-    info.innerHTML = [
-        `<span class="${cls}">${status}</span>`,
-        `<span>・${lang}・${vramLine}</span>`,
-        `<span>・${t('model.dl_label')}: ${disk}GB</span>`,
-        `<span>・${escapeHtml(opt.dataset.desc || '')}</span>`,
-    ].join('<br>');
 }
 
 async function switchModel(modelName) {
@@ -2476,7 +3607,7 @@ function initChart() {
             plugins: {
                 legend: {
                     position: 'top',
-                    labels: { usePointStyle: true, boxWidth: 8 }
+                    labels: { usePointStyle: true, boxWidth: 8, padding: 20 }
                 },
                 tooltip: {
                     backgroundColor: 'rgba(15, 23, 42, 0.9)',
@@ -2521,16 +3652,72 @@ function updateChart(history) {
 // ---------------------------------------------------------------------------
 // リアルタイムロギング（JSONL 記録の開始/停止 + ボタン状態）
 // ---------------------------------------------------------------------------
+
+// リアルタイム推移カードヘッダー: サンプリング周期（refresh_interval）と
+// 波形間隔（trendWindow 表示点数と時間幅）を表示
+function updateTrendMeta() {
+    const el = $('#trend-meta');
+    if (!el) return;
+    const ms = parseInt(config.refresh_interval, 10) || 1000;
+    const points = trendWindow;
+    const secs = Math.round((ms * points) / 1000);
+    el.textContent = `${t('realtime.sample_period')} ${ms}ms ・ ${t('realtime.wave_span')} ${points}${t('realtime.point_unit')}(${secs}s)`;
+}
+
 async function initRealtimeLogState() {
     try {
         const resp = await fetch(`${API_BASE}/realtime-log`);
         if (!resp.ok) return;
         const data = await resp.json();
         realtimeLogActive = !!(data && data.active);
+        realtimeLogAuto = !!(data && data.active && data.active.auto);
     } catch (e) {
         console.error('Failed to load realtime-log state:', e);
     }
+    // 自動開始トグルの状態を config から反映
+    try {
+        const c = await (await fetch(`${API_BASE}/config`)).json();
+        config = { ...config, ...c };
+    } catch (e) { /* config は loadSettings 側でも取得される */ }
+    applyRtlAutoToggle();
     refreshRealtimeLogBtn();
+    updateTrendMeta();
+}
+
+// 自動記録トグル（rtl_auto_start）の表示反映
+function applyRtlAutoToggle() {
+    const toggle = $('#toggle-rtl-auto');
+    if (toggle) toggle.checked = (config.rtl_auto_start || 'off') === 'on';
+}
+
+// 自動記録トグル切替: サービス/LLM の稼働に連動して自動で記録開始/終了
+async function toggleRtlAuto() {
+    const toggle = $('#toggle-rtl-auto');
+    if (!toggle) return;
+    const enabled = toggle.checked;
+    try {
+        const resp = await apiFetch(`${API_BASE}/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rtl_auto_start: enabled ? 'on' : 'off' })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            config.rtl_auto_start = enabled ? 'on' : 'off';
+            // 手動で OFF にしたら自動開始セッションは終了する（仕様）
+            if (!enabled && realtimeLogActive && realtimeLogAuto) {
+                realtimeLogAuto = false;
+                await stopRealtimeLog();
+            }
+            showToast(enabled ? t('realtime.auto_start_on') : t('realtime.auto_start_off'), 'success');
+        } else {
+            applyRtlAutoToggle();  // 失敗時は元の状態へ
+            showToast(data.error || t('toast.action_failed'), 'error');
+        }
+    } catch (e) {
+        applyRtlAutoToggle();
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
 }
 
 function refreshRealtimeLogBtn() {
@@ -2544,32 +3731,71 @@ function refreshRealtimeLogBtn() {
     btn.title = t(realtimeLogActive ? 'realtime.log_recording_tip' : '');
 }
 
-async function toggleRealtimeLog() {
-    const endpoint = realtimeLogActive ? '/realtime-log/stop' : '/realtime-log/start';
+async function startRealtimeLog() {
     try {
-        const resp = await apiFetch(`${API_BASE}${endpoint}`, { method: 'POST' });
+        const resp = await apiFetch(`${API_BASE}/realtime-log/start`, { method: 'POST' });
         if (!resp.ok) {
             const body = await resp.json().catch(() => ({}));
-            console.error('realtime-log toggle failed:', resp.status, body);
-            return;
+            console.error('realtime-log start failed:', resp.status, body);
+            return false;
         }
-        realtimeLogActive = !realtimeLogActive;
+        realtimeLogActive = true;
+        realtimeLogAuto = false;
+        refreshRealtimeLogBtn();
+        return true;
+    } catch (e) { console.error(e); return false; }
+}
+
+async function stopRealtimeLog() {
+    try {
+        const resp = await apiFetch(`${API_BASE}/realtime-log/stop`, { method: 'POST' });
+        if (!resp.ok) {
+            const body = await resp.json().catch(() => ({}));
+            console.error('realtime-log stop failed:', resp.status, body);
+            return false;
+        }
+        realtimeLogActive = false;
+        realtimeLogAuto = false;
         refreshRealtimeLogBtn();
         // 記録停止時：ログ履歴セクションが開いていれば一覧を再読み込み
-        if (!realtimeLogActive) {
-            const section = document.querySelector('.nav-link.active');
-            if (section && section.dataset.section === 'logging') loadRealtimeLogs();
-        }
-    } catch (e) {
-        console.error(e);
+        const section = document.querySelector('.nav-link.active');
+        if (section && section.dataset.section === 'logging') loadRealtimeLogs();
+        return true;
+    } catch (e) { console.error(e); return false; }
+}
+
+async function toggleRealtimeLog() {
+    if (realtimeLogActive) {
+        await stopRealtimeLog();
+    } else {
+        await startRealtimeLog();
     }
 }
 
 // ---------------------------------------------------------------------------
 // ログ履歴セクション（JSONL 一覧・閲覧・ダウンロード・コピー・削除）
 // ---------------------------------------------------------------------------
-let selectedLogName = '';
-let selectedLogText = null;
+// ---------------------------------------------------------------------------
+// リアルタイムロギング（JSONL 記録の一覧・閲覧・DL・削除）
+// ---------------------------------------------------------------------------
+
+// グラフ表示するモニタ定義（色はメイン推移チャートと同一）
+const RTLOG_MONITORS = [
+    { key: 'cpu',      label: 'CPU %',       color: '#ffb020', field: 'cpu_percent' },
+    { key: 'memory',   label: 'Memory %',    color: '#ff3d81', field: 'memory_percent' },
+    { key: 'gpu_util', label: 'GPU Util %',  color: '#22d3ee', field: 'gpu_util' },
+    { key: 'gpu_mem',  label: 'GPU VRAM %',  color: '#c084fc', field: 'gpu_mem_percent' },
+    { key: 'gpu_temp', label: 'GPU Temp °C', color: '#f87171', field: 'gpu_temp' },
+];
+const RTLOG_DASHES = [[], [6, 4], [2, 4], [8, 2, 2, 2]];  // 重ね合わせ時にログを区別する線種
+
+let rtlogSelected = [];          // 選択中ログのファイル名（複数可）
+let lastRtlogFiles = [];         // 現在一覧に表示中のファイル名（全選択チェック用）
+let rtlogDataCache = {};         // ファイル名 -> {samples, meta, raw}
+let rtlogView = 'graph';         // 表示モード: 'graph' | 'data'
+let rtlogFormat = 'jsonl';       // 実データ形式: 'jsonl' | 'csv'
+let rtlogMonitors = new Set(RTLOG_MONITORS.map(m => m.key));  // グラフ表示中のモニタ
+let rtlogChart = null;           // ログ履歴グラフ（Chart.js）
 
 function fmtBytes(bytes) {
     if (!bytes && bytes !== 0) return '-';
@@ -2584,11 +3810,11 @@ async function loadRealtimeLogs() {
     try {
         const resp = await fetch(`${API_BASE}/realtime-log`);
         const data = await resp.json();
+        // 一覧から消えた選択中ログを整理
+        const files = (data && data.files) || [];
+        rtlogSelected = rtlogSelected.filter(n => files.some(f => f.name === n));
         renderRealtimeLogList(data || { files: [], active: null });
-        // 選択中ログの要約・一覧を最新の meta 情報で更新
-        if (selectedLogName && data && data.files && data.files.some(f => f.name === selectedLogName)) {
-            renderRealtimeLogSummary(data.files.find(f => f.name === selectedLogName));
-        }
+        renderRtlogPanel();
     } catch (e) {
         console.error('Failed to load realtime logs:', e);
         listEl.innerHTML = `<div class="text-sm text-rose-400">${t('logging.empty')}</div>`;
@@ -2599,37 +3825,49 @@ function renderRealtimeLogList(data) {
     const listEl = $('#rtlog-list');
     if (!listEl) return;
     const files = data.files || [];
+    lastRtlogFiles = files.map(f => f.name);
     if (!files.length) {
         listEl.innerHTML = `<div class="text-sm text-stone-500">${t('logging.empty')}</div>`;
         return;
     }
     listEl.innerHTML = files.map(f => {
         const active = data.active && data.active.filename === f.name;
-        const isSel = selectedLogName === f.name;
+        const isSel = rtlogSelected.includes(f.name);
         const cls = isSel ? 'bg-amber-500/15 border-amber-500/40' : 'border-white/10 hover:border-amber-500/30';
         const samples = f.samples != null ? fmtNum(f.samples) : '-';
         return `
         <div class="rtlog-item rounded-xl border ${cls} bg-stone-900/40 px-3 py-2.5 cursor-pointer transition-all" data-name="${escapeHtml(f.name)}">
-            <div class="flex items-center justify-between gap-2">
-                <span class="font-mono text-xs text-amber-300 truncate">${escapeHtml(f.name)}</span>
-                ${active ? `<span class="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300">${t('logging.active_badge')}</span>` : ''}
-            </div>
-            <div class="mt-1 flex items-center gap-3 text-[11px] text-stone-400">
-                <span>${t('logging.samples')}: ${samples}</span>
-                ${f.duration_sec != null ? `<span>${t('logging.duration')}: ${f.duration_sec}s</span>` : ''}
-                ${f.avg_cpu != null ? `<span>CPU ${f.avg_cpu}%</span>` : ''}
-                ${f.avg_gpu_util != null ? `<span>GPU ${f.avg_gpu_util}%</span>` : ''}
-            </div>
-            <div class="mt-0.5 flex items-center gap-3 text-[11px] text-stone-500">
-                <span>${f.started_at ? String(f.started_at).replace('T', ' ') : ''}</span>
-                <span>${fmtBytes(f.size)}</span>
+            <div class="flex items-start gap-2">
+                <input type="checkbox" class="rtlog-check mt-0.5 shrink-0 accent-amber-500" ${isSel ? 'checked' : ''}>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-mono text-xs text-amber-300 truncate">${escapeHtml(f.name)}</span>
+                        ${active ? `<span class="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300">${t('logging.active_badge')}</span>` : ''}
+                    </div>
+                    <div class="mt-1 flex items-center gap-3 text-[11px] text-stone-400">
+                        <span>${t('logging.samples')}: ${samples}</span>
+                        ${f.duration_sec != null ? `<span>${t('logging.duration')}: ${f.duration_sec}s</span>` : ''}
+                        ${f.avg_cpu != null ? `<span>CPU ${f.avg_cpu}%</span>` : ''}
+                        ${f.avg_gpu_util != null ? `<span>GPU ${f.avg_gpu_util}%</span>` : ''}
+                    </div>
+                    <div class="mt-0.5 flex items-center gap-3 text-[11px] text-stone-500">
+                        <span>${f.started_at ? String(f.started_at).replace('T', ' ') : ''}</span>
+                        <span>${fmtBytes(f.size)}</span>
+                    </div>
+                </div>
             </div>
         </div>`;
     }).join('');
-    // クリックで内容を表示
+    // クリックで選択/解除（トグル）→ 複数選択で波形重ね合わせ。チェックボックスはクリックを止めて change でトグル
     listEl.querySelectorAll('.rtlog-item').forEach(el => {
-        el.addEventListener('click', () => viewRealtimeLog(el.dataset.name));
+        const cb = el.querySelector('.rtlog-check');
+        if (cb) {
+            cb.addEventListener('click', e => e.stopPropagation());
+            cb.addEventListener('change', () => toggleRtlogSelect(el.dataset.name));
+        }
+        el.addEventListener('click', () => toggleRtlogSelect(el.dataset.name));
     });
+    updateRtlogSelectedCount();
 }
 
 function renderRealtimeLogSummary(meta) {
@@ -2648,80 +3886,426 @@ function renderRealtimeLogSummary(meta) {
     ).join('');
 }
 
-async function viewRealtimeLog(name) {
-    if (!name) return;
-    try {
-        const resp = await fetch(`${API_BASE}/realtime-log/${encodeURIComponent(name)}`);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const text = await resp.text();
-        selectedLogName = name;
-        selectedLogText = text;
-        $('#rtlog-detail-title').textContent = name;
-        const actions = $('#rtlog-detail-actions');
-        if (actions) actions.classList.remove('hidden');
-        $('#rtlog-content').textContent = text || '(empty)';
-        // 一覧の選択状態を更新
-        document.querySelectorAll('#rtlog-list .rtlog-item').forEach(el => {
-            const sel = el.dataset.name === name;
-            el.classList.toggle('bg-amber-500/15', sel);
-            el.classList.toggle('border-amber-500/40', sel);
-        });
-        // 要約：先頭の meta 行から抽出
-        const firstLine = text.split('\n').find(l => l.trim());
-        const meta = { name };
-        if (firstLine) {
-            try {
-                const first = JSON.parse(firstLine);
-                if (first.whisper_model) meta.whisper_model = first.whisper_model;
-                if (first.ts) meta.started_at = first.ts;
-            } catch (e) { /* ignore */ }
-        }
-        renderRealtimeLogSummary(meta);
-    } catch (e) {
-        console.error('Failed to view log:', e);
-        showToast('Error: ' + e.message, 'error');
+// 選択中ログの JSONL を取得・パースしキャッシュ（samples / meta / raw）
+async function getRtlogData(name) {
+    if (rtlogDataCache[name]) return rtlogDataCache[name];
+    const resp = await fetch(`${API_BASE}/realtime-log/${encodeURIComponent(name)}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const raw = await resp.text();
+    const samples = [];
+    const meta = { name };
+    for (const line of raw.split('\n')) {
+        const s = line.trim();
+        if (!s) continue;
+        try {
+            const obj = JSON.parse(s);
+            if (obj && obj.type === 'sample') {
+                samples.push(obj);
+            } else if (obj && obj.type === 'meta') {
+                if (obj.event === 'session_start') {
+                    meta.started_at = obj.ts;
+                    if (obj.whisper_model) meta.whisper_model = obj.whisper_model;
+                } else if (obj.event === 'session_end') {
+                    for (const k of ['samples', 'duration_sec', 'avg_cpu', 'avg_gpu_util', 'avg_gpu_mem', 'avg_gpu_temp']) {
+                        if (obj[k] != null) meta[k] = obj[k];
+                    }
+                    if (obj.stop_reason) meta.stop_reason = obj.stop_reason;
+                }
+            }
+        } catch (e) { /* 破損行は無視 */ }
+    }
+    const data = { samples, meta, raw };
+    rtlogDataCache[name] = data;
+    return data;
+}
+
+function toggleRtlogSelect(name) {
+    const idx = rtlogSelected.indexOf(name);
+    if (idx === -1) rtlogSelected.push(name);
+    else rtlogSelected.splice(idx, 1);
+    // 一覧の選択状態を更新（行ハイライト + チェックボックス）
+    document.querySelectorAll('#rtlog-list .rtlog-item').forEach(el => {
+        const sel = rtlogSelected.includes(el.dataset.name);
+        el.classList.toggle('bg-amber-500/15', sel);
+        el.classList.toggle('border-amber-500/40', sel);
+        const cb = el.querySelector('.rtlog-check');
+        if (cb) cb.checked = sel;
+    });
+    renderRtlogPanel();
+    updateRtlogSelectedCount();
+}
+
+function clearRtlogSelect() {
+    rtlogSelected = [];
+    document.querySelectorAll('#rtlog-list .rtlog-item').forEach(el => {
+        el.classList.remove('bg-amber-500/15', 'border-amber-500/40');
+        const cb = el.querySelector('.rtlog-check');
+        if (cb) cb.checked = false;
+    });
+    renderRtlogPanel();
+    updateRtlogSelectedCount();
+}
+
+// ヘッダーの「すべて選択」チェックボックス（現在表示中のログを一括選択/解除）
+window.toggleSelectAllRtlogs = function(cb) {
+    const files = lastRtlogFiles || [];
+    if (cb.checked) {
+        rtlogSelected = [...new Set([...rtlogSelected, ...files])];
+    } else {
+        rtlogSelected = rtlogSelected.filter(n => !files.includes(n));
+    }
+    document.querySelectorAll('#rtlog-list .rtlog-item').forEach(el => {
+        const sel = rtlogSelected.includes(el.dataset.name);
+        el.classList.toggle('bg-amber-500/15', sel);
+        el.classList.toggle('border-amber-500/40', sel);
+        const c = el.querySelector('.rtlog-check');
+        if (c) c.checked = sel;
+    });
+    renderRtlogPanel();
+    updateRtlogSelectedCount();
+};
+
+// 選択数に応じて一括削除ボタンの表示/非表示と全選択チェックボックス状態を更新
+function updateRtlogSelectedCount() {
+    const count = rtlogSelected.length;
+    const btn = $('#btn-delete-selected-logs');
+    const cnt = $('#rtlog-selected-count');
+    if (btn) btn.classList.toggle('hidden', count === 0);
+    if (cnt) cnt.textContent = count;
+    const selAll = $('#rtlog-select-all');
+    if (selAll) {
+        const files = lastRtlogFiles || [];
+        const onPage = files.filter(n => rtlogSelected.includes(n)).length;
+        selAll.checked = onPage > 0 && onPage === files.length;
+        selAll.indeterminate = onPage > 0 && onPage < files.length;
     }
 }
 
+// 選択中のログを一括削除
+window.deleteSelectedRealtimeLogs = async function() {
+    const files = [...rtlogSelected];
+    if (!files.length) return;
+    if (!window.confirm(t('logging.delete_selected_confirm').replace('{n}', files.length))) return;
+    try {
+        const resp = await apiFetch(`${API_BASE}/realtime-log/batch-delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ files })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            const gone = data.deleted || [];
+            rtlogSelected = rtlogSelected.filter(n => !gone.includes(n));
+            gone.forEach(n => delete rtlogDataCache[n]);
+            renderRtlogPanel();
+            loadRealtimeLogs();
+            updateRtlogSelectedCount();
+            showToast(t('logging.batch_deleted').replace('{n}', gone.length), 'success');
+        } else {
+            showToast(t('toast.action_failed'), 'error');
+        }
+    } catch (e) {
+        console.error('Failed to batch delete logs:', e);
+        showToast('Error: ' + e.message, 'error');
+    }
+};
+
+// 選択数に応じて右パネル全体を描画（タブ・ボタン・要約・モニタ行・コンテンツ）
+function renderRtlogPanel() {
+    const title = $('#rtlog-detail-title');
+    const actions = $('#rtlog-detail-actions');
+    const clearBtn = $('#btn-clear-rtlog-select');
+    const viewTabs = $('#rtlog-view-tabs');
+    const fmtTabs = $('#rtlog-format-tabs');
+    const monitorRow = $('#rtlog-monitor-toggle');
+    const graphWrap = $('#rtlog-graph-wrap');
+    const content = $('#rtlog-content');
+    const copyBtn = $('#btn-copy-log');
+    const deleteBtn = $('#btn-delete-log');
+
+    if (clearBtn) clearBtn.classList.toggle('hidden', rtlogSelected.length === 0);
+    updateRtlogSelectedCount();
+
+    if (rtlogSelected.length === 0) {
+        if (title) title.textContent = t('logging.select_hint');
+        if (actions) actions.classList.add('hidden');
+        if (monitorRow) monitorRow.classList.add('hidden');
+        if (viewTabs) viewTabs.classList.add('hidden');
+        if (fmtTabs) fmtTabs.classList.add('hidden');
+        if (graphWrap) graphWrap.classList.add('hidden');
+        if (content) { content.classList.add('hidden'); content.textContent = ''; }
+        renderRealtimeLogSummary(null);
+        clearRtlogChart();
+        return;
+    }
+
+    if (actions) actions.classList.remove('hidden');
+    const single = rtlogSelected.length === 1;
+    // 実データタブ・コピー・削除は単一選択時のみ
+    if (viewTabs) viewTabs.classList.toggle('hidden', !single);
+    if (fmtTabs) fmtTabs.classList.toggle('hidden', !(single && rtlogView === 'data'));
+    if (copyBtn) copyBtn.classList.toggle('hidden', !single);
+    if (deleteBtn) deleteBtn.classList.toggle('hidden', !single);
+
+    if (title) {
+        title.textContent = single
+            ? rtlogSelected[0]
+            : t('logging.sel_count').replace('{n}', String(rtlogSelected.length));
+    }
+
+    // 要約（単一: メタ情報 / 複数: 選択中ファイル名）
+    if (single) {
+        const d = rtlogDataCache[rtlogSelected[0]];
+        renderRealtimeLogSummary(d ? d.meta : { name: rtlogSelected[0] });
+    } else {
+        const sum = $('#rtlog-summary');
+        if (sum) {
+            sum.innerHTML = rtlogSelected.map(n =>
+                `<span class="inline-flex items-center gap-1.5 mr-3 mb-1 text-[11px] text-amber-300 bg-stone-900/50 rounded-lg px-2.5 py-1 border border-white/10 font-mono">${escapeHtml(n)}</span>`
+            ).join('');
+        }
+    }
+
+    // モニタ ON/OFF 行（グラフ用）
+    if (monitorRow) monitorRow.classList.remove('hidden');
+    renderRtlogMonitorToggles();
+
+    applyRtlogViewTabs();
+
+    // コンテンツ: 単一+実データ → データ表示 / それ以外 → グラフ
+    if (single && rtlogView === 'data') {
+        if (graphWrap) graphWrap.classList.add('hidden');
+        if (content) content.classList.remove('hidden');
+        clearRtlogChart();
+        renderRtlogData();
+    } else {
+        if (content) { content.classList.add('hidden'); content.textContent = ''; }
+        if (graphWrap) graphWrap.classList.remove('hidden');
+        if (rtlogChart) rtlogChart.resize();
+        buildRtlogChart();
+    }
+}
+
+function renderRtlogMonitorToggles() {
+    const wrap = $('#rtlog-monitor-chips');
+    if (!wrap) return;
+    wrap.innerHTML = RTLOG_MONITORS.map(m => {
+        const checked = rtlogMonitors.has(m.key) ? 'checked' : '';
+        return `<label class="inline-flex items-center gap-1.5 text-[11px] text-stone-300 bg-stone-900/50 rounded-lg px-2.5 py-1 border border-white/10 cursor-pointer select-none">
+            <input type="checkbox" data-monitor="${m.key}" ${checked} class="accent-amber-500">
+            <span class="w-2 h-2 rounded-full inline-block" style="background:${m.color}"></span>
+            ${escapeHtml(m.label)}
+        </label>`;
+    }).join('');
+    wrap.querySelectorAll('input[data-monitor]').forEach(inp => {
+        inp.addEventListener('change', () => {
+            if (inp.checked) rtlogMonitors.add(inp.dataset.monitor);
+            else rtlogMonitors.delete(inp.dataset.monitor);
+            buildRtlogChart();
+        });
+    });
+}
+
+// グラフ/実データタブ・JSONL/CSVタブの活性表示
+function applyRtlogViewTabs() {
+    document.querySelectorAll('#rtlog-view-tabs .rtlog-tab').forEach(b => {
+        const on = b.dataset.rtview === rtlogView;
+        b.classList.toggle('bg-amber-500/25', on);
+        b.classList.toggle('text-amber-300', on);
+        b.classList.toggle('text-stone-400', !on);
+    });
+    const fmtTabs = $('#rtlog-format-tabs');
+    if (fmtTabs) fmtTabs.classList.toggle('hidden', !(rtlogSelected.length === 1 && rtlogView === 'data'));
+    document.querySelectorAll('#rtlog-format-tabs .rtlog-tab').forEach(b => {
+        const on = b.dataset.rtfmt === rtlogFormat;
+        b.classList.toggle('bg-amber-500/25', on);
+        b.classList.toggle('text-amber-300', on);
+        b.classList.toggle('text-stone-400', !on);
+    });
+}
+
+function clearRtlogChart() {
+    if (rtlogChart) {
+        rtlogChart.destroy();
+        rtlogChart = null;
+    }
+}
+
+// 選択中ログの波形を重ね合わせたグラフを描画（x軸は開始からの経過秒）
+async function buildRtlogChart() {
+    const canvas = $('#rtlog-chart');
+    if (!canvas || !rtlogSelected.length) { clearRtlogChart(); return; }
+    try {
+        const datas = await Promise.all(rtlogSelected.map(n => getRtlogData(n).catch(() => null)));
+        const datasets = [];
+        rtlogSelected.forEach((name, li) => {
+            const d = datas[li];
+            if (!d) return;
+            const dash = RTLOG_DASHES[li % RTLOG_DASHES.length];
+            const t0 = d.samples.length ? Date.parse(d.samples[0].ts) : 0;
+            RTLOG_MONITORS.forEach(m => {
+                if (!rtlogMonitors.has(m.key)) return;
+                datasets.push({
+                    label: `${m.label} [${name}]`,
+                    data: d.samples.map(s => {
+                        const v = s[m.field];
+                        return {
+                            x: Math.round((Date.parse(s.ts) - t0) / 1000),
+                            y: (v === undefined || v === null) ? null : Math.round(v * 10) / 10,
+                        };
+                    }),
+                    borderColor: m.color,
+                    borderDash: dash,
+                    backgroundColor: 'rgba(0,0,0,0)',
+                    pointRadius: 0,
+                    borderWidth: 1.5,
+                    tension: 0.3,
+                });
+            });
+        });
+        if (!datasets.length) { clearRtlogChart(); return; }
+
+        if (!rtlogChart) {
+            rtlogChart = new Chart(canvas, {
+                type: 'line',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 },
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, padding: 20 } },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleColor: '#f8fafc',
+                            bodyColor: '#cbd5e1',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            callbacks: {
+                                title: items => (items.length && items[0].parsed) ? `${items[0].parsed.x}s` : '',
+                            },
+                        },
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            beginAtZero: true,
+                            title: { display: true, text: 's', color: '#78716c', font: { size: 10 } },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#a8a29e', maxTicksLimit: 12 },
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#a8a29e' },
+                        },
+                    },
+                },
+            });
+        } else {
+            rtlogChart.data.datasets = datasets;
+            rtlogChart.update('none');
+        }
+    } catch (e) {
+        console.error('Failed to build rtlog chart:', e);
+    }
+}
+
+// 実データ表示（JSONL または CSV）
+function renderRtlogData() {
+    const content = $('#rtlog-content');
+    if (!content || rtlogSelected.length !== 1) return;
+    const d = rtlogDataCache[rtlogSelected[0]];
+    if (!d) return;
+    content.textContent = rtlogFormat === 'csv' ? toCsv(d.samples) : d.raw;
+}
+
+// samples を CSV 文字列へ（エスケープ込み）
+function toCsv(samples) {
+    const cols = ['ts', 'elapsed_sec', 'cpu_percent', 'memory_percent', 'gpu_util', 'gpu_mem_percent', 'gpu_temp', 'phase', 'progress', 'whisper_model', 'converting'];
+    const esc = v => {
+        if (v === undefined || v === null) return '';
+        const s = String(v);
+        return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const t0 = samples.length ? Date.parse(samples[0].ts) : 0;
+    const lines = [cols.join(',')];
+    for (const s of samples) {
+        const elapsed = t0 ? Math.round((Date.parse(s.ts) - t0) / 1000) : '';
+        lines.push(cols.map(c => c === 'elapsed_sec' ? esc(elapsed) : esc(s[c])).join(','));
+    }
+    return lines.join('\n');
+}
+
+// 表示中の形式（JSONL/CSV）でダウンロード（単一選択時のみ）
 function downloadRealtimeLog() {
-    if (!selectedLogName || selectedLogText == null) return;
-    const blob = new Blob([selectedLogText], { type: 'application/x-ndjson;charset=utf-8' });
+    if (rtlogSelected.length !== 1) return;
+    const name = rtlogSelected[0];
+    const d = rtlogDataCache[name];
+    if (!d) return;
+    const isCsv = rtlogFormat === 'csv';
+    const blob = new Blob(
+        [isCsv ? toCsv(d.samples) : d.raw],
+        { type: isCsv ? 'text/csv;charset=utf-8' : 'application/x-ndjson;charset=utf-8' }
+    );
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = selectedLogName;
+    a.download = isCsv ? name.replace(/\.jsonl$/i, '.csv') : name;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
 }
 
+// クリップボードへ安全にコピー。navigator.clipboard が存在しない環境（非セキュアコンテキスト等）では
+// writeText 呼び出し自体が同期 TypeError を投げ .catch() に到達しないため、事前に存在確認して
+// textarea + execCommand 方式へフォールバックする。成功/失敗を Promise<boolean> で返す。
+function copyToClipboard(text) {
+    return new Promise((resolve) => {
+        const fallback = () => {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.top = '-9999px';
+            ta.style.left = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+            document.body.removeChild(ta);
+            resolve(!!ok);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => resolve(true)).catch(fallback);
+        } else {
+            fallback();
+        }
+    });
+}
+
 function copyRealtimeLog() {
-    if (selectedLogText == null) return;
-    navigator.clipboard.writeText(selectedLogText).then(() => {
-        showToast(t('logging.copied'), 'success');
-    }).catch(() => {
-        const ta = document.createElement('textarea');
-        ta.value = selectedLogText;
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand('copy'); showToast(t('logging.copied'), 'success'); } catch (e) {}
-        document.body.removeChild(ta);
+    if (rtlogSelected.length !== 1) return;
+    const d = rtlogDataCache[rtlogSelected[0]];
+    if (!d) return;
+    copyToClipboard(d.raw).then((ok) => {
+        showToast(ok ? t('logging.copied') : t('logging.copy_failed'), ok ? 'success' : 'error');
     });
 }
 
 async function deleteRealtimeLog() {
-    if (!selectedLogName) return;
-    if (!window.confirm(t('logging.delete_confirm') + '\n' + selectedLogName)) return;
+    if (rtlogSelected.length !== 1) return;
+    const name = rtlogSelected[0];
+    if (!window.confirm(t('logging.delete_confirm') + '\n' + name)) return;
     try {
-        const resp = await apiFetch(`${API_BASE}/realtime-log/${encodeURIComponent(selectedLogName)}`, { method: 'DELETE' });
+        const resp = await apiFetch(`${API_BASE}/realtime-log/${encodeURIComponent(name)}`, { method: 'DELETE' });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        selectedLogName = '';
-        selectedLogText = null;
-        const actions = $('#rtlog-detail-actions');
-        if (actions) actions.classList.add('hidden');
-        $('#rtlog-content').textContent = '';
-        $('#rtlog-summary').innerHTML = '';
-        $('#rtlog-detail-title').textContent = t('logging.select_hint');
+        rtlogSelected = rtlogSelected.filter(n => n !== name);
+        delete rtlogDataCache[name];
+        renderRtlogPanel();
         loadRealtimeLogs();
         showToast(t('logging.deleted'), 'success');
     } catch (e) {
@@ -2733,7 +4317,7 @@ async function deleteRealtimeLog() {
 // ---------------------------------------------------------------------------
 // Readme（サイドバー「Readme」表示内容）
 // ---------------------------------------------------------------------------
-const APP_VERSION = '1.4.4';
+const APP_VERSION = '1.8.11';
 
 // モデル別 60分音声ベンチマーク目安（GTX 1660 Ti 6GB・int8_float16・beam=3）
 const MODEL_BENCH = {
@@ -2766,7 +4350,9 @@ const README_CONTENT = {
             'AI 校对（LLM: Deepseek / MiniMax / Ollama / 自定义 OpenAI 兼容端点）',
             '转写履历管理（搜索、再校对、SRT 输出）',
             '实时日志查看',
-            'Whisper 模型管理（下载、切换、保存位置指定、VRAM 警告）',
+            'Whisper 模型管理（下载、切换、删除、保存位置指定、VRAM 警告）',
+            'PaddleOCR 模型管理（下载・删除・进度。保存于项目内 models/paddlex，图像 OCR / PDF→Markdown）',
+            '聊天 API（OpenAI 兼容 SSE 流式 + 逐句实时语音输出）',
             '多语言界面（中文 / 日本語 / English）',
             '连接令牌认证（写入・控制操作，本地回环免除）',
             'Windows 开机自启动',
@@ -2779,6 +4365,7 @@ const README_CONTENT = {
         arch: [
             ['MyWhisperServer Dashboard', 'FastAPI + WebSocket + SQLite（:9001）— 设置・监控・履历・Readme 界面'],
             ['Whisper Server', 'faster-whisper（:9000）— GPU 推理，转写后执行 AI 校对'],
+            ['PaddleOCR Server', 'PaddleOCR（:9100）— 图像 OCR / PDF→Markdown。模型保存在 models/paddlex，可在设置中管理'],
             ['LLM 校对引擎', 'Deepseek API / MiniMax API / Ollama 等 OpenAI 兼容端点'],
             ['模型保存位置', 'models/（HuggingFace 缓存格式）— 可在设置中变更'],
             ['数据库', 'dashboard/data/records.db — 转写履历・设置・LLM 配置文件'],
@@ -2791,6 +4378,178 @@ const README_CONTENT = {
         current_version: '当前版本',
         changelog_title: '功能追加履历',
         changelog: [
+            {
+                ver: 'v1.8.11', date: '2026-08-23',
+                items: [
+                    '模型: 设置页「模型管理」新增 PaddleOCR 模型管理（下载/删除/进度）。PaddleOCR 模型保存到项目内 models/paddlex，随项目整体迁移',
+                ],
+            },
+            {
+                ver: 'v1.8.10', date: '2026-08-23',
+                items: [
+                    '履历: 删除按钮改为「批量删除」（选择行后删除），移除全删除按钮。日志履历也支持多选与批量删除',
+                ],
+            },
+            {
+                ver: 'v1.8.9', date: '2026-08-23',
+                items: [
+                    '履历: 转换履历支持多选（行复选框＋全选）与批量删除。外部启动的 Whisper 服务也会显示进程 ID 与启动时间',
+                ],
+            },
+            {
+                ver: 'v1.8.8', date: '2026-08-23',
+                items: [
+                    '界面: 侧边栏的 TTS 服务显示朗读中/暂停状态。OCR 运行时，控制卡片立即显示「转换中」，并显示进程 ID 与经时时间（外部启动的 OCR 也能识别 PID）',
+                ],
+            },
+            {
+                ver: 'v1.8.7', date: '2026-08-23',
+                items: [
+                    '界面: 在侧边栏的 Whisper 与 OCR 服务之间添加了 TTS 服务状态显示（模型已载入时以品红色点亮）',
+                ],
+            },
+            {
+                ver: 'v1.8.6', date: '2026-08-23',
+                items: [
+                    '界面: 实时趋势卡片的自动记录开关改为滑动开关（修正开关无法显示状态的问题）。同时拉开图表中各采样项目的图例间隔',
+                ],
+            },
+            {
+                ver: 'v1.8.5', date: '2026-08-23',
+                items: [
+                    '修正: 转换履历等的「复制」按钮，在剪贴板 API 不可用的环境（例如通过局域网 IP 打开）下不工作。通过先确认 navigator.clipboard 是否存在、并回退到旧的 textarea 方式，现在复制按钮在任何环境都能工作。失败时会显示错误提示',
+                ],
+            },
+            {
+                ver: 'v1.8.4', date: '2026-08-23',
+                items: [
+                    '修正: 转写履历中，结果含「\u0027（撇号）时查看・复制失败的问题。按钮 onclick 引用的字符串改用特殊编码（\u0027 → %27），含撇号的文本也能正常显示・复制',
+                ],
+            },
+            {
+                ver: 'v1.8.3', date: '2026-08-23',
+                items: [
+                    '结果表示: PaddleOCR 的 PDF→MD 输出包含 HTML 表格（<table>・居中 <div>）。在 Markdown 视图中将其安全地渲染为表格显示（rowspan/colspan 保持，script 等除外）',
+                ],
+            },
+            {
+                ver: 'v1.8.2', date: '2026-08-23',
+                items: [
+                    '结果表示: AI 校正结果（及转换结果）为 Markdown 格式时以 Markdown 视图显示。朗读时不会读出 MD 符号（标题・强调・列表・代码・表格等以渲染后的文字朗读）',
+                ],
+            },
+            {
+                ver: 'v1.8.1', date: '2026-08-23',
+                items: [
+                    '转换履历: 点击列标题可对列排序（再次点击切换升序/降序，▲▼ 显示当前排序列）',
+                ],
+            },
+            {
+                ver: 'v1.8.0', date: '2026-08-23',
+                items: [
+                    'OCR 执行: 文件选择 → 输出格式（MD/TXT）→ AI 校正选择（自动保存）→ 执行。图像 / PDF 按所选文件自动判定',
+                    'OCR 执行: 开始时显示「转换中」与已用时。转换完成后记录到转换履历（音频时长以 - 显示，转换速度 = 转换时间/页数的平均值）',
+                ],
+            },
+            {
+                ver: 'v1.7.0', date: '2026-08-23',
+                items: [
+                    '日志履历: 左列表支持多选，点击所选日志在右侧叠加显示波形图表。各监控（CPU/Memory/GPU利用率/VRAM/温度）可单独显示ON/OFF',
+                    '日志履历: 单选日志时可在「图表」与「实数据」间切换显示。实数据支持 JSONL / CSV 两种格式，下载按钮按当前显示格式保存',
+                ],
+            },
+            {
+                ver: 'v1.6.0', date: '2026-08-23',
+                items: [
+                    '实时推移新增「自动记录」开关: 任一服务（Whisper/TTS/OCR/LLM）从待机变为活动时自动开始记录，全部待机或本次活动中服务停止时自动结束。关闭开关时结束当前自动记录',
+                    '实时推移卡片头部显示采样周期（刷新间隔）与波形跨度（显示点数・时间宽度）',
+                ],
+            },
+            {
+                ver: 'v1.5.9', date: '2026-08-23',
+                items: [
+                    '服务控制卡: 删除模型详细（#model-info），模型・模式・切换按钮改为一行显示',
+                ],
+            },
+            {
+                ver: 'v1.5.8', date: '2026-08-23',
+                items: [
+                    '侧边栏下方新增「LLM 活用」: AI 校正（LLM）处理中显示状态（处理中/待机中 + 模型名）',
+                ],
+            },
+            {
+                ver: 'v1.5.7', date: '2026-08-23',
+                items: [
+                    '仪表盘各监控・实时推移的更新周期现在与设置的「刷新间隔」一致（默认 1000ms）。GPU Engine 计数器改为后台持续采样，不再阻塞快照，更新显著加快',
+                    '侧边栏顺序改为: 仪表盘 → OCR → 转换履历 → 设置 → 实时日志 → 日志履历 → Readme',
+                ],
+            },
+            {
+                ver: 'v1.5.6', date: '2026-08-23',
+                items: [
+                    '设置画面: 连接令牌新增启用/停用开关。停用后，其他设备无需令牌即可执行写入・控制操作',
+                ],
+            },
+            {
+                ver: 'v1.5.5', date: '2026-08-23',
+                items: [
+                    '转换履历的详细结果: 在结果画面右上角新增「校正」/「删除」按钮，可对已保存的转换结果重新执行 AI 校正并即时更新显示，或删除该记录',
+                ],
+            },
+            {
+                ver: 'v1.5.4', date: '2026-08-23',
+                items: [
+                    '设置画面: 连接令牌支持手动输入并保存（新增保存按钮）',
+                    'OCR 标签页: 显示与仪表盘相同的 CPU & 内存 / GPU 监控（实时同步）',
+                    '侧边栏: 将日志履历移动到「设置」和「Readme」之间',
+                ],
+            },
+            {
+                ver: 'v1.5.3', date: '2026-08-23',
+                items: [
+                    '服务控制卡改名为「服务控制」',
+                    '设置画面: 补全连接令牌・重新生成等缺失的多语言文本（日语显示时完全日语化）',
+                ],
+            },
+            {
+                ver: 'v1.5.2', date: '2026-08-23',
+                items: [
+                    'CPU & 内存监控: 下部 3 个显示盒的字号统一为 text-xl',
+                    '侧边栏: Whisper / OCR 各自添加状态显示与小开始、停止按钮（日文显示）',
+                ],
+            },
+            {
+                ver: 'v1.5.1', date: '2026-08-23',
+                items: [
+                    'GPU 监控卡: VRAM 圆环改为 4 色渐变分段显示（Whisper / TTS / OCR / 其他），并显示各模型的总体占比',
+                    'GPU 监控卡: 各模型框改为 2 行居中显示 —— 模型名 + VRAM 使用容量（MB 与占比・实时更新），文字加大 2 档',
+                    'GPU 监控卡: 使用率圆环也改为 4 色渐变分段显示（Whisper / TTS / OCR / 其他，Windows GPU Engine 按 PID 实时统计）',
+                    '服务控制卡: 集成 Whisper / TTS / OCR 的启动、停止、重启，TTS 支持模型读入 / 释放 / 重读',
+                ],
+            },
+            {
+                ver: 'v1.5.0', date: '2026-08-23',
+                items: [
+                    '新增 PaddleOCR 服务（端口 9100）: 图像 OCR（PP-OCRv6/PP-OCRv5）+ PDF→Markdown（PP-StructureV3）',
+                    'OCR 标签页: 服务启动/停止/重启・GPU/CPU 设备・语言选择・上传执行与 Markdown 下载',
+                    '设置: OCR 的启动时自动启动选项（默认: 关闭）',
+                ],
+            },
+            {
+                ver: 'v1.4.4', date: '2026-08-23',
+                items: [
+                    '修正: 模型切换下拉框被状态定期更新重置为运行中模型，导致所选模型（Small→medium）丢失的问题',
+                ],
+            },
+            {
+                ver: 'v1.4.0', date: '2026-08-23',
+                items: [
+                    '聊天 API（OpenAI 兼容 /api/v1/chat + SSE 流式）与逐句实时语音输出',
+                    '模型管理: Whisper / Kokoro / VibeVoice 的删除按钮、Kokoro・VibeVoice 的下载状态与管理',
+                    '本地 TTS 集成: 引擎延迟加载・常驻・空闲时自动释放（VRAM）',
+                    '显示改善: Whisper 状态「执行中」改为「待机中」、模型行悬停高亮',
+                ],
+            },
             {
                 ver: 'v1.2.0', date: '2026-08-22',
                 items: [
@@ -2830,7 +4589,9 @@ const README_CONTENT = {
             'AI 校正（LLM: Deepseek / MiniMax / Ollama / カスタム OpenAI 互換エンドポイント）',
             '変換履歴管理（検索・再校正・SRT 出力）',
             'リアルタイムログ表示',
-            'Whisper モデル管理（DL・切替・保存先指定・VRAM 警告）',
+            'Whisper モデル管理（DL・切替・削除・保存先指定・VRAM 警告）',
+            'PaddleOCR モデル管理（DL・削除・進捗。プロジェクト内 models/paddlex に保存、画像OCR / PDF→Markdown）',
+            'チャットAPI（OpenAI 互換 SSE ストリーミング + 文単位リアルタイム音声出力）',
             '多言語 UI（中文 / 日本語 / English）',
             '接続トークン認証（書き込み・制御操作のみ、ループバック免除）',
             'Windows 自動起動',
@@ -2843,6 +4604,7 @@ const README_CONTENT = {
         arch: [
             ['MyWhisperServer Dashboard', 'FastAPI + WebSocket + SQLite（:9001）— 設定・監視・履歴・Readme 画面'],
             ['Whisper Server', 'faster-whisper（:9000）— GPU 推論、転写後に AI 校正を実行'],
+            ['PaddleOCR Server', 'PaddleOCR（:9100）— 画像OCR / PDF→Markdown。モデルは models/paddlex に保存され設定画面で管理'],
             ['LLM 校正エンジン', 'Deepseek API / MiniMax API / Ollama など OpenAI 互換エンドポイント'],
             ['モデル保存先', 'models/（HuggingFace キャッシュ形式）— 設定画面で変更可'],
             ['データベース', 'dashboard/data/records.db — 転写履歴・設定・LLM プロファイル'],
@@ -2855,6 +4617,178 @@ const README_CONTENT = {
         current_version: '現在のバージョン',
         changelog_title: '機能追加履歴',
         changelog: [
+            {
+                ver: 'v1.8.11', date: '2026-08-23',
+                items: [
+                    'モデル: 設定ページ「音声モデル管理」に PaddleOCR モデル管理（DL/削除/進捗）を追加。PaddleOCR モデルはプロジェクト内 models/paddlex に保存され、プロジェクトごと移植可能',
+                ],
+            },
+            {
+                ver: 'v1.8.10', date: '2026-08-23',
+                items: [
+                    '履歴: 削除ボタンを「選択削除」（行を選択して削除）に変更し、全削除ボタンを廃止。記録ログ（ログ履歴）にも複数選択・一括削除を追加',
+                ],
+            },
+            {
+                ver: 'v1.8.9', date: '2026-08-23',
+                items: [
+                    '履歴: 変換履歴で複数選択（行チェックボックス＋全選択）と一括削除を追加。外部起動の Whisper サービスにもプロセス ID と起動時間を表示',
+                ],
+            },
+            {
+                ver: 'v1.8.8', date: '2026-08-23',
+                items: [
+                    'UI: サイドバーの TTS サービスに読み上げ中/一時停止中を表示。OCR 実行時は制御カードに即座に「変換中」を表示し、プロセス ID・経過時間を表示（外部起動の OCR も PID を検出）',
+                ],
+            },
+            {
+                ver: 'v1.8.7', date: '2026-08-23',
+                items: [
+                    'UI: サイドバーの Whisper サービスと OCR サービスの間に、TTS サービスの状態表示を追加（モデル読込中はフクシア色で表示）',
+                ],
+            },
+            {
+                ver: 'v1.8.6', date: '2026-08-23',
+                items: [
+                    'UI: リアルタイム推移カードの自動記録トグルをスライドスイッチに変更（状態が表示されない問題を修正）。あわせて各サンプリング項目の凡例の間隔を広げた',
+                ],
+            },
+            {
+                ver: 'v1.8.5', date: '2026-08-23',
+                items: [
+                    '修正: 変換履歴などの「コピー」ボタンが、クリップボード API が使えない環境（例: LAN IP で開いた場合）で動作しない問題。navigator.clipboard の存在確認と textarea 方式へのフォールバックを追加し、どの環境でもコピーできるように。失敗時はエラー表示',
+                ],
+            },
+            {
+                ver: 'v1.8.4', date: '2026-08-23',
+                items: [
+                    '修正: 変換履歴で結果に「\u0027（アポストロフィ）が含まれると表示・コピーできない問題。ボタン onclick に埋め込む文字列を特殊エンコード（\u0027 → %27）し、アポストロフィを含むテキストでも表示・コピーできるようにした',
+                ],
+            },
+            {
+                ver: 'v1.8.3', date: '2026-08-23',
+                items: [
+                    '結果表示: PaddleOCR の PDF→MD 出力に含まれる HTML テーブル（<table>・中央寄せ <div>）を、Markdown ビューで安全にテーブル表示（rowspan/colspan 維持、script 等は除外）',
+                ],
+            },
+            {
+                ver: 'v1.8.2', date: '2026-08-23',
+                items: [
+                    '結果表示: AI校正結果（および変換結果）が Markdown 形式のとき Markdown ビューで表示。読み上げ時は MD 記号を読まない（見出し・強調・リスト・コード・表などはレンダリング後の文字を読み上げ）',
+                ],
+            },
+            {
+                ver: 'v1.8.1', date: '2026-08-23',
+                items: [
+                    '変換履歴: 列ヘッダをクリックしてソート（再クリックで昇順⇔降順切替、▲▼ で現在のソート列を表示）',
+                ],
+            },
+            {
+                ver: 'v1.8.0', date: '2026-08-23',
+                items: [
+                    'OCR 実行: ファイル選択 → 出力形式（MD/TXT）→ AI 校正選択（選択保存）→ 実行。画像 / PDF は選択したファイルで自動判定します',
+                    'OCR 実行: 実行開始時に「変換中」と経過時間を表示。完了後は変換履歴に記録（音声時間は「-」表示、変換速度は変換時間/ページ数の平均値）',
+                ],
+            },
+            {
+                ver: 'v1.7.0', date: '2026-08-23',
+                items: [
+                    'ログ履歴: 左の一覧が複数選択に対応し、選択したログの波形を右側で重ね合わせ表示できます。各モニタ（CPU/Memory/GPU使用率/VRAM/温度）の表示ON/OFFを選択可能',
+                    'ログ履歴: 単一ログ選択時は「グラフ」と「実データ」をタブ切替。実データは JSONL / CSV の2形式に対応し、ダウンロードボタンは表示中の形式で保存します',
+                ],
+            },
+            {
+                ver: 'v1.6.0', date: '2026-08-23',
+                items: [
+                    'リアルタイム推移に「自動記録」トグルを追加: 各サービス（Whisper/TTS/OCR/LLM）が待機から稼働に変わった瞬間に自動で記録を開始し、全サービスが待機、または今回のセッションで活動中のサービスが停止した時に自動終了します。OFF にすると現在の自動記録は終了します',
+                    'リアルタイム推移カードのヘッダーにサンプリング周期（更新間隔）と波形間隔（表示点数・時間幅）を表示',
+                ],
+            },
+            {
+                ver: 'v1.5.9', date: '2026-08-23',
+                items: [
+                    'サービス制御カード: モデル詳細（#model-info）を削除し、モデル・モード・切替ボタンを一行にまとめて表示',
+                ],
+            },
+            {
+                ver: 'v1.5.8', date: '2026-08-23',
+                items: [
+                    'サイドバー下部に「LLM 活用」を追加: AI 校正（LLM）の処理中に状態（処理中/待機中 + モデル名）を表示',
+                ],
+            },
+            {
+                ver: 'v1.5.7', date: '2026-08-23',
+                items: [
+                    'ダッシュボード各モニタ・リアルタイム推移の更新周期を設定の「更新間隔」（既定 1000ms）に一致させました。GPU Engine カウンタはバックグラウンドで継続サンプリングするようにし、スナップショットをブロックしないため更新が大幅に高速化',
+                    'サイドバーの順序を変更: ダッシュボード → OCR → 変換履歴 → 設定 → リアルタイムログ → ログ履歴 → Readme',
+                ],
+            },
+            {
+                ver: 'v1.5.6', date: '2026-08-23',
+                items: [
+                    '設定画面: 接続トークンに有効/無効スイッチを追加。無効にすると、他のデバイスはトークンなしで書き込み・制御操作を実行できます',
+                ],
+            },
+            {
+                ver: 'v1.5.5', date: '2026-08-23',
+                items: [
+                    '変換履歴の詳細結果: 結果画面右上に「校正」/「削除」ボタンを追加。保存済みの変換結果へ AI 校正を再実行して表示を即時更新、または記録を削除できます',
+                ],
+            },
+            {
+                ver: 'v1.5.4', date: '2026-08-23',
+                items: [
+                    '設定画面: 接続トークンを手動入力して保存できるように（保存ボタン追加）',
+                    'OCR タブ: ダッシュボードと同じ CPU & メモリ / GPU モニターを表示（リアルタイム同期）',
+                    'サイドバー: ログ履歴を「設定」と「Readme」の間に移動',
+                ],
+            },
+            {
+                ver: 'v1.5.3', date: '2026-08-23',
+                items: [
+                    'サービス制御カードを「サービス制御」に改名',
+                    '設定画面: 接続トークン・再生成などの欠落していた多言語テキストを補完（日本語表示時に完全日本語化）',
+                ],
+            },
+            {
+                ver: 'v1.5.2', date: '2026-08-23',
+                items: [
+                    'CPU & メモリモニター: 下部 3 ボックスの表示フォントサイズを text-xl で統一',
+                    'サイドバー: Whisper / OCR それぞれに状態表示と小さな開始・停止ボタンを配置（日本語表示）',
+                ],
+            },
+            {
+                ver: 'v1.5.1', date: '2026-08-23',
+                items: [
+                    'GPU モニターカード: VRAM リングを 4 色グラデーションのセグメント表示（Whisper / TTS / OCR / その他）に変更し、各モデルの全体割合を表示',
+                    'GPU モニターカード: 各モデルボックスを 2 行表示（モデル名 + VRAM使用容量 MB・全体割合）に変更し、文字サイズを 2 段階アップ',
+                    'GPU モニターカード: 使用率リングも 4 色グラデーションのセグメント表示（Whisper / TTS / OCR / その他・Windows GPU Engine の PID 別実測）に変更',
+                    'サービス制御カード: Whisper / TTS / OCR の起動・停止・再起動を集約。TTS はモデルの読込 / 解放 / 再読込に対応',
+                ],
+            },
+            {
+                ver: 'v1.5.0', date: '2026-08-23',
+                items: [
+                    'PaddleOCR サービスを追加（ポート 9100）: 画像OCR（PP-OCRv6/PP-OCRv5）+ PDF→Markdown（PP-StructureV3）',
+                    'OCR タブ: サービス起動/停止/再起動・GPU/CPU デバイス・言語選択・アップロード実行と Markdown ダウンロード',
+                    '設定: OCR の起動時自動起動オプション（既定: オフ）',
+                ],
+            },
+            {
+                ver: 'v1.4.4', date: '2026-08-23',
+                items: [
+                    '修正: Whisper モデル切替ドロップダウンがステータス定期更新で実行中モデルに戻され、選択（Small→medium）が消える問題',
+                ],
+            },
+            {
+                ver: 'v1.4.0', date: '2026-08-23',
+                items: [
+                    'チャットAPI（OpenAI 互換 /api/v1/chat + SSE ストリーミング）と文単位リアルタイム音声出力',
+                    'モデル管理: Whisper / Kokoro / VibeVoice の削除ボタン、Kokoro・VibeVoice の DL 状態表示と管理',
+                    'ローカル TTS 統合: エンジンの遅延ロード・常駐・アイドル時の自動アンロード（VRAM 解放）',
+                    '表示改善: Whisper 状態「実行中」を「待機中」に変更、モデル行のホバー強調',
+                ],
+            },
             {
                 ver: 'v1.2.0', date: '2026-08-22',
                 items: [
@@ -2894,7 +4828,9 @@ const README_CONTENT = {
             'AI correction (LLM: Deepseek / MiniMax / Ollama / custom OpenAI-compatible endpoints)',
             'Transcription history (search, re-correct, SRT export)',
             'Real-time log viewer',
-            'Whisper model management (download, switch, storage location, VRAM warning)',
+            'Whisper model management (download, switch, delete, storage location, VRAM warning)',
+            'PaddleOCR model management (download/delete/progress, stored under models/paddlex; image OCR / PDF→Markdown)',
+            'Chat API (OpenAI-compatible SSE streaming + per-sentence real-time audio output)',
             'Multilingual UI (中文 / 日本語 / English)',
             'Connection-token auth (write/control only, loopback exempt)',
             'Windows auto-start',
@@ -2907,6 +4843,7 @@ const README_CONTENT = {
         arch: [
             ['MyWhisperServer Dashboard', 'FastAPI + WebSocket + SQLite (:9001) — settings, monitoring, history, Readme UI'],
             ['Whisper Server', 'faster-whisper (:9000) — GPU inference, AI correction after transcription'],
+            ['PaddleOCR Server', 'PaddleOCR (:9100) — image OCR / PDF→Markdown. Models stored under models/paddlex, managed in settings'],
             ['LLM correction engine', 'Deepseek API / MiniMax API / Ollama or any OpenAI-compatible endpoint'],
             ['Model storage', 'models/ (HuggingFace cache layout) — configurable in settings'],
             ['Database', 'dashboard/data/records.db — history, settings, LLM profiles'],
@@ -2919,6 +4856,178 @@ const README_CONTENT = {
         current_version: 'Current version',
         changelog_title: 'Changelog',
         changelog: [
+            {
+                ver: 'v1.8.11', date: '2026-08-23',
+                items: [
+                    'Models: Added PaddleOCR model management (download/delete/progress) to the Model Management card in settings. PaddleOCR models are stored under models/paddlex inside the project, so the whole project stays portable',
+                ],
+            },
+            {
+                ver: 'v1.8.10', date: '2026-08-23',
+                items: [
+                    'History: The delete button is now "Delete Selected" (select rows to delete); the Clear All button is removed. The log history also supports multi-select and batch delete',
+                ],
+            },
+            {
+                ver: 'v1.8.9', date: '2026-08-23',
+                items: [
+                    'History: Conversion history now supports multi-select (row checkboxes + select all) and batch delete. The process ID and start time are shown even for an externally started Whisper service',
+                ],
+            },
+            {
+                ver: 'v1.8.8', date: '2026-08-23',
+                items: [
+                    'UI: The sidebar TTS service now shows the speaking/paused state. When OCR runs, the control card immediately shows "Converting", and the process ID and elapsed time are displayed (the PID is detected even for externally started OCR)',
+                ],
+            },
+            {
+                ver: 'v1.8.7', date: '2026-08-23',
+                items: [
+                    'UI: Added a TTS service status display in the sidebar between the Whisper and OCR services (shown in fuchsia when the model is loaded)',
+                ],
+            },
+            {
+                ver: 'v1.8.6', date: '2026-08-23',
+                items: [
+                    'UI: The auto-record toggle in the realtime trend card is now a slide switch (fixes the state not being shown). Also increased the spacing between the legend items of each sampled metric',
+                ],
+            },
+            {
+                ver: 'v1.8.5', date: '2026-08-23',
+                items: [
+                    'Fix: The Copy buttons in the conversion history stopped working in environments where the Clipboard API is unavailable (e.g. opened via a LAN IP). Now the buttons first check whether navigator.clipboard exists and fall back to the legacy textarea method, so copying works everywhere. Failures are surfaced with an error toast',
+                ],
+            },
+            {
+                ver: 'v1.8.4', date: '2026-08-23',
+                items: [
+                    'Fix: View/Copy failed in the conversion history when a result contains an apostrophe ("\u0027"). The string embedded in the button onclick is now specially encoded ("\u0027" → %27) so apostrophe-bearing text displays and copies correctly',
+                ],
+            },
+            {
+                ver: 'v1.8.3', date: '2026-08-23',
+                items: [
+                    'Result View: HTML tables emitted by PaddleOCR in PDF→MD output (<table> / centered <div>) are now safely rendered as tables in the Markdown view (rowspan/colspan preserved, scripts dropped)',
+                ],
+            },
+            {
+                ver: 'v1.8.2', date: '2026-08-23',
+                items: [
+                    'Result View: AI-corrected (and raw) results are shown as rendered Markdown when in Markdown format. When reading aloud, MD symbols are not spoken (headings, emphasis, lists, code, tables are read as their rendered text)',
+                ],
+            },
+            {
+                ver: 'v1.8.1', date: '2026-08-23',
+                items: [
+                    'Conversion History: click a column header to sort (click again to toggle asc/desc; ▲▼ shows the active sort column)',
+                ],
+            },
+            {
+                ver: 'v1.8.0', date: '2026-08-23',
+                items: [
+                    'OCR Run: file select → output format (MD/TXT) → AI correction select (auto-saved) → run. Image / PDF is auto-detected from the selected file',
+                    'OCR Run: shows "Converting" and elapsed time on start. On completion, records to the conversion history (audio time shown as "-", speed = conversion time / pages average)',
+                ],
+            },
+            {
+                ver: 'v1.7.0', date: '2026-08-23',
+                items: [
+                    'Log History: the left list supports multi-select — selected logs overlay their waveforms on the right. Each monitor (CPU/Memory/GPU Util/VRAM/Temp) can be toggled ON/OFF',
+                    'Log History: with a single log selected, switch between "Graph" and "Data" views. Data supports JSONL / CSV formats; the Download button saves in the current display format',
+                ],
+            },
+            {
+                ver: 'v1.6.0', date: '2026-08-23',
+                items: [
+                    'Real-time trend: added "Auto-record" toggle — recording auto-starts the moment any service (Whisper/TTS/OCR/LLM) goes active, and auto-ends when all are idle or an active service of this session stops. Toggling OFF ends the current auto session',
+                    'Real-time trend card header now shows the sample period (refresh interval) and wave span (displayed points · time width)',
+                ],
+            },
+            {
+                ver: 'v1.5.9', date: '2026-08-23',
+                items: [
+                    'Service Control Card: removed model details (#model-info); model, mode, and switch button now display on one line',
+                ],
+            },
+            {
+                ver: 'v1.5.8', date: '2026-08-23',
+                items: [
+                    'Sidebar: added "LLM Activity" at the bottom — shows status (correcting / idle + model name) while AI correction (LLM) is running',
+                ],
+            },
+            {
+                ver: 'v1.5.7', date: '2026-08-23',
+                items: [
+                    'Dashboard monitors and real-time trend updates now match the configured "Refresh interval" (default 1000ms). The GPU Engine counter is sampled continuously in the background so it no longer blocks snapshots, making updates much faster',
+                    'Sidebar order changed to: Dashboard → OCR → Conversion History → Settings → Realtime Log → Log History → Readme',
+                ],
+            },
+            {
+                ver: 'v1.5.6', date: '2026-08-23',
+                items: [
+                    'Settings screen: added an enable/disable switch for the connection token. When off, other devices can perform write/control operations without a token',
+                ],
+            },
+            {
+                ver: 'v1.5.5', date: '2026-08-23',
+                items: [
+                    'Conversion history detail: added "Correct" / "Delete" buttons at the top-right of the result screen to re-run AI correction on a saved result (updating the display immediately) or delete the record',
+                ],
+            },
+            {
+                ver: 'v1.5.4', date: '2026-08-23',
+                items: [
+                    'Settings screen: connection token now supports manual entry and saving (added save button)',
+                    'OCR tab: shows the same CPU & memory / GPU monitors as the dashboard (real-time sync)',
+                    'Sidebar: moved Log History to between Settings and Readme',
+                ],
+            },
+            {
+                ver: 'v1.5.3', date: '2026-08-23',
+                items: [
+                    'Renamed "Service Control Card" heading to "Service Control"',
+                    'Settings screen: added missing multilingual text for connection token / regenerate (fully Japanese when UI is Japanese)',
+                ],
+            },
+            {
+                ver: 'v1.5.2', date: '2026-08-23',
+                items: [
+                    'CPU & memory monitor: unified the font size of the 3 bottom boxes to text-xl',
+                    'Sidebar: added status display plus small start/stop buttons for Whisper and OCR (Japanese labels)',
+                ],
+            },
+            {
+                ver: 'v1.5.1', date: '2026-08-23',
+                items: [
+                    'GPU monitor card: VRAM ring now shows 4 gradient segments (Whisper / TTS / OCR / Other) with each model\'s share of total',
+                    'GPU monitor card: each model box now shows 2 centered lines — model name + VRAM usage (MB & share, real-time), text bumped 2 sizes',
+                    'GPU monitor card: utilization ring also segmented into 4 gradients (Whisper / TTS / OCR / Other, measured per-PID via Windows GPU Engine counters)',
+                    'Service Control card: start/stop/restart for Whisper, TTS and OCR in one place; TTS supports model load / unload / reload',
+                ],
+            },
+            {
+                ver: 'v1.5.0', date: '2026-08-23',
+                items: [
+                    'Added PaddleOCR service (port 9100): image OCR (PP-OCRv6/PP-OCRv5) + PDF→Markdown (PP-StructureV3)',
+                    'OCR tab: service start/stop/restart, GPU/CPU device, language selection, upload-and-run with Markdown download',
+                    'Settings: OCR auto-start option (default: off)',
+                ],
+            },
+            {
+                ver: 'v1.4.4', date: '2026-08-23',
+                items: [
+                    'Fixed: model-switch dropdown was reset to the running model by periodic status updates, discarding the selected model (Small→medium)',
+                ],
+            },
+            {
+                ver: 'v1.4.0', date: '2026-08-23',
+                items: [
+                    'Chat API (OpenAI-compatible /api/v1/chat + SSE streaming) with per-sentence real-time audio output',
+                    'Model management: delete buttons for Whisper / Kokoro / VibeVoice; Kokoro & VibeVoice download status and management',
+                    'Local TTS integration: lazy engine load, resident model, idle auto-unload (VRAM)',
+                    'UI: Whisper status "Running" → "Standby"; hover highlight on model rows',
+                ],
+            },
             {
                 ver: 'v1.2.0', date: '2026-08-22',
                 items: [
@@ -3099,9 +5208,13 @@ function showSection(name) {
         loadLogs();
     } else if (name === 'logging') {
         loadRealtimeLogs();
+        if (rtlogChart) rtlogChart.resize();
     } else if (name === 'settings') {
         loadSettings();
         loadAutostartStatus();
+    } else if (name === 'ocr') {
+        loadOcrStatus();
+        loadOcrSettings();
     } else if (name === 'readme') {
         renderReadme(); // カタログ取得前に開いた場合も最新状態で描画
     }
@@ -3111,6 +5224,9 @@ function showSection(name) {
 // 履历
 // ---------------------------------------------------------------------------
 async function loadRecords(search = '') {
+    // 新しいデータ取得時は選択をリセット（ソート再描画のみ選択を維持）
+    recordSelection.clear();
+    updateSelectedCount();
     try {
         const url = `${API_BASE}/records?limit=50&search=${encodeURIComponent(search)}`;
         const resp = await apiFetch(url);
@@ -3121,23 +5237,57 @@ async function loadRecords(search = '') {
     }
 }
 
+// onclick に埋め込む文字列エンコード：encodeURIComponent は ' をエスケープしないため、
+// 結果テキストにアポストロフィが含まれても onclick が壊れないよう ' → %27 にする
+function enc(s) {
+    return encodeURIComponent(s == null ? '' : s).replace(/'/g, '%27');
+}
+
 function renderRecords(records) {
     lastRecords = records;
     const tbody = $('#records-table-body');
     if (!records || records.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-slate-500">${t('records.empty')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-slate-500">${t('records.empty')}</td></tr>`;
+        updateRecordSortIndicators();
+        updateSelectedCount();
         return;
     }
 
-    tbody.innerHTML = records.map(r => {
+    // ソート適用（records は不変、コピーをソート）
+    let list = records;
+    if (recordsSortKey) {
+        const key = recordsSortKey, dir = recordsSortDir;
+        const numericKeys = new Set(['time', 'duration', 'convert', 'correct', 'elapsed', 'speed', 'chars']);
+        const isNumeric = numericKeys.has(key);
+        list = [...records].sort((a, b) => {
+            const va = recordSortValue(a, key);
+            const vb = recordSortValue(b, key);
+            if (isNumeric) {
+                const na = (typeof va === 'number' && isFinite(va)) ? va : Infinity;
+                const nb = (typeof vb === 'number' && isFinite(vb)) ? vb : Infinity;
+                return (na - nb) * dir;
+            }
+            return String(va).localeCompare(String(vb), undefined, { numeric: true }) * dir;
+        });
+    }
+
+    tbody.innerHTML = list.map(r => {
         // 时间分量：処理時間 = elapsed（総合）、変換時間 = elapsed - AI校正（Whisper のみ）
         const total = (r.elapsed_seconds || 0);
         const correct = r.correct_elapsed || 0;
         const convert = Math.max(0, total - correct);
-        // 转换速度 = 转换耗时 / 音频长度（越小越快），用"多少分之一"表示（少数点1桁）
-        const speed = (r.duration > 0) ? (total / r.duration) : null;
-        const speedText = speed !== null && speed > 0 ? `1/${(1 / speed).toFixed(1)}` : '--';
-        const speedClass = speed !== null && speed <= 0.5 ? 'text-emerald-400' : speed !== null && speed <= 1 ? 'text-amber-400' : 'text-rose-400';
+        // OCR レコード判定（source='ocr' または pages 有り）
+        const isOcr = r.source === 'ocr' || r.pages != null;
+        // OCR: 変換速度 = 変換時間 / ページ数（平均値）。Whisper: 変換速度 = 変換耗时 / 音频长度（1/x 表示）
+        const speed = isOcr && r.pages > 0
+            ? (total / r.pages)
+            : (r.duration > 0 ? (total / r.duration) : null);
+        const speedText = isOcr
+            ? (speed > 0 ? speed.toFixed(1) + ' s/' + t('ocr.page_unit') : '--')
+            : (speed !== null && speed > 0 ? `1/${(1 / speed).toFixed(1)}` : '--');
+        const speedClass = isOcr
+            ? 'text-slate-400'
+            : (speed !== null && speed <= 0.5 ? 'text-emerald-400' : speed !== null && speed <= 1 ? 'text-amber-400' : 'text-rose-400');
         const modelTag = r.model ? `<span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-xs">${escapeHtml(r.model)}</span>` : '--';
         // LLM 校正模型（存在则显示）
         const llmTag = r.llm_model
@@ -3155,11 +5305,12 @@ function renderRecords(records) {
             : `${fmtNum(charCount(res))}`;
         return `
         <tr>
+            <td class="py-3 w-8"><input type="checkbox" class="record-check" value="${r.id}" ${recordSelection.has(r.id) ? 'checked' : ''} onchange="toggleRecordSelect(${r.id}, this.checked)"></td>
             <td class="py-3 text-slate-400 font-mono text-xs">${formatDateTime(r.timestamp)}</td>
             <td class="py-3">${escapeHtml(r.filename || '--')}</td>
             <td class="py-3"><span class="px-2 py-0.5 rounded-md bg-slate-800 text-xs">${escapeHtml(r.language || 'auto')}</span></td>
             <td class="py-3">${modelTag}${llmTag}</td>
-            <td class="py-3 text-slate-400">${formatTime(r.duration)}</td>
+            <td class="py-3 text-slate-400">${isOcr ? '-' : formatTime(r.duration)}</td>
             <td class="py-3 text-slate-400">${formatTime(convert)}</td>
             <td class="py-3 text-fuchsia-400">${r.correct_elapsed ? formatTime(correct) : '--'}</td>
             <td class="py-3 text-amber-300">${formatTime(total)}</td>
@@ -3167,8 +5318,8 @@ function renderRecords(records) {
             <td class="py-3 text-slate-300">${escapeHtml(truncate(r.summary, 40))}</td>
             <td class="py-3 text-slate-400 font-mono text-xs whitespace-nowrap">${charsCell}</td>
             <td class="py-3">
-                <button class="text-amber-400 hover:text-amber-300 text-sm" onclick="showRecordContent(${r.id}, '${encodeURIComponent(r.result || '')}', '${r.language || ''}', '${encodeURIComponent(r.raw_result || '')}')">${t('records.view')}</button>
-                <button class="text-cyan-400 hover:text-cyan-300 text-sm ml-2" onclick="copyRecordText(${r.id}, '${encodeURIComponent(r.result || '')}')">${t('records.copy')}</button>
+                <button class="text-amber-400 hover:text-amber-300 text-sm" onclick="showRecordContent(${r.id}, '${enc(r.result)}', '${r.language || ''}', '${enc(r.raw_result)}')">${t('records.view')}</button>
+                <button class="text-cyan-400 hover:text-cyan-300 text-sm ml-2" onclick="copyRecordText(${r.id}, '${enc(r.result)}')">${t('records.copy')}</button>
                 ${correctBtn}
                 <button class="text-rose-400 hover:text-rose-300 ml-2 align-middle" title="${t('records.delete')}" onclick="deleteRecord(${r.id})">
                     <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -3179,6 +5330,111 @@ function renderRecords(records) {
 
     $('#records-badge').textContent = records.length;
     $('#records-badge').classList.remove('hidden');
+    updateRecordSortIndicators();
+    updateSelectedCount();
+}
+
+// ---------------------------------------------------------------------------
+// 変換履歴の複数選択・一括削除
+// ---------------------------------------------------------------------------
+const recordSelection = new Set();   // 選択中のレコード ID（ソート再描画を跨いで維持）
+
+// 行チェックボックス切替（onchange）
+window.toggleRecordSelect = function(id, checked) {
+    if (checked) recordSelection.add(id);
+    else recordSelection.delete(id);
+    updateSelectedCount();
+};
+
+// ヘッダーの全選択チェックボックス（現在表示ページ分）
+window.toggleSelectAllRecords = function(cb) {
+    const ids = (lastRecords || []).map(r => r.id);
+    if (cb.checked) ids.forEach(id => recordSelection.add(id));
+    else ids.forEach(id => recordSelection.delete(id));
+    updateSelectedCount();
+};
+
+// 選択数に応じて一括削除ボタンの表示/非表示とヘッダー全選択状態を更新
+function updateSelectedCount() {
+    const count = recordSelection.size;
+    const btn = $('#btn-delete-selected');
+    const cnt = $('#records-selected-count');
+    if (btn) btn.classList.toggle('hidden', count === 0);
+    if (cnt) cnt.textContent = count;
+    const selAll = $('#records-select-all');
+    if (selAll) {
+        const ids = (lastRecords || []).map(r => r.id);
+        const onPage = ids.filter(id => recordSelection.has(id)).length;
+        selAll.checked = onPage > 0 && onPage === ids.length;
+        selAll.indeterminate = onPage > 0 && onPage < ids.length;
+    }
+}
+
+// 選択中のレコードを一括削除
+window.deleteSelectedRecords = async function() {
+    const ids = [...recordSelection];
+    if (!ids.length) return;
+    if (!confirm(t('records.batch_delete_confirm').replace('{n}', ids.length))) return;
+    try {
+        const resp = await apiFetch(`${API_BASE}/records/batch-delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            recordSelection.clear();
+            updateSelectedCount();
+            showToast(t('records.batch_deleted').replace('{n}', data.deleted), 'success');
+            loadRecords($('#records-search').value);
+            loadStats();
+        } else {
+            showToast(t('toast.action_failed'), 'error');
+        }
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    }
+};
+
+// 履历列ソート用の比較値を返す（表示と整合する実値）
+function recordSortValue(r, key) {
+    const total = (r.elapsed_seconds || 0);
+    switch (key) {
+        case 'time': return new Date(r.timestamp).getTime() || 0;
+        case 'duration': return Number(r.duration || 0);
+        case 'convert': return Math.max(0, total - (r.correct_elapsed || 0));
+        case 'correct': return Number(r.correct_elapsed || 0);
+        case 'elapsed': return total;
+        case 'speed': {
+            const isOcr = r.source === 'ocr' || r.pages != null;
+            return isOcr
+                ? (r.pages > 0 ? total / r.pages : NaN)
+                : (r.duration > 0 ? total / r.duration : NaN);
+        }
+        case 'chars': return charCount(r.result || '');
+        default: return String(r[key] != null ? r[key] : '');
+    }
+}
+
+// 列ヘッダクリックでソート切替（再クリックで昇順⇔降順）
+function sortRecords(key) {
+    if (recordsSortKey === key) {
+        recordsSortDir = -recordsSortDir;
+    } else {
+        recordsSortKey = key;
+        recordsSortDir = 1;
+    }
+    renderRecords(lastRecords || []);
+}
+
+// ソート中の列ヘッダに ▲/▼ を付与
+function updateRecordSortIndicators() {
+    $all('#records thead th[data-sort-key]').forEach(th => {
+        const active = th.getAttribute('data-sort-key') === recordsSortKey;
+        th.classList.toggle('sort-active', active);
+        th.classList.toggle('sort-asc', active && recordsSortDir === 1);
+        th.classList.toggle('sort-desc', active && recordsSortDir === -1);
+    });
 }
 
 // 時間単位切替：'sec'（秒表示） ⇔ 'minsec'（分秒表示）
@@ -3216,13 +5472,76 @@ window.correctRecord = async function(id) {
     }
 };
 
-// 删除单条记录
-window.deleteRecord = async function(id) {
+// 詳細結果画面右上の「校正」ボタン：表示中のレコードへ AI 校正を再実行し、
+// 開いている表示（変換結果パネル / 詳細モーダル）の校正結果タブを即時更新する
+function updateCorrectedDisplay(id, newResult, llmModel) {
+    const refresh = (pre, charsEl, metaFmt) => {
+        if (!pre) return;
+        const raw = pre.dataset.raw || '';
+        pre.dataset.corrected = newResult;
+        if (charsEl) charsEl.textContent = metaFmt ? metaFmt(raw, newResult) : recordCharsText(raw, newResult);
+    };
+    // パネル（変換履歴画面）
+    const panelPre = $('#record-content');
+    if (panelPre && panelPre.dataset.corrected !== undefined && String($('#record-content-panel').dataset.recordId || '') === String(id)) {
+        refresh(panelPre, $('#record-content-meta'), (raw, corr) => `${t('records.detail')} #${id} · ${recordCharsText(raw, corr)}`);
+        const corrBtn = $('#btn-tab-content-corrected');
+        if (corrBtn && corrBtn.classList.contains('result-tab-active')) setResultContent(panelPre, newResult);
+    }
+    // モーダル（底部クイックビュー）
+    const modalPre = $('#record-detail-content');
+    if (modalPre && modalPre.dataset.corrected !== undefined && String($('#record-detail-modal').dataset.recordId || '') === String(id)) {
+        refresh(modalPre, $('#record-detail-chars'));
+        const corrBtn = $('#btn-tab-detail-corrected');
+        if (corrBtn && corrBtn.classList.contains('result-tab-active')) setResultContent(modalPre, newResult);
+    }
+}
+
+window.correctRecordDisplay = async function(view) {
+    // 表示中のビューからレコード id を特定（view: 'content' | 'detail'）
+    const panel = $('#record-content-panel');
+    const modal = $('#record-detail-modal');
+    let id = null;
+    if (view === 'content' && panel && !panel.classList.contains('hidden')) id = panel.dataset.recordId;
+    else if (view === 'detail' && modal && !modal.classList.contains('hidden')) id = modal.dataset.recordId;
+    if (!id) { showToast(t('toast.action_failed'), 'error'); return; }
+    const btn = view === 'content' ? $('#btn-correct-content') : $('#btn-correct-modal');
+    const original = btn ? btn.innerHTML : '';
+    if (btn) btn.disabled = true;
+    showToast(t('records.correcting'), 'info');
+    try {
+        const resp = await apiFetch(`${API_BASE}/records/${id}/correct`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) {
+            updateCorrectedDisplay(id, data.result, data.llm_model);
+            showToast(t('records.corrected') + (data.llm_model ? ` (AI: ${data.llm_model})` : ''), 'success');
+            loadRecords($('#records-search').value);  // 一覧・集計を最新化
+        } else {
+            showToast(data.error || t('toast.action_failed'), 'error');
+        }
+    } catch (e) {
+        showToast(t('toast.network_error') + ': ' + e.message, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = original; }
+    }
+};
+
+// 詳細結果画面右上の「削除」ボタン：表示中のレコードを削除し、表示を閉じる
+window.deleteRecordDisplay = async function(view) {
+    const panel = $('#record-content-panel');
+    const modal = $('#record-detail-modal');
+    let id = null;
+    if (view === 'content' && panel && !panel.classList.contains('hidden')) id = panel.dataset.recordId;
+    else if (view === 'detail' && modal && !modal.classList.contains('hidden')) id = modal.dataset.recordId;
+    if (!id) { showToast(t('toast.action_failed'), 'error'); return; }
     if (!confirm(t('records.delete_confirm'))) return;
     try {
         const resp = await apiFetch(`${API_BASE}/records/${id}`, { method: 'DELETE' });
         const data = await resp.json();
         if (data.success) {
+            stopSpeaking();
+            if (view === 'content') panel.classList.add('hidden');
+            else modal.classList.add('hidden');
             showToast(t('records.deleted'), 'success');
             loadRecords($('#records-search').value);
             loadStats();
@@ -3234,15 +5553,15 @@ window.deleteRecord = async function(id) {
     }
 };
 
-// 清空全部记录
-window.clearRecords = async function() {
-    if (!confirm(t('records.clear_confirm'))) return;
+// 删除单条记录
+window.deleteRecord = async function(id) {
+    if (!confirm(t('records.delete_confirm'))) return;
     try {
-        const resp = await apiFetch(`${API_BASE}/records`, { method: 'DELETE' });
+        const resp = await apiFetch(`${API_BASE}/records/${id}`, { method: 'DELETE' });
         const data = await resp.json();
         if (data.success) {
-            showToast(t('records.cleared'), 'success');
-            loadRecords('');
+            showToast(t('records.deleted'), 'success');
+            loadRecords($('#records-search').value);
             loadStats();
         } else {
             showToast(t('toast.action_failed'), 'error');
@@ -3366,6 +5685,8 @@ function setReadBtn(btn, mode = 'reading') {
         if (s) { s.setAttribute('data-i18n', key); s.textContent = t(key); }
         btn.classList.add(mode === 'paused' ? 'read-paused' : 'read-active');
     }
+    // 読み上げ中/一時停止/停止に応じてサイドバー・制御カードの TTS 状態を反映
+    syncTtsSpeakingUi();
 }
 
 function pauseSpeaking() {
@@ -3542,6 +5863,258 @@ function startReadingAt(contentId) {
     readRecordContent(btn, contentId, lang, offset);
 }
 
+// ---------------------------------------------------------------------------
+// Markdown 表示（AI校正結果が MD 形式のとき MD ビューで表示・読み上げで記号を読まない）
+// ---------------------------------------------------------------------------
+// テキストが Markdown 記法を含むかを判定（変換結果/校正結果どちらのタブでも適用）
+function looksLikeMarkdown(text) {
+    if (!text) return false;
+    const t = String(text);
+    return /(^|\n)\s{0,3}#{1,6}\s/.test(t)                        // 見出し
+        || /\*\*[^*\n]+\*\*/.test(t) || /__[^_\n]+__/.test(t)     // 太字
+        || /(^|\n)\s{0,3}>\s?/.test(t)                            // 引用
+        || /(^|\n)\s{0,3}(?:[-*+]\s+|\d+\.\s+)/.test(t)           // リスト
+        || /(^|\n)\s{0,3}```/.test(t)                             // コードフェンス
+        || /`[^`\n]+`/.test(t)                                    // インラインコード
+        || /(^|\n)\s{0,3}(?:[-*_]\s*){3,}\s*$/.test(t)            // 区切り線
+        || (/[\|].*\|/.test(t) && /\|[\s:]*[-]{2,}/.test(t))      // 表
+        || /!\[[^\]]*\]\([^)\s]+\)/.test(t)                       // 画像
+        || /\[[^\]]+\]\([^)\s]+\)/.test(t)                        // リンク
+        || /<div[\s\S]*?<\/div>|<table[\s\S]*?<\/table>/i.test(t) // PaddleOCR の HTML テーブル/中央寄せブロック
+}
+
+// http(s) / mailto / アンカー のみ許可（javascript: 等を遮断）
+function mdSafeUrl(u) {
+    u = String(u || '').trim();
+    return /^(https?:|mailto:|#)/i.test(u) ? u : '';
+}
+
+// PaddleOCR PP-StructureV3 の HTML 断片（<div…><html><body><table border="1">…</table></body></html></div> 等）を
+// 許可タグだけの安全な HTML に変換して返す（rowspan/colspan を維持、script/iframe/style 等は破棄）
+function renderPaddleHtml(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const allowed = { table: 'table', tr: 'tr', td: 'td', th: 'th',
+                      b: 'strong', strong: 'strong', i: 'em', em: 'em', u: 'u',
+                      br: 'br', ul: 'ul', ol: 'ol', li: 'li', p: 'p', span: 'span' };
+    const build = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) return escapeHtml(node.nodeValue);
+        if (node.nodeType !== Node.ELEMENT_NODE) return '';
+        const tag = node.tagName.toLowerCase();
+        // ラッパー（html/body/div と、HTMLパーサが挿入する tbody/thead/tfoot）は中身だけを返す
+        if (tag === 'html' || tag === 'body' || tag === 'div'
+            || tag === 'tbody' || tag === 'thead' || tag === 'tfoot') {
+            return Array.from(node.childNodes).map(build).join('');
+        }
+        if (!allowed[tag]) return '';   // script/iframe/style/link 等は子ごと破棄
+        if (tag === 'br') return '<br/>';
+        const inner = Array.from(node.childNodes).map(build).join('');
+        let cls = '';
+        if (tag === 'table') cls = 'w-full text-sm border-collapse my-2';
+        if (tag === 'th') cls = 'border border-stone-700 px-2 py-1 text-stone-200 bg-stone-800/60 text-left';
+        if (tag === 'td') cls = 'border border-stone-700 px-2 py-1 text-stone-300';
+        let attrs = '';
+        ['colspan', 'rowspan'].forEach(a => {
+            if (node.hasAttribute(a)) attrs += ' ' + a + '="' + escapeHtml(node.getAttribute(a)) + '"';
+        });
+        if (cls) attrs += ' class="' + cls + '"';
+        return '<' + tag + attrs + '>' + inner + '</' + tag + '>';
+    };
+    let out = Array.from(doc.body.childNodes).map(build).join('');
+    // 元が text-align:center の div なら中央寄せで包む
+    const outer = doc.body.firstElementChild;
+    const isCenter = outer && /text-align\s*:\s*center/i.test(outer.getAttribute('style') || '');
+    return isCenter ? '<div class="text-center">' + out + '</div>' : out;
+}
+
+// 安全な Markdown → HTML 変換（テキストは全て escape、タグは白限定）
+function renderMarkdown(md) {
+    // PaddleOCR の HTML ブロック（<div…>…</div> / <table…>…</table>）を先に安全レンダリングして退避
+    const padBlocks = [];
+    const sentinel = (i) => '@@PADDLE' + i + '@@';
+    let mdBody = String(md || '');
+    mdBody = mdBody.replace(/<div[^>]*>[\s\S]*?<\/div>|<table[\s\S]*?<\/table>/g, (m) => {
+        padBlocks.push(m);
+        return sentinel(padBlocks.length - 1);
+    });
+
+    const esc = s => escapeHtml(String(s == null ? '' : s));
+    const inline = (t) => {
+        let s = esc(t);
+        // インラインコード（他より先に保護）
+        s = s.replace(/`([^`]+)`/g, (m, c) => '<code class="bg-stone-800 px-1 rounded text-fuchsia-300">' + c + '</code>');
+        // 画像 / リンク（URL は安全なもののみ）
+        s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, alt, url) => {
+            const u = mdSafeUrl(url);
+            return u ? '<img src="' + u + '" alt="' + esc(alt) + '" class="max-w-full rounded-lg my-1" />' : m;
+        });
+        s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, txt, url) => {
+            const u = mdSafeUrl(url);
+            return u ? '<a href="' + u + '" target="_blank" rel="noopener noreferrer" class="text-cyan-400 underline">' + txt + '</a>' : m;
+        });
+        // 太字 + 斜体 → 太字 → 斜体 → 打ち消し線
+        s = s.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+        s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+        s = s.replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>');
+        s = s.replace(/(^|[^_])_([^_\s][^_]*)_/g, '$1<em>$2</em>');
+        s = s.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+        return s;
+    };
+
+    const lines = mdBody.split(/\r?\n/);
+    const out = [];
+    let i = 0;
+    let listTag = null, listItems = [];
+    let bqBuf = [];
+    let curPara = '';
+
+    const push = (html) => { if (html) out.push(html); };
+    const flushList = () => {
+        if (listItems.length) {
+            push('<' + listTag + ' class="my-2 space-y-1 pl-5 list-disc">'
+                + listItems.map(x => '<li>' + x + '</li>').join('') + '</' + listTag + '>');
+            listItems = []; listTag = null;
+        }
+    };
+    const flushBq = () => {
+        if (bqBuf.length) {
+            push('<blockquote class="border-l-4 border-stone-600 pl-3 my-2 text-stone-400">'
+                + bqBuf.join('<br/>') + '</blockquote>');
+            bqBuf = [];
+        }
+    };
+    const flushPara = () => {
+        if (!curPara) return;
+        const parts = curPara.split('\n');
+        const allSentinel = parts.every(x => /^\s*@@PADDLE(\d+)@@\s*$/.test(x));
+        if (allSentinel) {
+            parts.forEach(x => {
+                const m = x.match(/@@PADDLE(\d+)@@/);
+                if (m) push(renderPaddleHtml(padBlocks[+m[1]]));
+            });
+        } else {
+            push('<p class="my-2">' + inline(curPara) + '</p>');
+        }
+        curPara = '';
+    };
+
+    while (i < lines.length) {
+        const line = lines[i];
+
+        // コードフェンス
+        const fence = line.match(/^\s*(```|~~~)(.*)$/);
+        if (fence) {
+            flushList(); flushBq(); flushPara();
+            const lang = fence[2].trim();
+            const buf = [];
+            i++;
+            while (i < lines.length && !/^\s*(```|~~~)\s*$/.test(lines[i])) { buf.push(lines[i]); i++; }
+            i++;
+            push('<pre class="bg-stone-950 border border-white/10 rounded-lg p-3 my-2 overflow-x-auto text-xs"><code'
+                + (lang ? ' data-lang="' + esc(lang) + '"' : '') + '>' + esc(buf.join('\n')) + '</code></pre>');
+            continue;
+        }
+
+        // 見出し
+        const h = line.match(/^\s{0,3}(#{1,6})\s+(.*)$/);
+        if (h) {
+            flushList(); flushBq(); flushPara();
+            const lv = h[1].length;
+            push('<h' + lv + ' class="font-semibold my-2 ' + (lv <= 2 ? 'text-lg' : 'text-base') + '">' + inline(h[2]) + '</h' + lv + '>');
+            i++;
+            continue;
+        }
+
+        // 区切り線
+        if (/^\s{0,3}(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+            flushList(); flushBq(); flushPara();
+            push('<hr class="border-stone-700 my-3" />');
+            i++;
+            continue;
+        }
+
+        // 表（ヘッダ行 + |---| 区切り）
+        const isSep = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/.test(line) && /-{2,}/.test(line);
+        if (line.includes('|') && !isSep && lines[i + 1] && /-{2,}/.test(lines[i + 1])
+            && /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/.test(lines[i + 1])) {
+            flushList(); flushBq(); flushPara();
+            const cells = line.split('|').filter((c, k, a) => !(k === 0 && c.trim() === '') && !(k === a.length - 1 && c.trim() === '')).map(c => c.trim());
+            const aligns = lines[i + 1].split('|').filter((c, k, a) => !(k === 0 && c.trim() === '') && !(k === a.length - 1 && c.trim() === '')).map(c => {
+                c = c.trim();
+                if (/^:.*:$/.test(c)) return 'center';
+                if (c.startsWith(':')) return 'left';
+                if (c.endsWith(':')) return 'right';
+                return 'left';
+            });
+            let html = '<table class="w-full text-sm border-collapse my-2"><thead><tr>';
+            cells.forEach((c, k) => {
+                html += '<th class="border border-stone-700 px-2 py-1 bg-stone-800/60 text-left">' + inline(c) + '</th>';
+            });
+            html += '</tr></thead><tbody>';
+            i += 2;
+            while (i < lines.length && lines[i].includes('|')) {
+                const row = lines[i].split('|').filter((c, k, a) => !(k === 0 && c.trim() === '') && !(k === a.length - 1 && c.trim() === '')).map(c => c.trim());
+                html += '<tr>' + row.map(c => '<td class="border border-stone-700 px-2 py-1 text-stone-300">' + inline(c) + '</td>').join('') + '</tr>';
+                i++;
+            }
+            html += '</tbody></table>';
+            push('<div class="overflow-x-auto my-2">' + html + '</div>');
+            continue;
+        }
+
+        // リスト
+        const ul = line.match(/^\s{0,3}([-*+])\s+(.*)$/);
+        const ol = line.match(/^\s{0,3}\d+\.\s+(.*)$/);
+        if (ul || ol) {
+            flushBq(); flushPara();
+            const tag = ol ? 'ol' : 'ul';
+            if (listTag !== tag) flushList();
+            listTag = tag;
+            listItems.push(inline(ol ? ol[1] : ul[2]));
+            i++;
+            continue;
+        }
+
+        // 引用
+        const bq = line.match(/^\s{0,3}>\s?(.*)$/);
+        if (bq) {
+            flushList(); flushPara();
+            bqBuf.push(inline(bq[1]));
+            i++;
+            continue;
+        }
+
+        // 空行 → 段落区切り
+        if (/^\s*$/.test(line)) {
+            flushList(); flushBq(); flushPara();
+            i++;
+            continue;
+        }
+
+        // 通常行（段落）
+        flushList(); flushBq();
+        curPara = curPara ? curPara + '\n' + line : line;
+        i++;
+    }
+    flushList(); flushBq(); flushPara();
+    return out.join('\n');
+}
+
+// 表示要素へテキストを反映：MD ならレンダリング、そうでなければ生テキスト
+function setResultContent(el, text) {
+    if (!el) return;
+    const txt = String(text == null ? '' : text);
+    if (txt && looksLikeMarkdown(txt)) {
+        el.innerHTML = renderMarkdown(txt);
+        el.classList.add('md-rendered');
+        el.classList.remove('font-mono', 'whitespace-pre-wrap');
+    } else {
+        el.textContent = txt;
+        el.classList.remove('md-rendered');
+        el.classList.add('font-mono', 'whitespace-pre-wrap');
+    }
+}
+
 // 詳細結果のタブ切替：'raw'（変換結果）⇔ 'corrected'（AI校正結果）
 function switchResultTab(view, tab) {
     stopSpeaking();
@@ -3550,7 +6123,7 @@ function switchResultTab(view, tab) {
     const isCorr = tab === 'corrected';
     const raw = pre.dataset.raw || '';
     const corrected = pre.dataset.corrected || raw;
-    pre.textContent = isCorr ? corrected : raw;
+    setResultContent(pre, isCorr ? corrected : raw);
     const rawBtn = $('#btn-tab-' + view + '-raw');
     const corrBtn = $('#btn-tab-' + view + '-corrected');
     if (rawBtn) rawBtn.classList.toggle('result-tab-active', !isCorr);
@@ -3565,6 +6138,7 @@ window.showRecordDetail = function(id, encodedResult, lang, encodedRaw) {
     pre.dataset.raw = raw;
     pre.dataset.corrected = result;
     $('#record-detail-modal').dataset.lang = lang || '';
+    $('#record-detail-modal').dataset.recordId = id;
     $('#record-detail-chars').textContent = recordCharsText(raw, result);
     $('#record-detail-modal').classList.remove('hidden');
     switchResultTab('detail', raw !== result ? 'corrected' : 'raw');
@@ -3581,6 +6155,7 @@ window.showRecordContent = function(id, encodedResult, lang, encodedRaw) {
     $('#record-content-meta').textContent = `${t('records.detail')} #${id} · ${recordCharsText(raw, result)}`;
     const panel = $('#record-content-panel');
     panel.dataset.lang = lang || '';
+    panel.dataset.recordId = id;
     panel.classList.remove('hidden');
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     switchResultTab('content', raw !== result ? 'corrected' : 'raw');
@@ -3605,6 +6180,7 @@ function initTrendResize() {
         trendWindow = WINDOW_LEVELS[idx];
         localStorage.setItem('trend_window', String(trendWindow));
         if (mainChart) mainChart.update('none');
+        updateTrendMeta();
     }
     $('#btn-trend-shrink').addEventListener('click', () => stepWindow(1));    // 缩小 → 显示更长时间
     $('#btn-trend-expand').addEventListener('click', () => stepWindow(-1));  // 放大 → 放大波形
@@ -3612,20 +6188,18 @@ function initTrendResize() {
     // リアルタイムロギング 開始/停止トグル
     const rtLogBtn = $('#btn-realtime-log');
     if (rtLogBtn) rtLogBtn.addEventListener('click', () => toggleRealtimeLog());
+    // 自動記録トグル（rtl_auto_start）
+    const rtlAuto = $('#toggle-rtl-auto');
+    if (rtlAuto) rtlAuto.addEventListener('change', () => toggleRtlAuto());
+
+    // 推移カードヘッダーの周期/波形間隔を即時表示（config 取得完了後は updateTrendMeta が再反映）
+    updateTrendMeta();
 }
 
 window.copyRecordText = function(id, encodedResult) {
     const result = decodeURIComponent(encodedResult);
-    navigator.clipboard.writeText(result).then(() => {
-        showToast(t('records.copied'), 'success');
-    }).catch(() => {
-        // 旧浏览器降级：用临时 textarea
-        const ta = document.createElement('textarea');
-        ta.value = result;
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand('copy'); showToast(t('records.copied'), 'success'); } catch (e) {}
-        document.body.removeChild(ta);
+    copyToClipboard(result).then((ok) => {
+        showToast(ok ? t('records.copied') : t('records.copy_failed'), ok ? 'success' : 'error');
     });
 };
 
@@ -3703,6 +6277,10 @@ async function loadSettings() {
         const data = await resp.json();
         config = { ...config, ...data };
         renderGpuTtsDisplay();
+        updateTrendMeta();  // 設定の refresh_interval 変更を推移カードヘッダーへ反映
+
+        // 接続トークン認証の有効/無効（トグル状態とトークン操作UIの反映）
+        applyAuthEnabledState((config.auth_enabled || 'on') !== 'off');
 
         $('#setting-language').value = config.default_language || 'zh';
         $('#setting-output').value = config.default_output || 'txt';
@@ -3779,7 +6357,6 @@ async function loadSettings() {
         updateActiveProfileLabel();
         await loadLLMProfiles();
         await loadAuthTokenDisplay();
-        updateModelInfo();
     } catch (e) {
         console.error('Failed to load settings:', e);
     }
@@ -4305,6 +6882,9 @@ async function initTtsVibevoiceControl() {
         const vvModel = config.tts_vibevoice_model || 'realtime';
         if ($('#vv-model-select')) $('#vv-model-select').value = vvModel;
         if ($('#setting-tts-vibevoice-model')) $('#setting-tts-vibevoice-model').value = vvModel;
+        if ($('#tts-engine-select')) $('#tts-engine-select').value = config.tts_engine || 'edge';
+        if ($('#tts-device-select')) $('#tts-device-select').value = config.tts_device || 'auto';
+        loadTtsStatus();
         showVibevoiceModelSetting();
         renderGpuTtsDisplay();
     } catch (e) {
@@ -4319,12 +6899,96 @@ function initEventListeners() {
     $('#btn-start-whisper').addEventListener('click', () => controlWhisper('start'));
     $('#btn-stop-whisper').addEventListener('click', () => controlWhisper('stop'));
     $('#btn-restart-whisper').addEventListener('click', () => controlWhisper('restart'));
+
+    // サイドバー（Whisper 開始/停止）
+    const sbWsStart = $('#sidebar-btn-start-whisper');
+    if (sbWsStart) sbWsStart.addEventListener('click', () => controlWhisper('start'));
+    const sbWsStop = $('#sidebar-btn-stop-whisper');
+    if (sbWsStop) sbWsStop.addEventListener('click', () => controlWhisper('stop'));
+
+    // PaddleOCR 制御
+    const btnStartOcr = $('#btn-start-ocr');
+    if (btnStartOcr) btnStartOcr.addEventListener('click', () => controlOcr('start'));
+    const btnStopOcr = $('#btn-stop-ocr');
+    if (btnStopOcr) btnStopOcr.addEventListener('click', () => controlOcr('stop'));
+    const btnRestartOcr = $('#btn-restart-ocr');
+    if (btnRestartOcr) btnRestartOcr.addEventListener('click', () => controlOcr('restart'));
+    // サイドバー（OCR 開始/停止）
+    const sbOcrStart = $('#sidebar-btn-start-ocr');
+    if (sbOcrStart) sbOcrStart.addEventListener('click', () => controlOcr('start'));
+    const sbOcrStop = $('#sidebar-btn-stop-ocr');
+    if (sbOcrStop) sbOcrStop.addEventListener('click', () => controlOcr('stop'));
+    const btnRunOcr = $('#btn-run-ocr');
+    if (btnRunOcr) btnRunOcr.addEventListener('click', runOcr);
+    const btnCopyOcr = $('#btn-copy-ocr');
+    if (btnCopyOcr) btnCopyOcr.addEventListener('click', copyOcrResult);
+    const btnDownloadOcrMd = $('#btn-download-ocr-md');
+    if (btnDownloadOcrMd) btnDownloadOcrMd.addEventListener('click', downloadOcrResult);
+    // OCR 実行カード: 出力形式 / AI校正 の選択は即保存
+    const ocrFmtSel = $('#ocr-format');
+    if (ocrFmtSel) ocrFmtSel.addEventListener('change', saveOcrRunSettings);
+    const ocrAiSel = $('#ocr-ai-correct');
+    if (ocrAiSel) ocrAiSel.addEventListener('change', saveOcrRunSettings);
+    const ocrDevSel = $('#select-ocr-device');
+    if (ocrDevSel) ocrDevSel.addEventListener('change', saveOcrSettings);
+    const ocrLangSel = $('#select-ocr-lang');
+    if (ocrLangSel) ocrLangSel.addEventListener('change', saveOcrSettings);
+    const toggleOcrAutostart = $('#toggle-ocr-autostart');
+    if (toggleOcrAutostart) toggleOcrAutostart.addEventListener('change', saveOcrSettings);
+    // サービス制御カード: OCR ボタン + 設定セレクタ（OCR タブと双方向同期）
+    const svcBtnStartOcr = $('#svc-btn-start-ocr');
+    if (svcBtnStartOcr) svcBtnStartOcr.addEventListener('click', () => controlOcr('start'));
+    const svcBtnStopOcr = $('#svc-btn-stop-ocr');
+    if (svcBtnStopOcr) svcBtnStopOcr.addEventListener('click', () => controlOcr('stop'));
+    const svcBtnRestartOcr = $('#svc-btn-restart-ocr');
+    if (svcBtnRestartOcr) svcBtnRestartOcr.addEventListener('click', () => controlOcr('restart'));
+    const svcOcrDevSel = $('#svc-select-ocr-device');
+    if (svcOcrDevSel) svcOcrDevSel.addEventListener('change', () => {
+        const dev = $('#select-ocr-device');
+        if (dev) dev.value = svcOcrDevSel.value;
+        saveOcrSettings();
+    });
+    const svcOcrLangSel = $('#svc-select-ocr-lang');
+    if (svcOcrLangSel) svcOcrLangSel.addEventListener('change', () => {
+        const lang = $('#select-ocr-lang');
+        if (lang) lang.value = svcOcrLangSel.value;
+        saveOcrSettings();
+    });
+    // サービス制御カード: TTS（読込/解放/再読込）
+    const btnTtsPreload = $('#btn-tts-preload');
+    if (btnTtsPreload) btnTtsPreload.addEventListener('click', () => controlTts('preload'));
+    const btnTtsUnload = $('#btn-tts-unload');
+    if (btnTtsUnload) btnTtsUnload.addEventListener('click', () => controlTts('unload'));
+    const btnTtsReload = $('#btn-tts-reload');
+    if (btnTtsReload) btnTtsReload.addEventListener('click', () => controlTts('reload'));
+    const svcTtsEngineSel = $('#tts-engine-select');
+    if (svcTtsEngineSel) svcTtsEngineSel.addEventListener('change', () => {
+        const eng = svcTtsEngineSel.value;
+        config.tts_engine = eng;
+        const s = $('#setting-tts-engine');
+        if (s) s.value = eng;
+        showVibevoiceModelSetting();
+        renderGpuTtsDisplay();
+        apiFetch(`${API_BASE}/config`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tts_engine: eng })
+        });
+    });
+    const svcTtsDeviceSel = $('#tts-device-select');
+    if (svcTtsDeviceSel) svcTtsDeviceSel.addEventListener('change', () => {
+        const dev = svcTtsDeviceSel.value;
+        config.tts_device = dev;
+        const s = $('#setting-tts-device');
+        if (s) s.value = dev;
+        renderGpuTtsDisplay();
+        apiFetch(`${API_BASE}/config`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tts_device: dev })
+        });
+    });
     // 引数無しで呼ぶ（click イベントが modelName に渡るのを防ぐ。switchToModel は文字列を渡す）
     $('#btn-switch-model').addEventListener('click', () => switchModel());
     const modelSel = $('#select-model');
     if (modelSel) modelSel.addEventListener('change', () => {
         modelSelectionPending = true;  // 切替未実行の間はステータス更新で上書きさせない
-        updateModelInfo();
     });
 
     $('#records-search').addEventListener('input', (e) => {
@@ -4334,7 +6998,6 @@ function initEventListeners() {
     $('#btn-refresh-records').addEventListener('click', () => {
         loadRecords($('#records-search').value);
     });
-    $('#btn-clear-records').addEventListener('click', clearRecords);
 
     // 時間単位切替（秒 ⇔ 分秒）
     const timeToggle = $('#toggle-time-unit');
@@ -4364,16 +7027,12 @@ function initEventListeners() {
     });
 
     $('#btn-copy-modal').addEventListener('click', () => {
-        const content = $('#record-detail-content').textContent || '';
-        navigator.clipboard.writeText(content).then(() => {
-            showToast(t('records.copied'), 'success');
-        }).catch(() => {
-            const ta = document.createElement('textarea');
-            ta.value = content;
-            document.body.appendChild(ta);
-            ta.select();
-            try { document.execCommand('copy'); showToast(t('records.copied'), 'success'); } catch (e) {}
-            document.body.removeChild(ta);
+        // アクティブなタブの元テキストをコピー（MD 表示時も記号付き原文を保持）
+        const el = $('#record-detail-content');
+        const isCorr = $('#btn-tab-detail-corrected').classList.contains('result-tab-active');
+        const content = (isCorr ? (el.dataset.corrected || '') : (el.dataset.raw || '')) || el.textContent || '';
+        copyToClipboard(content).then((ok) => {
+            showToast(ok ? t('records.copied') : t('records.copy_failed'), ok ? 'success' : 'error');
         });
     });
 
@@ -4383,16 +7042,12 @@ function initEventListeners() {
         $('#record-content-panel').classList.add('hidden');
     });
     $('#btn-copy-content').addEventListener('click', () => {
-        const content = $('#record-content').textContent || '';
-        navigator.clipboard.writeText(content).then(() => {
-            showToast(t('records.copied'), 'success');
-        }).catch(() => {
-            const ta = document.createElement('textarea');
-            ta.value = content;
-            document.body.appendChild(ta);
-            ta.select();
-            try { document.execCommand('copy'); showToast(t('records.copied'), 'success'); } catch (e) {}
-            document.body.removeChild(ta);
+        // アクティブなタブの元テキストをコピー（MD 表示時も記号付き原文を保持）
+        const el = $('#record-content');
+        const isCorr = $('#btn-tab-content-corrected').classList.contains('result-tab-active');
+        const content = (isCorr ? (el.dataset.corrected || '') : (el.dataset.raw || '')) || el.textContent || '';
+        copyToClipboard(content).then((ok) => {
+            showToast(ok ? t('records.copied') : t('records.copy_failed'), ok ? 'success' : 'error');
         });
     });
 
@@ -4524,9 +7179,25 @@ function initEventListeners() {
         toggleAutostart(e.target.checked);
     });
 
-    // ログ履歴セクション：一覧更新 / ダウンロード / コピー / 削除
+    // ログ履歴セクション：一覧更新 / 選択解除 / 表示タブ / 形式タブ / DL / コピー / 削除
     const btnRefreshLogs = $('#btn-refresh-logs');
     if (btnRefreshLogs) btnRefreshLogs.addEventListener('click', () => loadRealtimeLogs());
+    const btnClearSel = $('#btn-clear-rtlog-select');
+    if (btnClearSel) btnClearSel.addEventListener('click', () => clearRtlogSelect());
+    $all('#rtlog-view-tabs .rtlog-tab').forEach(b => {
+        b.addEventListener('click', () => {
+            rtlogView = b.dataset.rtview;
+            applyRtlogViewTabs();
+            renderRtlogPanel();
+        });
+    });
+    $all('#rtlog-format-tabs .rtlog-tab').forEach(b => {
+        b.addEventListener('click', () => {
+            rtlogFormat = b.dataset.rtfmt;
+            applyRtlogViewTabs();
+            renderRtlogData();
+        });
+    });
     const btnDownloadLog = $('#btn-download-log');
     if (btnDownloadLog) btnDownloadLog.addEventListener('click', () => downloadRealtimeLog());
     const btnCopyLog = $('#btn-copy-log');
@@ -4550,6 +7221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     populateModelSelect();
     fetchVibevoiceModelCatalog().then(() => renderVibevoiceModelList());
     fetchKokoroModelInfo().then(() => renderKokoroModelList());
+    fetchPaddleocrModelCatalog().then(() => renderPaddleocrModelList());
     initTtsVibevoiceControl();
     connectWebSocket();
     loadStats();

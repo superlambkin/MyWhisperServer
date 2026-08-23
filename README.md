@@ -140,7 +140,7 @@ LAN 内の他の端末からは `http://<このPCのIP>:9001`（例：`http://19
 | `start_whisper.bat` | Whisper のみ起動 |
 | `start_dashboard.bat` | Dashboard のみ起動 |
 | `start_all.bat` | **推奨**。Dashboard を起動（Whisper は自動起動） |
-| `stop_all.bat` | 9000 / 9001 ポートのプロセスを停止 |
+| `stop_all.bat` | 9000 / 9001 / 9100（OCR）ポートのプロセスを停止 |
 
 ---
 
@@ -267,7 +267,7 @@ journalctl -u mywhisperserver -f
 | `start_whisper.sh` | Whisper のみ起動 |
 | `start_dashboard.sh` | Dashboard のみ起動 |
 | `start_all.sh` | **推奨**。Dashboard を起動（Whisper は自動起動） |
-| `stop_all.sh` | 9000 / 9001 ポートのプロセスを停止 |
+| `stop_all.sh` | 9000 / 9001 / 9100（OCR）ポートのプロセスを停止 |
 | `install_ubuntu.sh` | 初回セットアップを一括実行 |
 | `mywhisperserver.service` | systemd 用ユニットファイル |
 
@@ -494,6 +494,58 @@ curl -X POST "http://<PCのIP>:9000/tts?format=json" \
 
 エンジン・音声はダッシュボードの設定に従います（リアルタイムチャットなどに利用可能）。
 
+---
+
+# PaddleOCR サービス（ポート 9100）
+
+Dashboard から起動・停止できる **OCR サービス**を追加しました（PaddleOCR 3.x・**ポート 9100**）。
+
+| モード | モデル | 入力 → 出力 |
+|---|---|---|
+| **画像 OCR** | PP-OCRv5 / PP-OCRv6 系（既定） | 画像（PNG/JPG 等）→ テキスト + 認識矩形 |
+| **PDF → Markdown** | PP-StructureV3 | PDF（または画像）→ Markdown |
+
+## インストール
+
+```bash
+# 1) Paddle GPU 本体（PyPI に無いため公式インデックスから。CUDA 11.8 ビルドは 12.x ドライバでも動作）
+python -m pip install paddlepaddle-gpu==3.3.1 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
+
+# 2) PaddleOCR + PP-StructureV3 用の追加依存
+python -m pip install paddleocr==3.7.0 "paddlex[ocr]==3.7.2"
+```
+
+> ⚠️ **VRAM 注意**: 6GB GPU（GTX 1660 Ti 等）で Whisper medium + Kokoro + PaddleOCR を同時に動かすと VRAM が不足しがちです。PDF 構造解析（PP-StructureV3）は **使用時のみ遅延ロード** し、GPU が不足した場合は CPU に自動フォールバックします。OCR タブに警告を表示しています。
+
+## Dashboard での操作
+
+1. サイドバー **「OCR」** タブを開く
+2. **「サービス開始」** で起動（初回はモデルを自動ダウンロードするため数分かかります）
+3. 実行デバイス（GPU/CPU）・言語を選択し、**画像を選択 →「実行」** で文字認識
+4. **PDF → Markdown** モードに切り替えると、アップロードした PDF を Markdown 化して表示・ダウンロードできます
+5. 「設定」から **起動時自動起動**（ocr_autostart）を有効化できます（既定: オフ）
+
+## モデル保存先
+
+PaddleOCR モデルは **プロジェクト内 `models/paddlex/official_models/`** に保存されます（PaddleX の `PADDLE_PDX_CACHE_HOME` をプロジェクト内に固定。保存先は「設定 → 模型保存位置」に追従）。プロジェクトごと移動すればモデルも追従します。設定画面の **「模型管理」→「PaddleOCR 模型」** から、対応モデル15種の一覧・ダウンロード・削除・進捗確認ができます（Whisper / VibeVoice / Kokoro と同じ DL 機構）。
+
+## API
+
+- `GET http://127.0.0.1:9100/health` — 状態確認
+  - `{"status":"ok","device":"gpu","ocr_ready":true,"structure_ready":false}`
+- `POST /ocr`（multipart: `file`, `lang`）— 画像 OCR
+- `POST /pdf`（multipart: `file`, `lang`）— PDF → Markdown
+
+```bash
+# 画像 OCR（日本語）
+curl -X POST http://127.0.0.1:9100/ocr -F "file=@scan.png" -F "lang=japan"
+
+# PDF → Markdown
+curl -X POST http://127.0.0.1:9100/pdf -F "file=@doc.pdf" -F "lang=japan"
+```
+
+Dashboard（ポート 9001）からも認証付きでプロキシできます：`POST /api/v1/ocr/run`・`POST /api/v1/ocr/pdf`・`POST /api/v1/ocr/start|stop|restart`・`GET /api/v1/ocr/status`。
+
 ### リアルタイムチャット・チャットボット API（音声出力付き）
 
 LLM（Deepseek 等・`/api/v1/llm/profiles` のアクティブプロファイル）と会話し、**文単位で読み上げ音声を返す**チャット API を追加しました。チャットボット / スマートスピーカー風のリアルタイム音声応答に利用できます。
@@ -615,6 +667,7 @@ Linux:   bash stop_all.sh を実行
 ```
 whisper_server/
 ├── whisper_server.py          # Whisper ASR サーバ（ポート 9000）
+├── ocr_server.py              # PaddleOCR サービス（ポート 9100・画像OCR + PDF→Markdown）
 ├── lan_client.py              # （任意）LAN テストクライアント
 ├── test.mp3                   # テスト用音声（任意）
 ├── requirements.txt           # Python 依存パッケージ

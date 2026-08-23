@@ -38,6 +38,24 @@ async def report_status(state: str, **extra):
         pass
 
 
+async def report_llm_status(processing: bool, model: Optional[str] = None):
+    """AI 校正（LLM）の実行状態を Dashboard へ報告（サイドバーの LLM 活用表示用）。
+
+    ai_correct_text の前後で呼び、処理中かどうかと使用モデル名を伝える。
+    """
+    if not DASHBOARD_URL:
+        return
+    try:
+        async with aiohttp.ClientSession() as session:
+            await session.post(
+                f"{DASHBOARD_URL}/api/v1/whisper/llm_status",
+                json={"processing": processing, "model": model},
+                timeout=aiohttp.ClientTimeout(total=3),
+            )
+    except Exception:
+        pass
+
+
 # 转换进度（线程间共享：transcribe 线程写入，事件循环后台任务读取上报）
 progress_lock = threading.Lock()
 progress_percent = 0.0
@@ -156,6 +174,7 @@ async def ai_correct_text(text: str):
         headers["Authorization"] = f"Bearer {api_key}"
     try:
         print(f"[AI correct] start, model={model_name}, chars={len(text)}")
+        await report_llm_status(True, model_name)
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 f"{base_url}/chat/completions",
@@ -174,6 +193,8 @@ async def ai_correct_text(text: str):
                     print(f"[AI correct] HTTP {resp.status}: {body}")
     except Exception as e:
         print(f"[AI correct] failed: {e}")
+    finally:
+        await report_llm_status(False, model_name)
     return text, None
 
 
@@ -207,7 +228,16 @@ _model_kwargs = {}
 if MODEL_DIR:
     _model_kwargs["download_root"] = MODEL_DIR
     print(f"Model download_root: {MODEL_DIR}")
-model = WhisperModel(MODEL_SIZE, device="cuda", compute_type=COMPUTE_TYPE, **_model_kwargs)
+# デバイス（Dashboard が WHISPER_DEVICE で指定。未指定なら cuda で試し、失敗時 CPU へフォールバック）
+WHISPER_DEVICE = os.environ.get("WHISPER_DEVICE", "").strip().lower() or "cuda"
+try:
+    model = WhisperModel(MODEL_SIZE, device=WHISPER_DEVICE, compute_type=COMPUTE_TYPE, **_model_kwargs)
+except Exception as e:
+    if WHISPER_DEVICE == "cuda":
+        print(f"[whisper] CUDA モデル読込失敗 → CPU(int8) で再試行: {e}")
+        model = WhisperModel(MODEL_SIZE, device="cpu", compute_type="int8", **_model_kwargs)
+    else:
+        raise
 print("Model loaded successfully.")
 
 
@@ -227,7 +257,8 @@ async def asr(
     output: Optional[str] = Form("txt"),
 ):
     start_time = time.time()
-    suffix = Path(audio_file.filename).suffix or ".wav"
+    # filename 未指定（None）でもクラッシュしないよう空文字へフォールバック
+    suffix = Path(audio_file.filename or "").suffix or ".wav"
     # アップロード上限（無制限のディスク使用を防止）
     MAX_UPLOAD_BYTES = 1024 * 1024 * 1024  # 1GB
     tmp_path = None
@@ -476,5 +507,7 @@ async def correct_text(data: dict):
 if __name__ == "__main__":
     import uvicorn
 
-    print("Starting Whisper API server on http://0.0.0.0:9000")
-    uvicorn.run(app, host="0.0.0.0", port=9000)
+    # WHISPER_PORT 設定時は Dashboard のポート管理と一致させる（既定 9000）
+    WHISPER_PORT = int(os.environ.get("WHISPER_PORT", "9000"))
+    print(f"Starting Whisper API server on http://0.0.0.0:{WHISPER_PORT}")
+    uvicorn.run(app, host="0.0.0.0", port=WHISPER_PORT)

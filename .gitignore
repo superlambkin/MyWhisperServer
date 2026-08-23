@@ -22,3 +22,10 @@ test.mp3
 test_record.txt
 *.tmp
 *.bak
+
+# 診断・検証用の一時成果物（CDP 検証スクリプト/結果、再起動スクリプト、OCR テスト入力）
+cdp_*
+_*.py
+_*.ps1
+*_result.json
+ocr_test.*

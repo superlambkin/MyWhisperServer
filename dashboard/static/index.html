@@ -10,7 +10,7 @@
     <script src="/static/vendor/tailwind.js?v=30"></script>
     <script src="/static/vendor/chart.umd.min.js?v=30"></script>
     <link rel="stylesheet" href="/static/vendor/fonts.css?v=30">
-    <link rel="stylesheet" href="/static/css/style.css?v=39">
+    <link rel="stylesheet" href="/static/css/style.css?v=40">
 </head>
 <body class="text-stone-100 font-manrope overflow-hidden">
     <div class="flex h-screen">
@@ -35,10 +35,18 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                     <span data-i18n="nav.dashboard">仪表盘</span>
                 </a>
+                <a href="#ocr" class="nav-link" data-section="ocr">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v2m0 0a2 2 0 00-2 2m2-2a2 2 0 010 4m-2 0v2m0 0a2 2 0 002 2h2m-2-2a2 2 0 004 0m-4 0h2m0 0v2a2 2 0 002 2h2m-2 0a2 2 0 004 0m-2 0v-2m4 0h2m0 0a2 2 0 004 0m-4 0a2 2 0 01-4 0m4 0v-2m0 0a2 2 0 00-2-2m2 2h2m0 0a2 2 0 00-2-2"></path></svg>
+                    <span data-i18n="nav.ocr">OCR</span>
+                </a>
                 <a href="#records" class="nav-link" data-section="records">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     <span data-i18n="nav.records">转换履历</span>
                     <span id="records-badge" class="ml-auto text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full hidden">0</span>
+                </a>
+                <a href="#settings" class="nav-link" data-section="settings">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <span data-i18n="nav.settings">设置</span>
                 </a>
                 <a href="#logs" class="nav-link" data-section="logs">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -48,10 +56,6 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     <span data-i18n="nav.logging">记录日志</span>
                 </a>
-                <a href="#settings" class="nav-link" data-section="settings">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    <span data-i18n="nav.settings">设置</span>
-                </a>
                 <a href="#readme" class="nav-link" data-section="readme">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                     <span data-i18n="nav.readme">Readme</span>
@@ -60,14 +64,62 @@
 
             <div class="p-4 border-t border-white/10">
                 <div class="glass-card p-4 rounded-xl">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs text-stone-400" data-i18n="sidebar.whisper_service">Whisper 服务</span>
-                        <div class="flex items-center gap-2">
-                            <span id="sidebar-eq" class="eq hidden" aria-hidden="true"><span class="eq-bar"></span><span class="eq-bar"></span><span class="eq-bar"></span></span>
-                            <span id="sidebar-status-dot" class="w-2 h-2 rounded-full bg-stone-500"></span>
+                    <!-- Whisper サービス -->
+                    <div class="mb-2">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs text-stone-400" data-i18n="sidebar.whisper_service">Whisper サービス</span>
+                            <div class="flex items-center gap-2">
+                                <span id="sidebar-eq" class="eq hidden" aria-hidden="true"><span class="eq-bar"></span><span class="eq-bar"></span><span class="eq-bar"></span></span>
+                                <span id="sidebar-status-dot" class="w-2 h-2 rounded-full bg-stone-500"></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <div id="sidebar-status-text" class="text-sm font-medium" data-i18n="status.checking">確認中...</div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button id="sidebar-btn-start-whisper" class="px-2 py-0.5 rounded-md text-xs font-medium transition-all border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/25" data-i18n="sidebar.start">開始</button>
+                                <button id="sidebar-btn-stop-whisper" class="px-2 py-0.5 rounded-md text-xs font-medium transition-all border bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/25" data-i18n="sidebar.stop">停止</button>
+                            </div>
                         </div>
                     </div>
-                    <div id="sidebar-status-text" class="text-sm font-medium" data-i18n="status.checking">检查中...</div>
+                    <!-- TTS サービス -->
+                    <div class="pt-2 mt-2 border-t border-white/10">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs text-stone-400" data-i18n="sidebar.tts_service">TTS サービス</span>
+                            <div class="flex items-center gap-2">
+                                <span id="sidebar-tts-dot" class="w-2 h-2 rounded-full bg-stone-500"></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <div id="sidebar-tts-status-text" class="text-sm font-medium" data-i18n="status.checking">確認中...</div>
+                        </div>
+                    </div>
+                    <!-- OCR サービス -->
+                    <div class="pt-2 mt-2 border-t border-white/10">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs text-stone-400" data-i18n="sidebar.ocr_service">OCR サービス</span>
+                            <div class="flex items-center gap-2">
+                                <span id="sidebar-ocr-dot" class="w-2 h-2 rounded-full bg-stone-500"></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <div id="sidebar-ocr-status-text" class="text-sm font-medium" data-i18n="status.checking">確認中...</div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button id="sidebar-btn-start-ocr" class="px-2 py-0.5 rounded-md text-xs font-medium transition-all border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/25" data-i18n="sidebar.start">開始</button>
+                                <button id="sidebar-btn-stop-ocr" class="px-2 py-0.5 rounded-md text-xs font-medium transition-all border bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/25" data-i18n="sidebar.stop">停止</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- LLM 活用（AI 校正の実行状態を表示） -->
+                    <div class="pt-2 mt-2 border-t border-white/10">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs text-stone-400" data-i18n="sidebar.llm_service">LLM 活用</span>
+                            <span id="sidebar-llm-dot" class="w-2 h-2 rounded-full bg-stone-500"></span>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <div id="sidebar-llm-status-text" class="text-sm font-medium" data-i18n="status.checking">確認中...</div>
+                            <span id="sidebar-llm-model" class="text-xs text-stone-400 font-mono truncate max-w-[110px]"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -234,7 +286,7 @@
                                     <div class="text-xs text-stone-400" data-i18n="hardware.mem_used">使用メモリ</div>
                                 </div>
                                 <a href="ms-settings:storage" title="Open Windows Storage settings" class="bg-stone-900/50 rounded-xl p-3 text-center block hover:bg-stone-800/60 border border-transparent hover:border-amber-500/40 transition-all">
-                                    <div id="disk-percent" class="text-base font-bold text-cyan-400">-- / -- GB</div>
+                                    <div id="disk-percent" class="text-xl font-bold text-cyan-400">-- / -- GB</div>
                                     <div class="text-xs text-stone-400"><span data-i18n="storage.title">ストレージ</span></div>
                                 </a>
                             </div>
@@ -254,13 +306,29 @@
                                     <div class="relative w-24 h-24 mx-auto">
                                         <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                                             <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
-                                            <circle id="gpu-util-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-gpu-util)" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                            <!-- 4 セグメント：Whisper / TTS / OCR / その他（グラデーション・使用率構成比） -->
                                             <defs>
-                                                <linearGradient id="gradient-gpu-util" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                    <stop offset="0%" stop-color="#10b981"></stop>
-                                                    <stop offset="100%" stop-color="#06b6d4"></stop>
+                                                <linearGradient id="gradient-gpu-util-whisper" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#22d3ee"></stop>
+                                                    <stop offset="100%" stop-color="#0e7490"></stop>
+                                                </linearGradient>
+                                                <linearGradient id="gradient-gpu-util-tts" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#e879f9"></stop>
+                                                    <stop offset="100%" stop-color="#a21caf"></stop>
+                                                </linearGradient>
+                                                <linearGradient id="gradient-gpu-util-ocr" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#fbbf24"></stop>
+                                                    <stop offset="100%" stop-color="#b45309"></stop>
+                                                </linearGradient>
+                                                <linearGradient id="gradient-gpu-util-other" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#4ade80"></stop>
+                                                    <stop offset="100%" stop-color="#15803d"></stop>
                                                 </linearGradient>
                                             </defs>
+                                            <circle id="gpu-util-whisper" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-gpu-util-whisper)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                            <circle id="gpu-util-tts" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-gpu-util-tts)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                            <circle id="gpu-util-ocr" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-gpu-util-ocr)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                            <circle id="gpu-util-other" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-gpu-util-other)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
                                         </svg>
                                         <div class="absolute inset-0 flex flex-col items-center justify-center">
                                             <span id="gpu-util-value" class="text-2xl font-bold">0%</span>
@@ -272,13 +340,29 @@
                                     <div class="relative w-24 h-24 mx-auto">
                                         <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                                             <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
-                                            <circle id="gpu-mem-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-gpu-mem)" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                            <!-- 4 セグメント：Whisper / TTS / OCR / その他（グラデーション・VRAM 構成比） -->
                                             <defs>
-                                                <linearGradient id="gradient-gpu-mem" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                    <stop offset="0%" stop-color="#f472b6"></stop>
-                                                    <stop offset="100%" stop-color="#f59e0b"></stop>
+                                                <linearGradient id="gradient-gpu-mem-whisper" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#22d3ee"></stop>
+                                                    <stop offset="100%" stop-color="#0e7490"></stop>
+                                                </linearGradient>
+                                                <linearGradient id="gradient-gpu-mem-tts" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#e879f9"></stop>
+                                                    <stop offset="100%" stop-color="#a21caf"></stop>
+                                                </linearGradient>
+                                                <linearGradient id="gradient-gpu-mem-ocr" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#fbbf24"></stop>
+                                                    <stop offset="100%" stop-color="#b45309"></stop>
+                                                </linearGradient>
+                                                <linearGradient id="gradient-gpu-mem-other" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stop-color="#4ade80"></stop>
+                                                    <stop offset="100%" stop-color="#15803d"></stop>
                                                 </linearGradient>
                                             </defs>
+                                            <circle id="gpu-mem-whisper" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-gpu-mem-whisper)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                            <circle id="gpu-mem-tts-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-gpu-mem-tts)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                            <circle id="gpu-mem-ocr-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-gpu-mem-ocr)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                            <circle id="gpu-mem-other-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#gradient-gpu-mem-other)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
                                         </svg>
                                         <div class="absolute inset-0 flex flex-col items-center justify-center">
                                             <span id="gpu-mem-value" class="text-2xl font-bold">0%</span>
@@ -306,30 +390,38 @@
                                 </div>
                             </div>
                             <div class="grid grid-cols-3 gap-3 mb-4">
+                                <!-- Whisper モデル（文字 2 ランクアップ・中央寄せ：1行目モデル名 / 2行目 VRAM使用容量 MB・全体割合） -->
                                 <div class="bg-stone-900/50 rounded-xl p-3 text-center">
-                                    <div id="gpu-util-text" class="text-xl font-bold text-amber-400">-- MHz</div>
-                                    <div class="text-xs text-stone-400" data-i18n="gpu.clock">时钟</div>
-                                </div>
-                                <div class="bg-stone-900/50 rounded-xl p-3 text-center">
-                                    <div id="gpu-mem-text" class="text-xl font-bold text-pink-400">-- / -- MB</div>
-                                    <div class="text-xs text-stone-400" data-i18n="gpu.mem">显存</div>
-                                    <div class="mt-1.5 space-y-0.5">
-                                        <div class="truncate" title="Whisper model">
-                                            <span id="gpu-mem-model" class="font-mono text-cyan-300 font-semibold text-xs">--</span>
-                                            <span id="gpu-mem-size" class="text-stone-400 text-[10px] ml-1">--</span>
-                                        </div>
-                                        <div id="gpu-mem-tts" class="hidden truncate" title="TTS model">
-                                            <span id="gpu-mem-tts-model" class="font-mono text-fuchsia-300 font-semibold text-xs">--</span>
-                                            <span id="gpu-mem-tts-size" class="text-stone-400 text-[10px] ml-1">--</span>
-                                        </div>
-                                        <div id="gpu-mem-total-line" class="hidden truncate text-stone-500 text-[10px]">
-                                            <span data-i18n="gpu.model_total">合计</span> <span id="gpu-mem-total">--</span>
-                                        </div>
+                                    <div class="text-lg font-bold text-cyan-300 truncate">
+                                        <span data-i18n="gpu.model_whisper">Whisper 模型</span>
+                                        <span id="gpu-mem-model">--</span>
+                                    </div>
+                                    <div class="text-lg font-semibold text-stone-200 mt-1">
+                                        <span id="gpu-mem-vram">--</span>
+                                        <span id="gpu-mem-pct">--</span>
                                     </div>
                                 </div>
-                                <div id="gpu-temp-box" class="bg-stone-900/50 rounded-xl p-3 text-center">
-                                    <div id="gpu-temp" class="text-xl font-bold text-emerald-400">-- W</div>
-                                    <div class="text-xs text-stone-400" data-i18n="gpu.power">功耗</div>
+                                <!-- TTS モデル（文字 2 ランクアップ・中央寄せ） -->
+                                <div class="bg-stone-900/50 rounded-xl p-3 text-center">
+                                    <div class="text-lg font-bold text-fuchsia-300 truncate">
+                                        <span data-i18n="gpu.model_tts">TTS 模型</span>
+                                        <span id="gpu-mem-tts-model">--</span>
+                                    </div>
+                                    <div class="text-lg font-semibold text-stone-200 mt-1">
+                                        <span id="gpu-mem-tts-vram">--</span>
+                                        <span id="gpu-mem-tts-pct">--</span>
+                                    </div>
+                                </div>
+                                <!-- OCR モデル（文字 2 ランクアップ・中央寄せ） -->
+                                <div class="bg-stone-900/50 rounded-xl p-3 text-center">
+                                    <div class="text-lg font-bold text-amber-300 truncate">
+                                        <span data-i18n="gpu.model_ocr">OCR 模型</span>
+                                        <span id="gpu-mem-ocr-model">--</span>
+                                    </div>
+                                    <div class="text-lg font-semibold text-stone-200 mt-1">
+                                        <span id="gpu-mem-ocr-vram">--</span>
+                                        <span id="gpu-mem-ocr-pct">--</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -342,8 +434,14 @@
                                 <div class="flex items-center gap-3">
                                     <h3 class="text-lg font-semibold" data-i18n="realtime.trend">实时趋势</h3>
                                     <span id="realtime-phase" class="phase-pill phase-idle" data-i18n="realtime.phase_idle">待机</span>
+                                    <span id="trend-meta" class="text-xs text-stone-500"></span>
                                 </div>
                                 <div class="flex items-center gap-2">
+                                    <label class="flex items-center gap-2 text-xs text-stone-400 cursor-pointer select-none" title="" data-i18n-title="realtime.auto_tip">
+                                        <input id="toggle-rtl-auto" type="checkbox" class="rtl-switch-input">
+                                        <span class="rtl-switch-track"><span class="rtl-switch-thumb"></span></span>
+                                        <span data-i18n="realtime.auto_start">自动记录</span>
+                                    </label>
                                     <button id="btn-realtime-log" class="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-xs text-stone-300 transition-all flex items-center gap-1.5" title="">
                                         <span class="rec-dot"></span>
                                         <span data-i18n="realtime.log_start">开始记录</span>
@@ -360,69 +458,141 @@
                         <div id="whisper-control-card" class="glass-card p-6 rounded-2xl flex flex-col">
                             <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
                                 <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                                <span data-i18n="whisper.control">Whisper 服务控制</span>
+                                <span data-i18n="control.title">服务控制卡</span>
                             </h3>
-                            <div class="flex flex-wrap items-center gap-4 mb-4 shrink-0">
-                                <button id="btn-start-whisper" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-medium transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    <span data-i18n="whisper.start">启动服务</span>
-                                </button>
-                                <button id="btn-stop-whisper" class="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-medium transition-all shadow-lg shadow-rose-500/20 flex items-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>
-                                    <span data-i18n="whisper.stop">停止服务</span>
-                                </button>
-                                <button id="btn-restart-whisper" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-medium transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                    <span data-i18n="whisper.restart">重启服务</span>
-                                </button>
-                                <div class="flex items-center gap-2 ml-auto">
-                                    <!-- モード切替（設定画面 speed.mode と双方向同期） -->
-                                    <label class="text-sm text-stone-400" data-i18n="speed.mode">模式</label>
-                                    <select id="select-speed-mode" class="px-3 py-2 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
-                                        <option value="fast" data-i18n="speed.mode.fast">速度优先</option>
-                                        <option value="balanced" data-i18n="speed.mode.balanced">平衡</option>
-                                        <option value="accurate" data-i18n="speed.mode.accurate">精度优先</option>
-                                        <option value="custom" data-i18n="speed.mode.custom">自定义</option>
+
+                            <!-- Whisper サービス -->
+                            <div class="bg-stone-900/40 rounded-xl p-3 mb-3 shrink-0">
+                                <div class="flex flex-wrap items-center gap-2 mb-2">
+                                    <span class="font-semibold text-emerald-400" data-i18n="control.whisper">Whisper</span>
+                                    <span id="whisper-status" class="text-sm font-medium">--</span>
+                                    <span id="whisper-managed" class="text-xs"></span>
+                                    <div class="ml-auto flex items-center gap-2">
+                                        <button id="btn-start-whisper" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            <span data-i18n="whisper.start">启动</span>
+                                        </button>
+                                        <button id="btn-stop-whisper" class="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-400 text-white text-sm font-medium transition-all flex items-center gap-1.5 shadow-lg shadow-rose-500/20">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>
+                                            <span data-i18n="whisper.stop">停止</span>
+                                        </button>
+                                        <button id="btn-restart-whisper" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-white text-sm font-medium transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/20">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                            <span data-i18n="whisper.restart">重启</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+                                    <div class="flex items-center gap-x-3 flex-nowrap">
+                                        <label class="text-stone-400 whitespace-nowrap" data-i18n="whisper.model">模型</label>
+                                        <select id="select-model" class="px-2.5 py-1.5 rounded-lg bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm"></select>
+                                        <label class="text-stone-400 whitespace-nowrap" data-i18n="speed.mode">模式</label>
+                                        <select id="select-speed-mode" class="px-2.5 py-1.5 rounded-lg bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                            <option value="fast" data-i18n="speed.mode.fast">速度优先</option>
+                                            <option value="balanced" data-i18n="speed.mode.balanced">平衡</option>
+                                            <option value="accurate" data-i18n="speed.mode.accurate">精度优先</option>
+                                            <option value="custom" data-i18n="speed.mode.custom">自定义</option>
+                                        </select>
+                                        <button id="btn-switch-model" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-white text-sm font-medium transition-all whitespace-nowrap">
+                                            <span data-i18n="whisper.switch_model">切换模型</span>
+                                        </button>
+                                    </div>
+                                    <span class="text-xs text-stone-400 flex items-center gap-1 ml-auto"><span data-i18n="whisper.pid">进程 ID</span><span id="whisper-pid" class="font-mono text-stone-300">--</span></span>
+                                    <span class="text-xs text-stone-400 flex items-center gap-1"><span data-i18n="whisper.uptime">启动时间</span><span id="whisper-uptime" class="font-mono text-stone-300">--</span></span>
+                                </div>
+                            </div>
+
+                            <!-- TTS サービス（内蔵・モデルの読込/解放で制御） -->
+                            <div class="bg-stone-900/40 rounded-xl p-3 mb-3 shrink-0">
+                                <div class="flex flex-wrap items-center gap-2 mb-2">
+                                    <span class="font-semibold text-fuchsia-400" data-i18n="control.tts">TTS</span>
+                                    <span id="svc-tts-status" class="text-sm font-medium">--</span>
+                                    <div class="ml-auto flex items-center gap-2">
+                                        <button id="btn-tts-preload" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                            <span data-i18n="tts.load">读入</span>
+                                        </button>
+                                        <button id="btn-tts-unload" class="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-400 text-white text-sm font-medium transition-all flex items-center gap-1.5 shadow-lg shadow-rose-500/20">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                                            <span data-i18n="tts.unload">释放</span>
+                                        </button>
+                                        <button id="btn-tts-reload" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-white text-sm font-medium transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/20">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                            <span data-i18n="tts.reload">重读</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+                                    <label class="text-stone-400" data-i18n="tts.engine">引擎</label>
+                                    <select id="tts-engine-select" class="px-2.5 py-1.5 rounded-lg bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                        <option value="edge" data-i18n="settings.tts_engine.edge">Edge TTS</option>
+                                        <option value="kokoro" data-i18n="settings.tts_engine.kokoro">Kokoro</option>
+                                        <option value="vibevoice" data-i18n="settings.tts_engine.vibevoice">VibeVoice</option>
                                     </select>
-                                    <label class="text-sm text-stone-400" data-i18n="whisper.model">模型</label>
-                                    <select id="select-model" class="px-3 py-2 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm"></select>
-                                    <button id="btn-switch-model" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-sm font-medium transition-all shadow-lg shadow-amber-500/20">
-                                        <span data-i18n="whisper.switch_model">切换模型</span>
-                                    </button>
+                                    <label class="text-stone-400" data-i18n="tts.device">设备</label>
+                                    <select id="tts-device-select" class="px-2.5 py-1.5 rounded-lg bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                        <option value="auto" data-i18n="settings.tts_device.auto">自动</option>
+                                        <option value="cuda">CUDA</option>
+                                        <option value="cpu">CPU</option>
+                                    </select>
+                                    <!-- エンジン依存: vibevoice モデル / kokoro 音色（既存 wrap を再利用・showVibevoiceModelSetting が表示制御） -->
+                                    <div id="vv-model-select-wrap" class="hidden flex items-center gap-2">
+                                        <label class="text-stone-400" data-i18n="settings.tts_vibevoice_model">VibeVoice 模型</label>
+                                        <select id="vv-model-select" class="px-2.5 py-1.5 rounded-lg bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                            <option value="realtime" data-i18n="settings.tts_vibevoice_model.realtime">Realtime 0.5B（高速・日本語含む）</option>
+                                            <option value="tts" data-i18n="settings.tts_vibevoice_model.tts">TTS 1.5B（英語/中文のみ・CPUのみ・合成非対応）</option>
+                                        </select>
+                                    </div>
+                                    <div id="kk-voice-select-wrap" class="hidden flex items-center gap-2">
+                                        <label class="text-stone-400" data-i18n="settings.tts_kokoro_voice">Kokoro 声音（日本語）</label>
+                                        <select id="kk-voice-select" class="px-2.5 py-1.5 rounded-lg bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                            <option value="jf_alpha" data-i18n="settings.tts_kokoro_voice.jf_alpha">女声 Alpha（标准）</option>
+                                            <option value="jf_gongitsune" data-i18n="settings.tts_kokoro_voice.jf_gongitsune">女声 Gongitsune</option>
+                                            <option value="jf_nezumi" data-i18n="settings.tts_kokoro_voice.jf_nezumi">女声 Nezumi</option>
+                                            <option value="jf_tebukuro" data-i18n="settings.tts_kokoro_voice.jf_tebukuro">女声 Tebukuro</option>
+                                            <option value="jm_kumo" data-i18n="settings.tts_kokoro_voice.jm_kumo">男声 Kumo</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                            <!-- 読み上げ（TTS）の VibeVoice モデル選択：設定画面 tts_vibevoice_model と同期。エンジンが vibevoice の時のみ表示・右寄せ -->
-                            <div id="vv-model-select-wrap" class="flex items-center justify-end gap-2 mb-4 shrink-0 hidden">
-                                <label class="text-sm text-stone-400" data-i18n="settings.tts_vibevoice_model">VibeVoice 模型</label>
-                                <select id="vv-model-select" class="px-3 py-2 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
-                                    <option value="realtime" data-i18n="settings.tts_vibevoice_model.realtime">Realtime 0.5B（高速・日本語含む）</option>
-                                    <option value="tts" data-i18n="settings.tts_vibevoice_model.tts">TTS 1.5B（英語/中文のみ・CPUのみ・合成非対応）</option>
-                                </select>
-                            </div>
-                            <!-- 読み上げ（TTS）の Kokoro 日本語音声選択：設定画面 tts_kokoro_voice と同期。エンジンが kokoro の時のみ表示 -->
-                            <div id="kk-voice-select-wrap" class="flex items-center justify-end gap-2 mb-4 shrink-0 hidden">
-                                <label class="text-sm text-stone-400" data-i18n="settings.tts_kokoro_voice">Kokoro 声音（日本語）</label>
-                                <select id="kk-voice-select" class="px-3 py-2 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
-                                    <option value="jf_alpha" data-i18n="settings.tts_kokoro_voice.jf_alpha">女声 Alpha（标准）</option>
-                                    <option value="jf_gongitsune" data-i18n="settings.tts_kokoro_voice.jf_gongitsune">女声 Gongitsune</option>
-                                    <option value="jf_nezumi" data-i18n="settings.tts_kokoro_voice.jf_nezumi">女声 Nezumi</option>
-                                    <option value="jf_tebukuro" data-i18n="settings.tts_kokoro_voice.jf_tebukuro">女声 Tebukuro</option>
-                                    <option value="jm_kumo" data-i18n="settings.tts_kokoro_voice.jm_kumo">男声 Kumo</option>
-                                </select>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-base">
-                                <div class="bg-stone-900/50 rounded-xl p-3">
-                                    <span class="text-stone-400 block" data-i18n="whisper.status">状态</span>
-                                    <span id="whisper-status" class="font-medium">--</span>
-                                    <span id="whisper-managed" class="text-xs mt-1 block"></span>
+
+                            <!-- OCR サービス -->
+                            <div class="bg-stone-900/40 rounded-xl p-3 mb-3 shrink-0">
+                                <div class="flex flex-wrap items-center gap-2 mb-2">
+                                    <span class="font-semibold text-amber-400" data-i18n="control.ocr">OCR</span>
+                                    <span id="svc-ocr-status" class="text-sm font-medium">--</span>
+                                    <span id="svc-ocr-managed" class="text-xs"></span>
+                                    <div class="ml-auto flex items-center gap-2">
+                                        <button id="svc-btn-start-ocr" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            <span data-i18n="ocr.start">启动</span>
+                                        </button>
+                                        <button id="svc-btn-stop-ocr" class="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-400 text-white text-sm font-medium transition-all flex items-center gap-1.5 shadow-lg shadow-rose-500/20">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>
+                                            <span data-i18n="ocr.stop">停止</span>
+                                        </button>
+                                        <button id="svc-btn-restart-ocr" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-white text-sm font-medium transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/20">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                            <span data-i18n="ocr.restart">重启</span>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="bg-stone-900/50 rounded-xl p-3">
-                                    <span class="text-stone-400 block" data-i18n="whisper.pid">进程 ID</span>
-                                    <span id="whisper-pid" class="font-mono">--</span>
-                                </div>
-                                <div class="bg-stone-900/50 rounded-xl p-3">
-                                    <span class="text-stone-400 block" data-i18n="whisper.uptime">启动时间</span>
-                                    <span id="whisper-uptime" class="font-mono">--</span>
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+                                    <label class="text-stone-400" data-i18n="ocr.device">执行设备</label>
+                                    <select id="svc-select-ocr-device" class="px-2.5 py-1.5 rounded-lg bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                        <option value="cuda" data-i18n="ocr.device.gpu">GPU（CUDA）</option>
+                                        <option value="cpu" data-i18n="ocr.device.cpu">CPU</option>
+                                    </select>
+                                    <label class="text-stone-400" data-i18n="ocr.lang">语言</label>
+                                    <select id="svc-select-ocr-lang" class="px-2.5 py-1.5 rounded-lg bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                        <option value="japan" data-i18n="ocr.lang.japan">日本語</option>
+                                        <option value="en" data-i18n="ocr.lang.en">English</option>
+                                        <option value="ch" data-i18n="ocr.lang.ch">中文</option>
+                                        <option value="ko" data-i18n="ocr.lang.ko">한국어</option>
+                                    </select>
+                                    <span id="svc-ocr-engine" class="text-xs text-stone-400 font-mono"></span>
+                                    <span class="text-xs text-stone-400 flex items-center gap-1 ml-auto"><span data-i18n="whisper.pid">进程 ID</span><span id="svc-ocr-pid" class="font-mono text-stone-300">--</span></span>
+                                    <span class="text-xs text-stone-400 flex items-center gap-1"><span data-i18n="whisper.uptime">启动时间</span><span id="svc-ocr-uptime" class="font-mono text-stone-300">--</span></span>
                                 </div>
                             </div>
 
@@ -516,8 +686,8 @@
                                 <button id="btn-refresh-records" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-white text-sm font-medium transition-all">
                                     <span data-i18n="records.refresh">刷新</span>
                                 </button>
-                                <button id="btn-clear-records" class="px-4 py-2 rounded-xl bg-rose-500/80 hover:bg-rose-400 text-white text-sm font-medium transition-all">
-                                    <span data-i18n="records.clear_all">清空全部</span>
+                                <button id="btn-delete-selected" onclick="deleteSelectedRecords()" class="hidden px-4 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 text-sm font-medium transition-all">
+                                    <span data-i18n="records.batch_delete">批量删除</span> (<span id="records-selected-count">0</span>)
                                 </button>
                             </div>
                         </div>
@@ -525,22 +695,25 @@
                             <table class="w-full text-sm">
                                 <thead>
                                     <tr class="text-left text-stone-400 border-b border-white/10">
-                                        <th class="pb-3 font-medium" data-i18n="records.time">时间</th>
-                                        <th class="pb-3 font-medium" data-i18n="records.filename">文件名</th>
-                                        <th class="pb-3 font-medium" data-i18n="records.language">语言</th>
-                                        <th class="pb-3 font-medium" data-i18n="records.model">模型</th>
-                                        <th class="pb-3 font-medium" data-i18n="records.duration">音声時間</th>
-                                        <th class="pb-3 font-medium" data-i18n="records.convert_time">変換時間</th>
-                                        <th class="pb-3 font-medium" data-i18n="records.correct_time">AI 校正</th>
-                                        <th class="pb-3 font-medium" data-i18n="records.elapsed">処理時間</th>
-                                        <th class="pb-3 font-medium" data-i18n="records.speed">转换速度</th>
-                                        <th class="pb-3 font-medium" data-i18n="records.summary">结果摘要</th>
-                                        <th class="pb-3 font-medium" data-i18n="records.chars">字数</th>
+                                        <th class="pb-3 w-8">
+                                            <input type="checkbox" id="records-select-all" class="record-select-all" data-i18n-title="records.select_all" title="全选" onclick="toggleSelectAllRecords(this)">
+                                        </th>
+                                        <th class="pb-3 font-medium sortable" data-sort-key="time" data-i18n="records.time" onclick="sortRecords('time')">时间</th>
+                                        <th class="pb-3 font-medium sortable" data-sort-key="filename" data-i18n="records.filename" onclick="sortRecords('filename')">文件名</th>
+                                        <th class="pb-3 font-medium sortable" data-sort-key="language" data-i18n="records.language" onclick="sortRecords('language')">语言</th>
+                                        <th class="pb-3 font-medium sortable" data-sort-key="model" data-i18n="records.model" onclick="sortRecords('model')">模型</th>
+                                        <th class="pb-3 font-medium sortable" data-sort-key="duration" data-i18n="records.duration" onclick="sortRecords('duration')">音声時間</th>
+                                        <th class="pb-3 font-medium sortable" data-sort-key="convert" data-i18n="records.convert_time" onclick="sortRecords('convert')">変換時間</th>
+                                        <th class="pb-3 font-medium sortable" data-sort-key="correct" data-i18n="records.correct_time" onclick="sortRecords('correct')">AI 校正</th>
+                                        <th class="pb-3 font-medium sortable" data-sort-key="elapsed" data-i18n="records.elapsed" onclick="sortRecords('elapsed')">処理時間</th>
+                                        <th class="pb-3 font-medium sortable" data-sort-key="speed" data-i18n="records.speed" onclick="sortRecords('speed')">转换速度</th>
+                                        <th class="pb-3 font-medium sortable" data-sort-key="summary" data-i18n="records.summary" onclick="sortRecords('summary')">结果摘要</th>
+                                        <th class="pb-3 font-medium sortable" data-sort-key="chars" data-i18n="records.chars" onclick="sortRecords('chars')">字数</th>
                                         <th class="pb-3 font-medium" data-i18n="records.action">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody id="records-table-body" class="divide-y divide-white/5">
-                                    <tr><td colspan="12" class="py-8 text-center text-stone-500" data-i18n="records.empty">暂无记录</td></tr>
+                                    <tr><td colspan="13" class="py-8 text-center text-stone-500" data-i18n="records.empty">暂无记录</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -552,6 +725,14 @@
                             <h4 class="font-semibold" data-i18n="records.detail">完整结果</h4>
                             <div class="flex items-center gap-3">
                                 <span id="record-content-meta" class="text-xs text-stone-400"></span>
+                                <button id="btn-correct-content" onclick="correctRecordDisplay('content')" class="px-3 py-1.5 rounded-lg bg-fuchsia-500/20 text-fuchsia-300 text-sm hover:bg-fuchsia-500/30 transition-all flex items-center gap-1.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                                    <span data-i18n="records.correct">校正</span>
+                                </button>
+                                <button id="btn-delete-content" onclick="deleteRecordDisplay('content')" class="px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 text-sm hover:bg-rose-500/30 transition-all flex items-center gap-1.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    <span data-i18n="records.delete">削除</span>
+                                </button>
                                 <button id="btn-read-content" class="px-3 py-1.5 rounded-lg bg-fuchsia-500/20 text-fuchsia-300 text-sm hover:bg-fuchsia-500/30 transition-all flex items-center gap-1.5">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"></path></svg>
                                     <span data-i18n="records.read">音読み</span>
@@ -567,7 +748,7 @@
                             <button id="btn-tab-content-corrected" class="result-tab" onclick="switchResultTab('content', 'corrected')" data-i18n="records.tab_corrected">AI校正结果</button>
                         </div>
                         <div class="overflow-y-auto custom-scrollbar max-h-[50vh]">
-                            <pre id="record-content" class="font-mono text-sm whitespace-pre-wrap text-stone-300 bg-stone-900/50 p-4 rounded-xl"></pre>
+                            <div id="record-content" class="font-mono text-sm whitespace-pre-wrap text-stone-300 bg-stone-900/50 p-4 rounded-xl"></div>
                         </div>
                     </div>
 
@@ -580,6 +761,14 @@
                                     <span id="record-detail-chars" class="text-xs text-stone-400 font-normal"></span>
                                 </h4>
                                 <div class="flex items-center gap-2">
+                                    <button id="btn-correct-modal" onclick="correctRecordDisplay('detail')" class="px-3 py-1.5 rounded-lg bg-fuchsia-500/20 text-fuchsia-300 text-sm hover:bg-fuchsia-500/30 transition-all flex items-center gap-1.5">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                                        <span data-i18n="records.correct">校正</span>
+                                    </button>
+                                    <button id="btn-delete-modal" onclick="deleteRecordDisplay('detail')" class="px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 text-sm hover:bg-rose-500/30 transition-all flex items-center gap-1.5">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        <span data-i18n="records.delete">削除</span>
+                                    </button>
                                     <button id="btn-read-modal" class="px-3 py-1.5 rounded-lg bg-fuchsia-500/20 text-fuchsia-300 text-sm hover:bg-fuchsia-500/30 transition-all flex items-center gap-1.5">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"></path></svg>
                                         <span data-i18n="records.read">音読み</span>
@@ -597,7 +786,7 @@
                                 <button id="btn-tab-detail-corrected" class="result-tab" onclick="switchResultTab('detail', 'corrected')" data-i18n="records.tab_corrected">AI校正结果</button>
                             </div>
                             <div class="p-4 overflow-y-auto flex-1">
-                                <pre id="record-detail-content" class="font-mono text-sm whitespace-pre-wrap text-stone-300 bg-stone-900/50 p-4 rounded-xl"></pre>
+                                <div id="record-detail-content" class="font-mono text-sm whitespace-pre-wrap text-stone-300 bg-stone-900/50 p-4 rounded-xl"></div>
                             </div>
                         </div>
                     </div>
@@ -623,29 +812,57 @@
                     </div>
                 </section>
 
-                <!-- Realtime Logging Section（JSONL 記録の一覧・閲覧・DL・削除） -->
+                <!-- Realtime Logging Section（JSONL 記録の一覧・グラフ/データ閲覧・DL・削除） -->
                 <section id="logging" class="section hidden">
                     <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 h-[calc(100vh-140px)]">
                         <div class="glass-card p-5 rounded-2xl lg:col-span-2 flex flex-col min-h-0">
-                            <div class="flex items-center justify-between mb-4 shrink-0">
+                            <div class="flex items-center justify-between mb-3 shrink-0">
                                 <h3 class="text-lg font-semibold" data-i18n="logging.title">记录日志</h3>
-                                <button id="btn-refresh-logs" class="px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-sm transition-all" data-i18n="logging.refresh">刷新</button>
+                                <div class="flex items-center gap-2">
+                                    <button id="btn-delete-selected-logs" onclick="deleteSelectedRealtimeLogs()" class="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-sm transition-all hidden">
+                                        <span data-i18n="logging.batch_delete">批量删除</span> (<span id="rtlog-selected-count">0</span>)
+                                    </button>
+                                    <button id="btn-clear-rtlog-select" class="px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-sm transition-all hidden" data-i18n="logging.clear_select">清除选择</button>
+                                    <button id="btn-refresh-logs" class="px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-sm transition-all" data-i18n="logging.refresh">刷新</button>
+                                </div>
+                            </div>
+                            <div class="mb-2 flex items-center gap-2 shrink-0">
+                                <label class="inline-flex items-center gap-1.5 text-[11px] text-stone-400 cursor-pointer select-none">
+                                    <input type="checkbox" id="rtlog-select-all" class="accent-amber-500" onchange="toggleSelectAllRtlogs(this)">
+                                    <span data-i18n="logging.select_all">全选</span>
+                                </label>
+                                <span class="text-[11px] text-stone-500" data-i18n="logging.select_tip">点击可多选并叠加波形</span>
                             </div>
                             <div id="rtlog-list" class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
                                 <div class="text-sm text-stone-500" data-i18n="logging.empty">暂无记录</div>
                             </div>
                         </div>
                         <div class="glass-card p-5 rounded-2xl lg:col-span-3 flex flex-col min-h-0">
-                            <div class="flex items-center justify-between mb-4 shrink-0">
+                            <div class="flex items-center justify-between mb-3 shrink-0">
                                 <h3 id="rtlog-detail-title" class="text-base font-semibold text-stone-400 truncate" data-i18n="logging.select_hint">选择左侧日志查看内容</h3>
                                 <div id="rtlog-detail-actions" class="flex items-center gap-2 shrink-0 hidden">
-                                    <button id="btn-download-log" class="px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 text-sm transition-all" data-i18n="logging.download">下载</button>
+                                    <div id="rtlog-view-tabs" class="flex rounded-lg bg-stone-900/60 border border-white/10 p-0.5 hidden">
+                                        <button data-rtview="graph" class="rtlog-tab px-3 py-1 rounded-md text-xs transition-all" data-i18n="logging.graph">图</button>
+                                        <button data-rtview="data" class="rtlog-tab px-3 py-1 rounded-md text-xs transition-all" data-i18n="logging.data">数据</button>
+                                    </div>
+                                    <div id="rtlog-format-tabs" class="flex rounded-lg bg-stone-900/60 border border-white/10 p-0.5 hidden">
+                                        <button data-rtfmt="jsonl" class="rtlog-tab px-3 py-1 rounded-md text-xs transition-all">JSONL</button>
+                                        <button data-rtfmt="csv" class="rtlog-tab px-3 py-1 rounded-md text-xs transition-all">CSV</button>
+                                    </div>
+                                    <button id="btn-download-log" class="px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 text-sm transition-all" data-i18n="logging.download" title="" data-i18n-title="logging.download_as">下载</button>
                                     <button id="btn-copy-log" class="px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-sm transition-all" data-i18n="logging.copy">复制</button>
                                     <button id="btn-delete-log" class="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-sm transition-all" data-i18n="logging.delete">删除</button>
                                 </div>
                             </div>
-                            <div id="rtlog-summary" class="mb-3 shrink-0"></div>
-                            <pre id="rtlog-content" class="flex-1 bg-stone-950 rounded-xl p-4 font-mono text-xs overflow-auto custom-scrollbar border border-white/10 whitespace-pre-wrap break-all"></pre>
+                            <div id="rtlog-summary" class="mb-2 shrink-0"></div>
+                            <div id="rtlog-monitor-toggle" class="mb-3 shrink-0 hidden">
+                                <span class="text-[11px] text-stone-500 mr-2" data-i18n="logging.monitors">监控显示</span>
+                                <div id="rtlog-monitor-chips" class="inline-flex flex-wrap gap-2"></div>
+                            </div>
+                            <div id="rtlog-graph-wrap" class="flex-1 min-h-0 hidden">
+                                <canvas id="rtlog-chart"></canvas>
+                            </div>
+                            <pre id="rtlog-content" class="flex-1 bg-stone-950 rounded-xl p-4 font-mono text-xs overflow-auto custom-scrollbar border border-white/10 whitespace-pre-wrap break-all hidden"></pre>
                         </div>
                     </div>
                 </section>
@@ -743,11 +960,22 @@
                                             <option value="en">English</option>
                                         </select>
                                     </div>
+                                    <div class="flex items-center justify-between p-4 bg-stone-900/50 rounded-xl mb-3">
+                                        <div>
+                                            <div class="font-medium" data-i18n="settings.auth_enabled">连接令牌认证</div>
+                                            <div class="text-sm text-stone-400" data-i18n="settings.auth_enabled_desc">关闭后，其他设备无需令牌即可执行写入・控制操作</div>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input id="toggle-auth-enabled" type="checkbox" class="sr-only peer">
+                                            <div class="w-14 h-7 bg-stone-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-500"></div>
+                                        </label>
+                                    </div>
                                     <div>
                                         <label class="block text-sm text-stone-400 mb-2" data-i18n="settings.conn_token">连接令牌（LAN 控制用）</label>
-                                        <div class="flex gap-2">
-                                            <input id="auth-token-display" type="text" readonly class="flex-1 px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:outline-none font-mono text-xs" placeholder="---">
-                                            <button id="btn-auth-token-copy" type="button" class="px-3 py-2 rounded-xl bg-stone-800/80 hover:bg-stone-700 text-sm text-stone-300 transition-all" title="复制">复制</button>
+                                        <div id="auth-token-controls" class="flex gap-2">
+                                            <input id="auth-token-display" type="text" class="flex-1 px-4 py-2.5 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none font-mono text-xs" placeholder="---" spellcheck="false">
+                                            <button id="btn-auth-token-save-setting" type="button" class="px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-sm font-medium transition-all" data-i18n="settings.token_save">トークンを保存</button>
+                                            <button id="btn-auth-token-copy" type="button" class="px-3 py-2 rounded-xl bg-stone-800/80 hover:bg-stone-700 text-sm text-stone-300 transition-all" data-i18n-title="settings.copy" title="Copy">复制</button>
                                             <button id="btn-auth-token-regenerate" type="button" class="px-3 py-2 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-sm font-medium transition-all" data-i18n="settings.regenerate">重新生成</button>
                                         </div>
                                         <p class="mt-1 text-xs text-stone-500" data-i18n="settings.conn_token_desc">在其他设备的写入/控制请求与 WebSocket 连接中使用此令牌。本机访问无需令牌。</p>
@@ -914,6 +1142,12 @@
                                         <div class="text-sm text-stone-400 mb-2" data-i18n="model.kokoro_manage">Kokoro 模型</div>
                                         <div id="kokoro-model-list" class="space-y-1 max-h-48 overflow-y-auto"></div>
                                     </div>
+                                    <!-- PaddleOCR モデルDL（OCR・PDF→Markdown。保存先 models/paddlex、PaddleX と同一レイアウト） -->
+                                    <div class="mt-4">
+                                        <div class="text-sm text-stone-400 mb-2" data-i18n="model.paddleocr_manage">PaddleOCR 模型</div>
+                                        <div id="paddleocr-model-list" class="space-y-1 max-h-56 overflow-y-auto"></div>
+                                        <p id="paddleocr-cache-dir" class="mt-1 text-xs text-stone-500 font-mono break-all"></p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -931,11 +1165,317 @@
                                         </label>
                                     </div>
                                 </div>
-                                <div id="autostart-status" class="text-sm text-stone-400 mb-4">状态: 检查中...</div>
+                                <div id="autostart-status" class="text-sm text-stone-400 mb-4" data-i18n="autostart.status.checking">状態: 確認中...</div>
                                 <div class="p-4 bg-stone-900/50 rounded-xl text-sm text-stone-400">
                                     <p data-i18n="autostart.path_hint">开启后，会在 Windows 启动文件夹中创建快捷方式：</p>
                                     <code class="block mt-2 text-xs text-amber-300 break-all">%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\MyWhisperServer.lnk</code>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- OCR Section -->
+                <section id="ocr" class="section hidden">
+                    <div class="max-w-6xl mx-auto space-y-6">
+                        <!-- OCR サービス制御 -->
+                        <div id="ocr-control-card" class="glass-card p-6 rounded-2xl">
+                            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v2m0 0a2 2 0 00-2 2m2-2a2 2 0 010 4m-2 0v2m0 0a2 2 0 002 2h2m-2-2a2 2 0 004 0m-4 0h2m0 0v2a2 2 0 002 2h2m-2 0a2 2 0 004 0m-2 0v-2m4 0h2m0 0a2 2 0 004 0m-4 0a2 2 0 01-4 0m4 0v-2m0 0a2 2 0 00-2-2m2 2h2m0 0a2 2 0 00-2-2"></path></svg>
+                                <span data-i18n="ocr.control">OCR サービス制御</span>
+                            </h3>
+                            <div class="flex flex-wrap items-center gap-4 mb-4 shrink-0">
+                                <button id="btn-start-ocr" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-medium transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span data-i18n="ocr.start">启动服务</span>
+                                </button>
+                                <button id="btn-stop-ocr" class="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-medium transition-all shadow-lg shadow-rose-500/20 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>
+                                    <span data-i18n="ocr.stop">停止服务</span>
+                                </button>
+                                <button id="btn-restart-ocr" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-medium transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                    <span data-i18n="ocr.restart">重启服务</span>
+                                </button>
+                                <div class="flex items-center gap-2 ml-auto">
+                                    <label class="text-sm text-stone-400" data-i18n="ocr.device">执行设备</label>
+                                    <select id="select-ocr-device" class="px-3 py-2 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                        <option value="cuda" data-i18n="ocr.device.gpu">GPU（CUDA）</option>
+                                        <option value="cpu" data-i18n="ocr.device.cpu">CPU</option>
+                                    </select>
+                                    <label class="text-sm text-stone-400" data-i18n="ocr.lang">语言</label>
+                                    <select id="select-ocr-lang" class="px-3 py-2 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                        <option value="japan" data-i18n="ocr.lang.japan">日本語</option>
+                                        <option value="en" data-i18n="ocr.lang.en">English</option>
+                                        <option value="ch" data-i18n="ocr.lang.ch">中文</option>
+                                        <option value="ko" data-i18n="ocr.lang.ko">한국어</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-base">
+                                <div class="bg-stone-900/50 rounded-xl p-3">
+                                    <span class="text-stone-400 block" data-i18n="ocr.status">状态</span>
+                                    <span id="ocr-status" class="font-medium">--</span>
+                                    <span id="ocr-managed" class="text-xs mt-1 block"></span>
+                                </div>
+                                <div class="bg-stone-900/50 rounded-xl p-3">
+                                    <span class="text-stone-400 block" data-i18n="ocr.pid">进程 ID</span>
+                                    <span id="ocr-pid" class="font-mono">--</span>
+                                </div>
+                                <div class="bg-stone-900/50 rounded-xl p-3">
+                                    <span class="text-stone-400 block" data-i18n="ocr.uptime">启动时间</span>
+                                    <span id="ocr-uptime" class="font-mono">--</span>
+                                </div>
+                                <div class="bg-stone-900/50 rounded-xl p-3">
+                                    <span class="text-stone-400 block" data-i18n="ocr.elapsed_time">経過時間</span>
+                                    <span id="ocr-elapsed" class="font-mono">--</span>
+                                </div>
+                                <div class="bg-stone-900/50 rounded-xl p-3">
+                                    <span class="text-stone-400 block" data-i18n="ocr.engine">引擎</span>
+                                    <span id="ocr-engine" class="font-mono">--</span>
+                                </div>
+                            </div>
+                            <div class="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm text-stone-300">
+                                <p data-i18n="ocr.vram_warn">警告：6GB VRAM では Whisper + Kokoro + PaddleOCR の同時稼働で VRAM が不足する場合があります。PDF 構造解析（PP-StructureV3）は使用時にのみモデルをロードします。</p>
+                            </div>
+                        </div>
+
+                        <!-- モニター（ダッシュボードと同じ CPU & メモリ / GPU。data-monitor-sync で値を同期） -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="glass-card p-6 rounded-2xl">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
+                                    <span data-i18n="hardware.cpu_mem">CPU & メモリモニタ</span>
+                                </h3>
+                                <div class="mb-4">
+                                    <div class="text-sm text-stone-400 mb-1" data-i18n="cpu.name">CPU 名称</div>
+                                    <div id="ocr-cpu-name" class="font-medium min-h-[2.5rem]" data-monitor-sync="cpu-name" data-i18n="cpu.detecting">检测中...</div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-4 mb-4">
+                                    <div class="text-center">
+                                        <div class="relative w-24 h-24 mx-auto">
+                                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+                                                <defs>
+                                                    <linearGradient id="ocr-gradient-cpu" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                        <stop offset="0%" stop-color="#ffb020"></stop>
+                                                        <stop offset="100%" stop-color="#ff5e1a"></stop>
+                                                    </linearGradient>
+                                                </defs>
+                                                <circle id="ocr-cpu-ring" data-monitor-sync="cpu-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#ocr-gradient-cpu)" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                            </svg>
+                                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                                <span id="ocr-cpu-value" class="text-2xl font-bold" data-monitor-sync="cpu-value">0%</span>
+                                                <span class="text-xs text-stone-400" data-i18n="hardware.cpu">CPU</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="relative w-24 h-24 mx-auto">
+                                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+                                                <defs>
+                                                    <linearGradient id="ocr-gradient-mem" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                        <stop offset="0%" stop-color="#ff3d81"></stop>
+                                                        <stop offset="100%" stop-color="#c084fc"></stop>
+                                                    </linearGradient>
+                                                </defs>
+                                                <circle id="ocr-mem-ring" data-monitor-sync="mem-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#ocr-gradient-mem)" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                            </svg>
+                                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                                <span id="ocr-mem-value" class="text-2xl font-bold" data-monitor-sync="mem-value">0%</span>
+                                                <span class="text-xs text-stone-400" data-i18n="hardware.memory">内存</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="relative w-24 h-24 mx-auto">
+                                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+                                                <defs>
+                                                    <linearGradient id="ocr-gradient-disk" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                        <stop offset="0%" stop-color="#22d3ee"></stop>
+                                                        <stop offset="100%" stop-color="#0891b2"></stop>
+                                                    </linearGradient>
+                                                </defs>
+                                                <circle id="ocr-disk-ring" data-monitor-sync="disk-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#ocr-gradient-disk)" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                            </svg>
+                                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                                <span id="ocr-disk-ring-value" class="text-2xl font-bold" data-monitor-sync="disk-ring-value">0%</span>
+                                                <span class="text-xs text-stone-400" data-i18n="storage.title">ストレージ</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div class="bg-stone-900/50 rounded-xl p-3 text-center">
+                                        <div id="ocr-cpu-freq" class="text-xl font-bold text-amber-400" data-monitor-sync="cpu-freq">-- MHz</div>
+                                        <div class="text-xs text-stone-400" data-i18n="hardware.cpu_freq">CPU 周波数</div>
+                                    </div>
+                                    <div class="bg-stone-900/50 rounded-xl p-3 text-center">
+                                        <div id="ocr-mem-used" class="text-xl font-bold text-pink-400" data-monitor-sync="mem-used">-- / -- GB</div>
+                                        <div class="text-xs text-stone-400" data-i18n="hardware.mem_used">使用メモリ</div>
+                                    </div>
+                                    <a href="ms-settings:storage" title="Open Windows Storage settings" class="bg-stone-900/50 rounded-xl p-3 text-center block hover:bg-stone-800/60 border border-transparent hover:border-amber-500/40 transition-all">
+                                        <div id="ocr-disk-percent" class="text-xl font-bold text-cyan-400" data-monitor-sync="disk-percent">-- / -- GB</div>
+                                        <div class="text-xs text-stone-400"><span data-i18n="storage.title">ストレージ</span></div>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="glass-card p-6 rounded-2xl">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                    <span data-i18n="hardware.gpu">GPU 监控</span>
+                                </h3>
+                                <div class="mb-4">
+                                    <div class="text-sm text-stone-400 mb-1" data-i18n="gpu.name">GPU 名称</div>
+                                    <div id="ocr-gpu-name" class="font-medium min-h-[2.5rem]" data-monitor-sync="gpu-name" data-i18n="gpu.detecting">检测中...</div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-4 mb-4">
+                                    <div class="text-center">
+                                        <div class="relative w-24 h-24 mx-auto">
+                                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+                                                <defs>
+                                                    <linearGradient id="ocr-gradient-gpu-util-whisper" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#22d3ee"></stop><stop offset="100%" stop-color="#0e7490"></stop></linearGradient>
+                                                    <linearGradient id="ocr-gradient-gpu-util-tts" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#e879f9"></stop><stop offset="100%" stop-color="#a21caf"></stop></linearGradient>
+                                                    <linearGradient id="ocr-gradient-gpu-util-ocr" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#fbbf24"></stop><stop offset="100%" stop-color="#b45309"></stop></linearGradient>
+                                                    <linearGradient id="ocr-gradient-gpu-util-other" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4ade80"></stop><stop offset="100%" stop-color="#15803d"></stop></linearGradient>
+                                                </defs>
+                                                <circle id="ocr-gpu-util-whisper" data-monitor-sync="gpu-util-whisper" cx="50" cy="50" r="45" fill="none" stroke="url(#ocr-gradient-gpu-util-whisper)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                                <circle id="ocr-gpu-util-tts" data-monitor-sync="gpu-util-tts" cx="50" cy="50" r="45" fill="none" stroke="url(#ocr-gradient-gpu-util-tts)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                                <circle id="ocr-gpu-util-ocr" data-monitor-sync="gpu-util-ocr" cx="50" cy="50" r="45" fill="none" stroke="url(#ocr-gradient-gpu-util-ocr)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                                <circle id="ocr-gpu-util-other" data-monitor-sync="gpu-util-other" cx="50" cy="50" r="45" fill="none" stroke="url(#ocr-gradient-gpu-util-other)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                            </svg>
+                                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                                <span id="ocr-gpu-util-value" class="text-2xl font-bold" data-monitor-sync="gpu-util-value">0%</span>
+                                                <span class="text-xs text-stone-400">GPU</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="relative w-24 h-24 mx-auto">
+                                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+                                                <defs>
+                                                    <linearGradient id="ocr-gradient-gpu-mem-whisper" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#22d3ee"></stop><stop offset="100%" stop-color="#0e7490"></stop></linearGradient>
+                                                    <linearGradient id="ocr-gradient-gpu-mem-tts" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#e879f9"></stop><stop offset="100%" stop-color="#a21caf"></stop></linearGradient>
+                                                    <linearGradient id="ocr-gradient-gpu-mem-ocr" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#fbbf24"></stop><stop offset="100%" stop-color="#b45309"></stop></linearGradient>
+                                                    <linearGradient id="ocr-gradient-gpu-mem-other" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4ade80"></stop><stop offset="100%" stop-color="#15803d"></stop></linearGradient>
+                                                </defs>
+                                                <circle id="ocr-gpu-mem-whisper" data-monitor-sync="gpu-mem-whisper" cx="50" cy="50" r="45" fill="none" stroke="url(#ocr-gradient-gpu-mem-whisper)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                                <circle id="ocr-gpu-mem-tts-ring" data-monitor-sync="gpu-mem-tts-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#ocr-gradient-gpu-mem-tts)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                                <circle id="ocr-gpu-mem-ocr-ring" data-monitor-sync="gpu-mem-ocr-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#ocr-gradient-gpu-mem-ocr)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                                <circle id="ocr-gpu-mem-other-ring" data-monitor-sync="gpu-mem-other-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#ocr-gradient-gpu-mem-other)" stroke-width="8" stroke-linecap="butt" stroke-dasharray="0 283" stroke-dashoffset="283"></circle>
+                                            </svg>
+                                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                                <span id="ocr-gpu-mem-value" class="text-2xl font-bold" data-monitor-sync="gpu-mem-value">0%</span>
+                                                <span class="text-xs text-stone-400" data-i18n="gpu.mem">显存</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="ocr-gpu-temp-ring-wrap" data-monitor-sync="gpu-temp-ring-wrap" class="text-center">
+                                        <div class="relative w-24 h-24 mx-auto">
+                                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+                                                <defs>
+                                                    <linearGradient id="ocr-gradient-gpu-temp" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                        <stop offset="0%" stop-color="#34d399"></stop>
+                                                        <stop offset="100%" stop-color="#fbbf24"></stop>
+                                                    </linearGradient>
+                                                </defs>
+                                                <circle id="ocr-gpu-temp-ring" data-monitor-sync="gpu-temp-ring" cx="50" cy="50" r="45" fill="none" stroke="url(#ocr-gradient-gpu-temp)" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                            </svg>
+                                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                                <span id="ocr-gpu-temp-ring-value" class="text-2xl font-bold" data-monitor-sync="gpu-temp-ring-value">0°C</span>
+                                                <span class="text-xs text-stone-400" data-i18n="gpu.temp">温度</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div class="bg-stone-900/50 rounded-xl p-3 text-center">
+                                        <div class="text-lg font-bold text-cyan-300 truncate">
+                                            <span data-i18n="gpu.model_whisper">Whisper 模型</span>
+                                            <span id="ocr-gpu-mem-model" data-monitor-sync="gpu-mem-model">--</span>
+                                        </div>
+                                        <div class="text-lg font-semibold text-stone-200 mt-1">
+                                            <span id="ocr-gpu-mem-vram" data-monitor-sync="gpu-mem-vram">--</span>
+                                            <span id="ocr-gpu-mem-pct" data-monitor-sync="gpu-mem-pct">--</span>
+                                        </div>
+                                    </div>
+                                    <div class="bg-stone-900/50 rounded-xl p-3 text-center">
+                                        <div class="text-lg font-bold text-fuchsia-300 truncate">
+                                            <span data-i18n="gpu.model_tts">TTS 模型</span>
+                                            <span id="ocr-gpu-mem-tts-model" data-monitor-sync="gpu-mem-tts-model">--</span>
+                                        </div>
+                                        <div class="text-lg font-semibold text-stone-200 mt-1">
+                                            <span id="ocr-gpu-mem-tts-vram" data-monitor-sync="gpu-mem-tts-vram">--</span>
+                                            <span id="ocr-gpu-mem-tts-pct" data-monitor-sync="gpu-mem-tts-pct">--</span>
+                                        </div>
+                                    </div>
+                                    <div class="bg-stone-900/50 rounded-xl p-3 text-center">
+                                        <div class="text-lg font-bold text-amber-300 truncate">
+                                            <span data-i18n="gpu.model_ocr">OCR 模型</span>
+                                            <span id="ocr-gpu-mem-ocr-model" data-monitor-sync="gpu-mem-ocr-model">--</span>
+                                        </div>
+                                        <div class="text-lg font-semibold text-stone-200 mt-1">
+                                            <span id="ocr-gpu-mem-ocr-vram" data-monitor-sync="gpu-mem-ocr-vram">--</span>
+                                            <span id="ocr-gpu-mem-ocr-pct" data-monitor-sync="gpu-mem-ocr-pct">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- OCR 実行（ファイル自動判定・出力形式・AI校正・経過時間） -->
+                        <div class="glass-card p-6 rounded-2xl">
+                            <h3 class="text-lg font-semibold mb-4" data-i18n="ocr.execute">OCR 実行</h3>
+                            <div class="flex flex-wrap items-center gap-4 mb-4 shrink-0">
+                                <input id="ocr-file" type="file" class="text-sm text-stone-300 file:mr-3 file:px-4 file:py-2 file:rounded-xl file:border-0 file:bg-stone-800 file:text-stone-200 file:text-sm file:font-medium hover:file:bg-stone-700" accept="image/*,.pdf">
+                                <label class="text-sm text-stone-400" data-i18n="ocr.format">输出格式</label>
+                                <select id="ocr-format" class="px-3 py-2 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                    <option value="md" data-i18n="ocr.format_md">MD</option>
+                                    <option value="txt" data-i18n="ocr.format_txt">TXT</option>
+                                </select>
+                                <label class="text-sm text-stone-400" data-i18n="ocr.ai_correct">AI 校正</label>
+                                <select id="ocr-ai-correct" class="px-3 py-2 rounded-xl bg-stone-900/50 border border-white/10 focus:border-amber-500 focus:outline-none text-sm">
+                                    <option value="off" data-i18n="ocr.ai_correct_off">校正しない</option>
+                                    <option value="on" data-i18n="ocr.ai_correct_on">校正する</option>
+                                </select>
+                                <button id="btn-run-ocr" class="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-medium transition-all shadow-lg shadow-cyan-500/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span data-i18n="ocr.run">执行</span>
+                                </button>
+                                <span id="ocr-exec-status" class="text-sm text-stone-400"></span>
+                            </div>
+                            <div class="space-y-4">
+                                <div id="ocr-result-block" class="hidden">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-sm text-stone-400" data-i18n="ocr.result">结果</span>
+                                        <div class="flex items-center gap-2">
+                                            <button id="btn-download-ocr-md" class="hidden px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-xs text-stone-200 transition-all" data-i18n="ocr.download">下载</button>
+                                            <button id="btn-copy-ocr" class="px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-xs text-stone-200 transition-all" data-i18n="settings.copy">复制</button>
+                                        </div>
+                                    </div>
+                                    <div id="ocr-result" class="whitespace-pre-wrap break-words bg-stone-900/60 border border-white/10 rounded-xl p-4 text-sm text-stone-200 max-h-96 overflow-y-auto font-mono"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- OCR 設定 -->
+                        <div class="glass-card p-6 rounded-2xl">
+                            <h3 class="text-lg font-semibold mb-4" data-i18n="ocr.settings">OCR 設定</h3>
+                            <div class="flex items-center justify-between p-4 bg-stone-900/50 rounded-xl">
+                                <div>
+                                    <div class="font-medium" data-i18n="ocr.autostart">启动时自动启动 OCR 服务</div>
+                                    <div class="text-sm text-stone-400" data-i18n="ocr.autostart_desc">Dashboard 起動時に PaddleOCR サービスも自動起動（既定: オフ）</div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input id="toggle-ocr-autostart" type="checkbox" class="sr-only peer">
+                                    <div class="w-14 h-7 bg-stone-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-500"></div>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -997,6 +1537,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=65"></script>
+    <script src="/static/js/app.js?v=102"></script>
 </body>
 </html>

@@ -11,6 +11,7 @@ import sqlite3
 import threading
 import subprocess
 import platform
+import socket
 from pathlib import Path
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
@@ -19,13 +20,13 @@ from typing import Optional, List, Dict, Any
 import psutil
 import aiohttp
 import edge_tts
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Request, Form, Query, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Request, Form, Query, File, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 # ローカル高速 TTS（Kokoro / VibeVoice）。重い import は関数内遅延なので起動コストはほぼゼロ
-from tts_local import engine_available, loaded_device, synthesize as tts_synthesize, unload as tts_unload, load as tts_load
+from tts_local import engine_available, loaded_device, synthesize as tts_synthesize, unload as tts_unload, load as tts_load, busy as tts_busy
 
 # 自启路径：Windows 用启动文件夹快捷方式，Linux 用 ~/.config/autostart desktop 文件
 IS_WINDOWS = platform.system() == "Windows"
@@ -57,12 +58,21 @@ WHISPER_HOST = os.environ.get("WHISPER_HOST", "127.0.0.1")
 WHISPER_PORT = int(os.environ.get("WHISPER_PORT", "9000"))
 WHISPER_URL = f"http://{WHISPER_HOST}:{WHISPER_PORT}"
 
+# PaddleOCR サービス（ポート 9100・画像OCR + PDF→Markdown）
+OCR_HOST = os.environ.get("OCR_HOST", "127.0.0.1")
+OCR_PORT = int(os.environ.get("OCR_PORT", "9100"))
+OCR_URL = f"http://{OCR_HOST}:{OCR_PORT}"
+OCR_SCRIPT = BASE_DIR / "ocr_server.py"
+OCR_LOG = BASE_DIR / "ocr.log"
+
 # 全局状态
 whisper_process: Optional[subprocess.Popen] = None
 whisper_start_time: Optional[float] = None
 whisper_log_handle = None
 is_converting = False  # 是否正在转换（由 whisper_server 上报）
 _progress_percent: Optional[float] = None  # 转换进度 0-100，None=非转换中（由 whisper_server 上报）
+_llm_status: Dict[str, Any] = {"processing": False, "model": None}  # LLM（AI校正）実行状態（サイドバー表示用）
+_auto_rtl_prev: Dict[str, bool] = {"whisper": False, "tts": False, "ocr": False, "llm": False}  # 自動記録: 前回の稼働状態（遷移検知用）
 connected_websockets: List[WebSocket] = []
 system_history: Dict[str, List[Any]] = {
     "cpu": [],
@@ -77,6 +87,13 @@ MAX_HISTORY = 480  # 趋势图历史点数上限（2s 间隔 ≈ 16 分钟；配
 whisper_proc_cache: Optional[dict] = None
 whisper_proc_cache_time: float = 0
 
+# PaddleOCR 服务状态
+ocr_process: Optional[subprocess.Popen] = None
+ocr_start_time: Optional[float] = None
+ocr_log_handle = None
+ocr_proc_cache: Optional[dict] = None
+ocr_proc_cache_time: float = 0
+
 # リアルタイムロギング状態（JSONL 記録）
 rt_log: Dict[str, Any] = {
     "active": False,
@@ -87,6 +104,8 @@ rt_log: Dict[str, Any] = {
     "agg": {"cpu": 0.0, "gpu_util": 0.0, "gpu_mem": 0.0, "gpu_temp": 0.0},
     "whisper_model": "",
     "last_start_ts": None, # 直近の converting_start start_ts（duration 計算用）
+    "auto": False,          # 自動開始（rtl_auto_start）で開始されたセッションか
+    "session_active": [],   # 自動開始セッション中に活動したサービス（whisper/tts/ocr/llm）
 }
 RT_LOG_DIR = LOGS_DIR / "realtime"
 
@@ -101,7 +120,11 @@ def _is_loopback(host: str) -> bool:
 
 
 async def get_dashboard_token() -> str:
-    """环境变量 DASHBOARD_TOKEN > config 存储 > 自动生成・保存（遅延初期化）。"""
+    """环境变量 DASHBOARD_TOKEN > config 存储 > 自动生成・保存（遅延初期化）。
+
+    threading.Lock は await をまたいで保持するとデッドロックするため、
+    ロック内では同期 DB アクセスのみ行う（get_config_sync / set_config_sync）。
+    """
     global _dashboard_token
     if _dashboard_token:
         return _dashboard_token
@@ -112,20 +135,30 @@ async def get_dashboard_token() -> str:
         if env_token:
             _dashboard_token = env_token
             return _dashboard_token
-        stored = await get_config("dashboard_token")
+        stored = get_config_sync("dashboard_token")
         if stored:
             _dashboard_token = stored
             return _dashboard_token
         generated = secrets.token_urlsafe(24)
-        await set_config("dashboard_token", generated)
+        set_config_sync("dashboard_token", generated)
         _dashboard_token = generated
         print(f"[auth] Dashboard 接続トークンを生成: {generated}")
         return generated
 
 
+async def auth_enabled() -> bool:
+    """接続トークン認証の有効/無効（config auth_enabled: on / off）。"""
+    return (await get_config("auth_enabled", "on")) != "off"
+
+
 async def require_auth(request: Request):
-    """ループバック以外の POST/PUT/DELETE・/ws にトークンを要求する依存関数。"""
+    """ループバック以外の POST/PUT/DELETE・/ws にトークンを要求する依存関数。
+
+    auth_enabled が off の場合は認証自体を行わない（LAN から認証不要で操作可）。
+    """
     if _is_loopback(request.client.host if request.client else ""):
+        return
+    if not await auth_enabled():
         return
     token = await get_dashboard_token()
     header = request.headers.get("Authorization", "")
@@ -153,6 +186,32 @@ def validate_base_url(url: str) -> str:
     if parts.username is not None or parts.password is not None:
         raise HTTPException(status_code=400, detail="base_url must not contain userinfo")
     return url
+
+
+def _assert_private_host(url: str):
+    """SSRF 対策: URL のホストがループバック / プライベート IPv4 / リンクローカル のみ許可。
+
+    ローカル LLM（Ollama 等）へのプロキシ用途のため、公開 IP・外部ホストへの
+    サーバー発のリクエストを禁止する。
+    """
+    import ipaddress
+    from urllib.parse import urlsplit
+    parts = urlsplit(str(url).strip().rstrip("/"))
+    if not parts.hostname:
+        raise HTTPException(status_code=400, detail="base_url must have a host")
+    host = parts.hostname.rstrip(".")
+    try:
+        ips = [ipaddress.ip_address(host)]
+    except ValueError:
+        # ホスト名 → 解決して全候補がプライベートか確認
+        try:
+            infos = socket.getaddrinfo(host, parts.port or 80, type=socket.SOCK_STREAM)
+            ips = [ipaddress.ip_address(i[4][0].split("%")[0]) for i in infos]
+        except Exception:
+            raise HTTPException(status_code=400, detail="base_url host を解決できません")
+    for ip in ips:
+        if not (ip.is_private or ip.is_loopback or ip.is_link_local):
+            raise HTTPException(status_code=400, detail="base_url はプライベートホストのみ許可されます")
 
 # NVML 初始化尝试
 nvml_available = False
@@ -207,6 +266,10 @@ def init_db():
             conn.execute("ALTER TABLE records ADD COLUMN correct_elapsed REAL")
         if "raw_result" not in cols:
             conn.execute("ALTER TABLE records ADD COLUMN raw_result TEXT")
+        if "source" not in cols:
+            conn.execute("ALTER TABLE records ADD COLUMN source TEXT DEFAULT 'whisper'")
+        if "pages" not in cols:
+            conn.execute("ALTER TABLE records ADD COLUMN pages INTEGER")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS config (
                 key TEXT PRIMARY KEY,
@@ -271,6 +334,12 @@ def init_db():
             "tts_kokoro_voice": "jf_alpha",
             # 起動時にローカルTTSをVRAMに読込、以後常駐（on | off）
             "tts_preload": "on",
+            # PaddleOCR サービス（cuda | cpu / japan | en | ch / autostart on | off）
+            "ocr_device": "cuda",
+            "ocr_lang": "japan",
+            "ocr_autostart": "off",
+            # リアルタイムログ自動開始（on | off）。サービス/LLM の稼働に合わせて自動記録
+            "rtl_auto_start": "off",
         }
         for k, v in defaults.items():
             conn.execute("INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)", (k, v))
@@ -346,14 +415,23 @@ def get_config_sync(key: str, default: str = "") -> str:
         return row[0] if row else default
 
 
+def set_config_sync(key: str, value: str):
+    """同步写入配置（ロック保持中の await を避けるためトークン初期化で使用）"""
+    import sqlite3
+    with sqlite3.connect(str(DB_PATH)) as conn:
+        conn.execute("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", (key, value))
+        conn.commit()
+
+
 async def add_record(payload: dict):
     import aiosqlite
-    # 记录使用的 Whisper 模型
+    # 记录使用的 Whisper 模型（OCR 等は payload の model を優先）
     whisper_model = await get_config("whisper_model", "medium")
+    model = payload.get("model") or whisper_model
     async with aiosqlite.connect(str(DB_PATH)) as db:
         await db.execute("""
-            INSERT INTO records (filename, duration, language, output_format, summary, result, raw_result, timestamp, elapsed_seconds, model, llm_model, correct_elapsed)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO records (filename, duration, language, output_format, summary, result, raw_result, timestamp, elapsed_seconds, model, llm_model, correct_elapsed, source, pages)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             payload.get("filename"),
             payload.get("duration"),
@@ -364,9 +442,11 @@ async def add_record(payload: dict):
             payload.get("raw_result") or payload.get("result"),
             payload.get("timestamp"),
             payload.get("elapsed_seconds"),
-            whisper_model,
+            model,
             payload.get("llm_model"),
             payload.get("correct_elapsed"),
+            payload.get("source") or "whisper",
+            payload.get("pages"),
         ))
         await db.commit()
         async with db.execute("SELECT last_insert_rowid()") as cursor:
@@ -429,6 +509,81 @@ async def get_stats() -> dict:
 # ---------------------------------------------------------------------------
 # 系统监控
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# GPU 使用率の PID 別内訳（Windows GPU Engine カウンタ）
+# ---------------------------------------------------------------------------
+# nvidia-smi / pynvml は per-process 利用率を提供しないため、Windows の
+# 「GPU Engine」パフォーマンスカウンタから PID 別利用率を取得する。
+# 取得コスト（PowerShell 起動 ~0.3-1s）が高いので 4 秒間キャッシュする。
+_GPU_ENGINE_UTIL_CACHE: dict = {}
+_GPU_ENGINE_UTIL_TS: float = 0.0
+_GPU_ENGINE_SAMPLER_STOP = threading.Event()
+
+
+def _run_gpu_engine_counter() -> dict:
+    """GPU Engine カウンタを 1 回サンプリングし、PID 別 GPU 使用率（全エンジン合計）を返す。
+
+    Get-Counter は 1 回で ~5 秒かかるため、スナップショット（monitor_loop）からは
+    直接呼ばず、専用サンプラースレッドからのみ実行する。
+    非 Windows / カウンタなし / タイムアウトなど失敗時は空 dict（呼び出し側は
+    「その他」に丸め込み、表示はグレースフルに劣化する）。
+    """
+    ps_cmd = (
+        "powershell -NoProfile -Command \"Get-Counter '\\GPU Engine(*)\\Utilization Percentage' "
+        "-ErrorAction SilentlyContinue | Select-Object -ExpandProperty CounterSamples | "
+        "ForEach-Object { $_.InstanceName + '|' + $_.CookedValue }\""
+    )
+    out = subprocess.run(ps_cmd, capture_output=True, text=True, timeout=8, shell=True).stdout
+    res: dict = {}
+    for line in out.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            name, val = line.rsplit("|", 1)
+            v = float(val)
+        except Exception:
+            continue
+        m = re.match(r"pid_(\d+)_", name)
+        if m:
+            pid = int(m.group(1))
+            res[pid] = res.get(pid, 0.0) + v
+    return res
+
+
+def _gpu_engine_sampler_loop():
+    """GPU Engine カウンタをバックグラウンドで継続的にサンプリングする daemon スレッド。
+
+    Get-Counter は ~5 秒かかるため、monitor_loop から同期的に呼ぶとスナップショット
+    全体が 5 秒以上ブロックされ、更新周期（refresh_interval）と乖離してしまう。
+    ここでキャッシュを常時更新し続けることで、_gpu_engine_util_by_pid は即時返す。
+    """
+    if platform.system() != "Windows":
+        return  # 非 Windows ではカウンタ自体が存在しないため何もしない
+    global _GPU_ENGINE_UTIL_TS
+    while not _GPU_ENGINE_SAMPLER_STOP.is_set():
+        try:
+            res = _run_gpu_engine_counter()
+        except Exception:
+            res = {}
+        if not _GPU_ENGINE_SAMPLER_STOP.is_set():
+            _GPU_ENGINE_UTIL_CACHE.clear()
+            _GPU_ENGINE_UTIL_CACHE.update(res)
+            _GPU_ENGINE_UTIL_TS = time.monotonic()
+        time.sleep(0.5)
+
+
+def _gpu_engine_util_by_pid() -> dict:
+    """最新のキャッシュ済み PID 別 GPU 使用率を即座に返す（ブロックしない）。
+
+    サンプラースレッドが ~5 秒毎に更新するため、monitor_loop のスナップショットを
+    遅延させない。未更新（起動直後）は空 dict を返す。
+    """
+    if platform.system() != "Windows":
+        return {}
+    return dict(_GPU_ENGINE_UTIL_CACHE)
+
+
 def get_gpu_info() -> Optional[dict]:
     if not nvml_available:
         return None
@@ -451,12 +606,25 @@ def get_gpu_info() -> Optional[dict]:
             power_w = round(nvmlDeviceGetPowerUsage(handle) / 1000.0, 1)
         except Exception:
             pass
+
+        # 使用率の PID 別内訳: whisper=whisper_process / tts=ダッシュボード自身（TTS 合成を内蔵）/ ocr=ocr_process
+        pids = _gpu_engine_util_by_pid()
+        w_pid = whisper_process.pid if whisper_process is not None and whisper_process.poll() is None else None
+        o_pid = ocr_process.pid if ocr_process is not None and ocr_process.poll() is None else None
+        t_pid = os.getpid()
+        w_util = round(pids.get(w_pid, 0.0), 1) if w_pid else 0.0
+        t_util = round(pids.get(t_pid, 0.0), 1) if t_pid else 0.0
+        o_util = round(pids.get(o_pid, 0.0), 1) if o_pid else 0.0
+        other_util = round(max(0.0, util.gpu - (w_util + t_util + o_util)), 1)
+        util_breakdown = {"whisper": w_util, "tts": t_util, "ocr": o_util, "other": other_util}
+
         return {
             "name": name,
             "memory_total_mb": mem.total // 1024 // 1024,
             "memory_used_mb": mem.used // 1024 // 1024,
             "memory_free_mb": mem.free // 1024 // 1024,
             "utilization": util.gpu,
+            "util_breakdown": util_breakdown,
             "temperature": temp,
             "clock_mhz": clock_mhz,
             "power_w": power_w,
@@ -526,7 +694,11 @@ def get_system_snapshot() -> dict:
 # Whisper 进程管理
 # ---------------------------------------------------------------------------
 def find_whisper_process() -> Optional[dict]:
-    """优先返回 Dashboard 自己启动的 Whisper 进程，避免遍历所有进程导致卡死"""
+    """Dashboard 自身が起動した Whisper プロセスを優先。無ければポート 9000 の LISTEN PID を検出する。
+
+    注意: psutil.process_iter で cmdline を全走査すると Windows では 1 秒以上ブロックして
+    イベントループを詰まらせるため、必ず net_connections（数 ms）で特定する。
+    """
     global whisper_process, whisper_start_time
     if whisper_process is not None:
         if whisper_process.poll() is None:
@@ -534,9 +706,24 @@ def find_whisper_process() -> Optional[dict]:
                 "pid": whisper_process.pid,
                 "cmdline": "python whisper_server.py",
                 "start_time": datetime.fromtimestamp(whisper_start_time or time.time()).isoformat(),
+                "managed": True,
             }
-        else:
-            whisper_process = None
+        whisper_process = None
+    try:
+        for conn in psutil.net_connections(kind="tcp"):
+            if conn.status == psutil.CONN_LISTEN and conn.laddr.port == WHISPER_PORT and conn.pid is not None:
+                try:
+                    start = datetime.fromtimestamp(psutil.Process(conn.pid).create_time()).isoformat()
+                except Exception:
+                    start = datetime.now().isoformat()
+                return {
+                    "pid": conn.pid,
+                    "cmdline": "python whisper_server.py",
+                    "start_time": start,
+                    "managed": False,  # 外部起動（Dashboard 管理外）
+                }
+    except (psutil.AccessDenied, OSError, ValueError):
+        pass
     return None
 
 
@@ -562,6 +749,8 @@ def start_whisper_process() -> subprocess.Popen:
     env = os.environ.copy()
     env["DASHBOARD_URL"] = f"http://127.0.0.1:{DASHBOARD_PORT}"
     env["PYTHONUNBUFFERED"] = "1"  # 让子进程日志实时写入文件
+    env["WHISPER_PORT"] = str(WHISPER_PORT)
+    env["WHISPER_DEVICE"] = os.environ.get("WHISPER_DEVICE", "")
     env["WHISPER_MODEL"] = get_config_sync("whisper_model", "medium")
     # モデル保存先（download_root）を注入：切替時・起動時にここから読み込み/保存
     env["WHISPER_MODEL_DIR"] = str(get_model_dir_sync())
@@ -650,6 +839,184 @@ def stop_whisper_process():
 
 
 # ---------------------------------------------------------------------------
+# PaddleOCR 进程管理
+# ---------------------------------------------------------------------------
+def find_ocr_process() -> Optional[dict]:
+    """Dashboard 自身が起動した OCR プロセスを優先。無ければポート 9100 の LISTEN PID を検出する。
+
+    注意: psutil.process_iter で cmdline を全走査すると Windows では 1 秒以上ブロックして
+    イベントループを詰まらせるため、必ず net_connections（数 ms）で特定する。
+    """
+    global ocr_process, ocr_start_time
+    if ocr_process is not None:
+        if ocr_process.poll() is None:
+            return {
+                "pid": ocr_process.pid,
+                "cmdline": "python ocr_server.py",
+                "start_time": datetime.fromtimestamp(ocr_start_time or time.time()).isoformat(),
+            }
+        ocr_process = None
+    try:
+        for conn in psutil.net_connections(kind="tcp"):
+            if conn.status == psutil.CONN_LISTEN and conn.laddr.port == OCR_PORT and conn.pid is not None:
+                try:
+                    start = datetime.fromtimestamp(psutil.Process(conn.pid).create_time()).isoformat()
+                except Exception:
+                    start = datetime.now().isoformat()
+                return {
+                    "pid": conn.pid,
+                    "cmdline": "python ocr_server.py",
+                    "start_time": start,
+                }
+    except (psutil.AccessDenied, OSError, ValueError):
+        pass
+    return None
+
+
+async def ocr_health() -> Optional[dict]:
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{OCR_URL}/health", timeout=aiohttp.ClientTimeout(total=2)) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+    except Exception:
+        pass
+    return None
+
+
+def start_ocr_process() -> subprocess.Popen:
+    """启动 PaddleOCR 服务（whisper と同様、stdout はログファイルへ。PIPE 禁止）。"""
+    global ocr_process, ocr_start_time, ocr_log_handle
+    env = os.environ.copy()
+    env["DASHBOARD_URL"] = f"http://127.0.0.1:{DASHBOARD_PORT}"
+    env["PYTHONUNBUFFERED"] = "1"
+    env["OCR_DEVICE"] = get_config_sync("ocr_device", "cuda")
+    env["OCR_LANG"] = get_config_sync("ocr_lang", "japan")
+    env["OCR_PORT"] = str(OCR_PORT)
+    # PaddleOCR モデル保存先をプロジェクト内（models/paddlex）に固定
+    env["PADDLE_PDX_CACHE_HOME"] = str(get_model_dir_sync() / "paddlex")
+    ocr_start_time = time.time()
+    if ocr_log_handle is not None:
+        try:
+            ocr_log_handle.close()
+        except Exception:
+            pass
+    ocr_log_handle = open(OCR_LOG, "a", encoding="utf-8", buffering=1)
+    ocr_process = subprocess.Popen(
+        [sys.executable, "-u", str(OCR_SCRIPT)],
+        cwd=str(BASE_DIR),
+        env=env,
+        stdout=ocr_log_handle,
+        stderr=subprocess.STDOUT,
+    )
+    return ocr_process
+
+
+def stop_ocr_process():
+    global ocr_process, ocr_start_time, ocr_log_handle
+    if ocr_process is not None and ocr_process.poll() is None:
+        try:
+            parent = psutil.Process(ocr_process.pid)
+            for child in parent.children(recursive=True):
+                child.terminate()
+            parent.terminate()
+        except Exception:
+            pass
+        try:
+            ocr_process.wait(timeout=3)
+        except Exception:
+            try:
+                ocr_process.kill()
+            except Exception:
+                pass
+    ocr_process = None
+    ocr_start_time = None
+    # 孤児プロセス対策（dashboard 再起動で追跡を失った場合も port 占有者を強制終了）
+    _kill_port_owner(OCR_PORT)
+    for _ in range(50):
+        if not _is_port_listening(OCR_PORT):
+            break
+        time.sleep(0.1)
+    if ocr_log_handle is not None:
+        try:
+            ocr_log_handle.close()
+        except Exception:
+            pass
+        ocr_log_handle = None
+
+
+async def _proxy_ocr(path: str, file: UploadFile, lang: Optional[str]):
+    """OCR サービスへ multipart をフォワード（ループバック制御）。未起動なら 503。"""
+    health = await ocr_health()
+    if health is None:
+        raise HTTPException(status_code=503, detail="OCR service is not running")
+    data = aiohttp.FormData()
+    # UploadFile.file は SpooledTemporaryFile で aiohttp が直接シリアライズ不可
+    # → バイト列に読み替えて (filename, content, content_type) 形式で送る
+    content = await file.read()
+    data.add_field(
+        "file", content, filename=file.filename or "upload",
+        content_type=file.content_type or "application/octet-stream",
+    )
+    if lang:
+        data.add_field("lang", lang)
+    # 初回はモデルDL・構造解析で数分かかるため long timeout
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f"{OCR_URL}{path}", data=data, timeout=aiohttp.ClientTimeout(total=600)) as resp:
+            body = await resp.text()
+            if resp.status != 200:
+                raise HTTPException(status_code=resp.status, detail=body[:500])
+            try:
+                return JSONResponse(status_code=200, content=json.loads(body) if body else {})
+            except json.JSONDecodeError:
+                return PlainTextResponse(body)
+
+
+async def _proxy_ocr_json(path: str, file: UploadFile, lang: Optional[str]) -> dict:
+    """OCR サービスへ multipart をフォワードし、JSON 結果を dict で返す（/ocr/convert 用）。"""
+    health = await ocr_health()
+    if health is None:
+        raise HTTPException(status_code=503, detail="OCR service is not running")
+    data = aiohttp.FormData()
+    content = await file.read()
+    data.add_field(
+        "file", content, filename=file.filename or "upload",
+        content_type=file.content_type or "application/octet-stream",
+    )
+    if lang:
+        data.add_field("lang", lang)
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f"{OCR_URL}{path}", data=data, timeout=aiohttp.ClientTimeout(total=600)) as resp:
+            body = await resp.text()
+            if resp.status != 200:
+                raise HTTPException(status_code=resp.status, detail=body[:500])
+            try:
+                return json.loads(body) if body else {}
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=502, detail="OCR returned non-JSON response")
+
+
+def _markdown_to_text(md: str) -> str:
+    """Markdown 記法を簡易除去してプレーンテキスト化（TXT 出力用）。"""
+    import re as _re
+    lines = []
+    for ln in md.splitlines():
+        s = ln.rstrip()
+        s = _re.sub(r"^#{1,6}\s*", "", s)                      # 見出し
+        s = _re.sub(r"^\s*[-*+]\s+", "", s)                   # 箇条書き
+        s = _re.sub(r"^\s*\d+\.\s+", "", s)                   # 番号付き
+        s = _re.sub(r"```", "", s)                            # コードフェンス
+        s = _re.sub(r"\*\*(.+?)\*\*", r"\1", s)               # 太字
+        s = _re.sub(r"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)", r"\1", s)  # 斜体
+        s = _re.sub(r"`(.+?)`", r"\1", s)                     # インラインコード
+        s = _re.sub(r"\[(.+?)\]\(.+?\)", r"\1", s)            # リンク
+        s = _re.sub(r"^>\s*", "", s)                          # 引用
+        if s.strip():
+            lines.append(s)
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # WebSocket 广播
 # ---------------------------------------------------------------------------
 async def broadcast(data: dict):
@@ -732,8 +1099,15 @@ def _rt_log_event(event: str, **fields) -> None:
 async def monitor_loop():
     whisper_log_size = 0
     dashboard_log_size = 0
+    interval = 1.0
     while True:
         loop_start = time.time()
+        # 更新間隔（refresh_interval, ms）に合わせてブロードキャスト（300ms〜10s にクランプ）
+        try:
+            raw = await get_config("refresh_interval", "1000")
+            interval = max(0.3, min(10.0, int(raw) / 1000.0))
+        except Exception:
+            interval = 1.0
         try:
             # 系统监控（在线程中执行避免阻塞事件循环）
             t0 = time.time()
@@ -770,8 +1144,27 @@ async def monitor_loop():
                     "running": health is not None,
                     "health": health,
                     "process": proc_info,
+                    "llm_status": _llm_status,
                 }
             })
+
+            # PaddleOCR 状态
+            ocr_health_d = await ocr_health()
+            ocr_proc_info = find_ocr_process()
+            await broadcast({
+                "type": "ocr_status",
+                "data": {
+                    "running": ocr_health_d is not None,
+                    "health": ocr_health_d,
+                    "process": ocr_proc_info,
+                }
+            })
+
+            # リアルタイムログ自動開始/停止（rtl_auto_start が on の時のみ動作）
+            await _auto_rtl_control(health, ocr_health_d)
+
+            # TTS 状态（ダッシュボード内蔵。モデル読込/常駐状態のみ）
+            await broadcast({"type": "tts_status", "data": await _tts_status_dict()})
 
             # リアルタイムロギング：アクティブ時のみ 2 秒毎のサンプル行を追記
             if rt_log["active"]:
@@ -816,12 +1209,12 @@ async def monitor_loop():
                     await broadcast({"type": "log_line", "source": "dashboard", "line": line})
 
             total = time.time() - loop_start
-            if total > 1.5:
+            if total > max(1.5, interval * 1.5):
                 print(f"[monitor_loop] slow iteration: total={total:.2f}s, snapshot={t1-t0:.2f}s, health={t3-t2:.2f}s, proc={t4-t3:.2f}s")
 
         except Exception as e:
             print(f"[monitor_loop error] {e}")
-        await asyncio.sleep(2)
+        await asyncio.sleep(interval)
 
 
 # ---------------------------------------------------------------------------
@@ -848,28 +1241,65 @@ async def auto_start_whisper():
         print(f"[auto_start] Whisper already running, health={health}")
 
 
+async def auto_start_ocr():
+    """ocr_autostart=on の時のみ Dashboard 起動後に OCR サービスを自動起動。"""
+    await asyncio.sleep(4)
+    if get_config_sync("ocr_autostart", "off") != "on":
+        print("[auto_start] OCR autostart disabled (ocr_autostart=off)")
+        return
+    health = await ocr_health()
+    if health is None:
+        print("[auto_start] OCR not running, starting now...")
+        try:
+            await asyncio.to_thread(start_ocr_process)
+            for _ in range(30):
+                await asyncio.sleep(1)
+                health = await ocr_health()
+                if health is not None:
+                    print(f"[auto_start] OCR started, health={health}")
+                    break
+        except Exception as e:
+            print(f"[auto_start] failed to start OCR: {e}")
+    else:
+        print(f"[auto_start] OCR already running, health={health}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # GPU Engine カウンタは 1 回 ~5 秒かかるため、専用スレッドで継続サンプリングし
+    # monitor_loop のスナップショットをブロックしないようにする
+    _GPU_ENGINE_SAMPLER_STOP.clear()
+    gpu_sampler_thread = threading.Thread(target=_gpu_engine_sampler_loop, daemon=True)
+    gpu_sampler_thread.start()
     task = asyncio.create_task(monitor_loop())
     auto_start_task = asyncio.create_task(auto_start_whisper())
+    auto_start_ocr_task = asyncio.create_task(auto_start_ocr())
     preload_tts_task = asyncio.create_task(preload_local_tts())
     yield
     # #10: 起動タスクを明示的にキャンセルし、ログハンドルを閉じる
+    _GPU_ENGINE_SAMPLER_STOP.set()
     task.cancel()
     auto_start_task.cancel()
+    auto_start_ocr_task.cancel()
     preload_tts_task.cancel()
-    for t in (task, auto_start_task, preload_tts_task):
+    for t in (task, auto_start_task, auto_start_ocr_task, preload_tts_task):
         try:
             await t
         except asyncio.CancelledError:
             pass
-    global whisper_log_handle
+    global whisper_log_handle, ocr_log_handle
     if whisper_log_handle is not None:
         try:
             whisper_log_handle.close()
         except Exception:
             pass
         whisper_log_handle = None
+    if ocr_log_handle is not None:
+        try:
+            ocr_log_handle.close()
+        except Exception:
+            pass
+        ocr_log_handle = None
     if nvml_available:
         try:
             nvmlShutdown()
@@ -911,7 +1341,7 @@ async def api_whisper_status():
     proc = await asyncio.to_thread(find_whisper_process)
     return {
         "running": health is not None,
-        "managed": proc is not None,
+        "managed": bool(proc and proc.get("managed", True)),
         "health": health,
         "process": proc,
     }
@@ -968,6 +1398,22 @@ async def api_whisper_progress(data: dict):
     return {"success": True}
 
 
+@app.post("/api/v1/whisper/llm_status", dependencies=[Depends(require_auth)])
+async def api_whisper_llm_status(data: dict):
+    """whisper_server から LLM（AI 校正）実行状態を受信し、フロントへブロードキャスト。
+
+    サイドバーの「LLM 活用」表示用。処理開始/終了のたびに whisper_server が報告する。
+    """
+    global _llm_status
+    _llm_status = {
+        "processing": bool(data.get("processing", False)),
+        # model は前回の値を保持（処理中→待機中の切り替えでモデル名を消さない）
+        "model": data.get("model") or _llm_status.get("model"),
+    }
+    await broadcast({"type": "llm_status", "data": _llm_status})
+    return {"success": True}
+
+
 # ---------------------------------------------------------------------------
 # リアルタイムロギング（JSONL / AI 解析可能）
 # ---------------------------------------------------------------------------
@@ -1003,6 +1449,15 @@ async def api_rtlog_start():
     global rt_log
     if rt_log["active"]:
         return JSONResponse({"success": False, "message": "already active"}, status_code=409)
+    return await _rtl_start(auto=False)
+
+
+async def _rtl_start(auto: bool = False) -> dict:
+    """ロギング開始の共通処理。auto=True は自動開始（rtl_auto_start）セッション。
+
+    新規 JSONL ファイルを作成し meta session_start を書き、状態をフロントへ通知する。
+    """
+    global rt_log
     RT_LOG_DIR.mkdir(parents=True, exist_ok=True)
     name = f"realtime_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl"
     path = RT_LOG_DIR / name
@@ -1017,6 +1472,8 @@ async def api_rtlog_start():
         "agg": {"cpu": 0.0, "gpu_util": 0.0, "gpu_mem": 0.0, "gpu_temp": 0.0},
         "whisper_model": model or "",
         "last_start_ts": None,
+        "auto": auto,
+        "session_active": [],
     })
     rt_log["file"] = open(path, "w", encoding="utf-8")
     _rt_write({
@@ -1024,8 +1481,10 @@ async def api_rtlog_start():
         "ts": datetime.now().isoformat(),
         "whisper_model": model,
         "whisper_running": health is not None,
+        "auto": auto,
     })
-    return {"success": True, "filename": name}
+    await broadcast({"type": "realtime_log", "data": {"active": True, "auto": auto}})
+    return {"success": True, "filename": name, "auto": auto}
 
 
 @app.post("/api/v1/realtime-log/stop", dependencies=[Depends(require_auth)])
@@ -1034,6 +1493,12 @@ async def api_rtlog_stop():
     global rt_log
     if not rt_log["active"]:
         return JSONResponse({"success": False, "message": "not active"}, status_code=409)
+    return await _rtl_stop(reason="manual")
+
+
+async def _rtl_stop(reason: str = "manual") -> dict:
+    """ロギング終了の共通処理。reason: manual / auto_idle / auto_stopped:<svc> / auto_disabled。"""
+    global rt_log
     samples = rt_log["samples"]
     duration_sec = round(time.time() - rt_log["start_ts"], 2) if rt_log["start_ts"] else 0
     agg = rt_log["agg"]
@@ -1047,6 +1512,8 @@ async def api_rtlog_stop():
         "avg_gpu_util": round(agg["gpu_util"] / n, 1),
         "avg_gpu_mem": round(agg["gpu_mem"] / n, 1),
         "avg_gpu_temp": round(agg["gpu_temp"] / n, 1),
+        "stop_reason": reason,
+        "auto": rt_log.get("auto", False),
     })
     name = rt_log["path"].name if rt_log["path"] else None
     try:
@@ -1057,8 +1524,69 @@ async def api_rtlog_stop():
         "active": False, "file": None, "path": None, "start_ts": None,
         "samples": 0, "agg": {"cpu": 0.0, "gpu_util": 0.0, "gpu_mem": 0.0, "gpu_temp": 0.0},
         "whisper_model": "", "last_start_ts": None,
+        "auto": False, "session_active": [],
     })
+    await broadcast({"type": "realtime_log", "data": {"active": False, "auto": False}})
     return {"success": True, "filename": name, "samples": samples, "duration_sec": duration_sec}
+
+
+async def _auto_rtl_control(health: Optional[dict], ocr_health_d: Optional[dict]) -> None:
+    """リアルタイムログの自動開始/停止を制御する（monitor_loop から毎ループ呼ぶ）。
+
+    仕様（ユーザー確定）:
+      - 開始: 各サービス（Whisper/TTS/OCR）・LLM活用 のいずれかが「待機 → 稼働」に
+        遷移した瞬間に自動記録を開始（edge-triggered）。
+      - 終了: ①全サービス・LLMが待機（自然完了） ②今回のセッション中に活動した
+        サービスが停止（異常終了） ③トグルOFF（auto_disabled）。
+    """
+    global _auto_rtl_prev
+    auto_on = get_config_sync("rtl_auto_start", "off") == "on"
+
+    w_active = is_converting or _progress_percent == -1   # 変換中 or 校正中
+    w_stopped = health is None                            # whisper プロセス稼働なし
+    l_active = bool(_llm_status.get("processing"))        # AI 校正（LLM）処理中
+    o_active = bool((ocr_health_d or {}).get("busy"))     # OCR 処理中（/health busy）
+    o_stopped = ocr_health_d is None                      # OCR 未起動/応答なし
+    t_active = tts_busy()                                 # TTS 合成処理中（tts_local.busy）
+    t_engine = (await get_config("tts_engine", "edge") or "edge").strip().lower()
+    t_stopped = loaded_device(t_engine) is None           # TTS エンジン未読込
+
+    states = {"whisper": w_active, "tts": t_active, "ocr": o_active, "llm": l_active}
+
+    if not auto_on:
+        # トグルOFF → 自動開始セッションは即終了（手動セッションは触らない）
+        if rt_log["active"] and rt_log.get("auto"):
+            await _rtl_stop(reason="auto_disabled")
+        for k in states:
+            _auto_rtl_prev[k] = False
+        return
+
+    if not rt_log["active"]:
+        # 自動開始: いずれかが「待機 → 稼働」へ遷移した瞬間
+        if any(states[k] and not _auto_rtl_prev.get(k) for k in states):
+            await _rtl_start(auto=True)
+    else:
+        if not rt_log.get("auto"):
+            return  # 手動開始セッションは自動制御しない
+        # セッション中に活動したサービスを追跡
+        sess = set(rt_log.get("session_active") or [])
+        for k, active in states.items():
+            if active:
+                sess.add(k)
+        rt_log["session_active"] = list(sess)
+        # 終了条件 ①: 全サービス・LLM が待機
+        if not any(states.values()):
+            await _rtl_stop(reason="auto_idle")
+            return
+        # 終了条件 ②: セッション中に活動したサービスが停止（異常終了）
+        stopped_map = {"whisper": w_stopped, "tts": t_stopped, "ocr": o_stopped, "llm": False}
+        for k in sess:
+            if stopped_map[k]:
+                await _rtl_stop(reason=f"auto_stopped:{k}")
+                break
+    # 状態遷移を記録（次の遷移検知用）
+    for k in states:
+        _auto_rtl_prev[k] = states[k]
 
 
 @app.get("/api/v1/realtime-log")
@@ -1075,6 +1603,7 @@ async def api_rtlog_list():
             "started_at": datetime.fromtimestamp(rt_log["start_ts"]).isoformat() if rt_log["start_ts"] else None,
             "samples": rt_log["samples"],
             "whisper_model": rt_log["whisper_model"],
+            "auto": rt_log.get("auto", False),
         }
     return {"active": active, "files": files}
 
@@ -1102,6 +1631,34 @@ async def api_rtlog_delete(filename: str):
         raise HTTPException(status_code=404, detail="not found")
     path.unlink()
     return {"success": True}
+
+
+class RtLogBatchDeletePayload(BaseModel):
+    files: List[str]
+
+
+@app.post("/api/v1/realtime-log/batch-delete", dependencies=[Depends(require_auth)])
+async def api_rtlog_batch_delete(payload: RtLogBatchDeletePayload):
+    """選択したログファイルを一括削除。記録中・存在しない・不正な名前は skipped に集約。"""
+    deleted: List[str] = []
+    skipped: List[str] = []
+    for filename in dict.fromkeys(payload.files):   # 重複除去・順序維持
+        if not _RTLOG_NAME_RE.match(filename):
+            skipped.append(filename)
+            continue
+        if rt_log["active"] and rt_log["path"] and rt_log["path"].name == filename:
+            skipped.append(filename)
+            continue
+        path = RT_LOG_DIR / filename
+        if not path.exists():
+            skipped.append(filename)
+            continue
+        try:
+            path.unlink()
+            deleted.append(filename)
+        except OSError:
+            skipped.append(filename)
+    return {"success": True, "deleted": deleted, "skipped": skipped}
 
 
 @app.post("/api/v1/ai/test", dependencies=[Depends(require_auth)])
@@ -1492,7 +2049,7 @@ async def api_activate_llm_profile(profile_id: int):
     return {"success": True, "profile": profile}
 
 
-@app.get("/api/v1/llm/ollama/models")
+@app.get("/api/v1/llm/ollama/models", dependencies=[Depends(require_auth)])
 async def api_ollama_models(base_url: str = "http://localhost:11434/v1"):
     """Ollama のモデル一覧を取得（/api/tags をバックエンド経由でプロキシ）。
 
@@ -1506,6 +2063,10 @@ async def api_ollama_models(base_url: str = "http://localhost:11434/v1"):
         base_url = ""
     if not base_url:
         return {"success": False, "error": "invalid base_url"}
+    try:
+        _assert_private_host(base_url)
+    except HTTPException as e:
+        return {"success": False, "error": e.detail}
     root = base_url.rstrip("/")
     if root.endswith("/v1"):
         root = root[:-3]
@@ -1681,7 +2242,6 @@ async def api_tts(req: TTSRequest):
                 print(f"[tts] VibeVoice-TTS は合成未対応（英語/中国語・CPUのみ）のため Realtime-0.5B を使用")
             model_path = _vibevoice_snapshot_path(VIBEVOICE_MODEL_CATALOG["realtime"]["repo"])
         result = await asyncio.to_thread(tts_synthesize, engine, text, key, device, model_path=model_path, voice=voice)
-        _touch_engine(engine)
         return {
             "audio_base64": base64.b64encode(result["wav_bytes"]).decode("ascii"),
             "mime": result["mime"],
@@ -1692,6 +2252,82 @@ async def api_tts(req: TTSRequest):
     except Exception as e:
         print(f"[tts] {engine} error: {e}")
         raise HTTPException(502, f"{engine} synthesis failed: {e}")
+    finally:
+        # 失敗時も読込済みモデルを TTL アンロード対象に載せる（VRAM 常駐リーク防止）
+        _touch_engine(engine)
+
+
+async def _tts_status_dict() -> dict:
+    """TTS 状態（ダッシュボード内蔵のため、常駐/読込状態のみが管理対象）。"""
+    engine = (await get_config("tts_engine", "edge") or "edge").strip().lower()
+    device = (await get_config("tts_device", "auto") or "auto").strip().lower()
+    active = loaded_device(engine)  # 読込済みなら device、未読込なら None
+    ok, reason = engine_available(engine)
+    return {
+        "engine": engine,
+        "device": device,
+        "active_device": active,
+        "loaded": active is not None,
+        "resident": engine in _resident_engines,
+        "available": ok,
+        "reason": reason if not ok else None,
+    }
+
+
+@app.get("/api/v1/tts/status")
+async def api_tts_status():
+    """TTS サービス状態（ダッシュボード内蔵のため開始/停止はモデルの読込/解放に対応）。"""
+    return await _tts_status_dict()
+
+
+@app.post("/api/v1/tts/preload", dependencies=[Depends(require_auth)])
+async def api_tts_preload():
+    """ローカル TTS モデル（kokoro / vibevoice）を VRAM に読込・常駐させる。edge はクラウドのため対象外。"""
+    engine = (await get_config("tts_engine", "edge") or "edge").strip().lower()
+    if engine == "edge":
+        return {"success": False, "message": "edge はクラウド TTS のため読込対象外"}
+    ok, reason = engine_available(engine)
+    if not ok:
+        return {"success": False, "message": f"TTS engine '{engine}' が利用できません: {reason}"}
+    pref = (await get_config("tts_device", "auto") or "auto").strip().lower()
+    device = _pick_tts_device(engine, pref)
+    model_path = None
+    if engine == "kokoro":
+        model_path = _kokoro_model_dir()
+    elif engine == "vibevoice":
+        model_path = _vibevoice_snapshot_path(VIBEVOICE_MODEL_CATALOG["realtime"]["repo"])
+    try:
+        await asyncio.to_thread(tts_load, engine, device, model_path=model_path)
+        _resident_engines.add(engine)
+        print(f"[tts] 手動プリロード: {engine} を常駐（device={device}）")
+        return {"success": True, "engine": engine, "device": device}
+    except Exception as e:
+        print(f"[tts] プリロード失敗: {e}")
+        return {"success": False, "message": f"preload failed: {e}"}
+
+
+@app.post("/api/v1/tts/unload", dependencies=[Depends(require_auth)])
+async def api_tts_unload():
+    """ローカル TTS モデルを解放し VRAM を返す（常駐解除 + アイドル解放タスクのキャンセル）。"""
+    engine = (await get_config("tts_engine", "edge") or "edge").strip().lower()
+    _resident_engines.discard(engine)
+    t = _tts_unload_tasks.pop(engine, None)
+    if t:
+        t.cancel()
+    try:
+        await asyncio.to_thread(tts_unload, engine)
+    except Exception as e:
+        print(f"[tts] アンロード失敗: {e}")
+        return {"success": False, "message": f"unload failed: {e}"}
+    print(f"[tts] 手動アンロード: {engine} を解放")
+    return {"success": True, "engine": engine}
+
+
+@app.post("/api/v1/tts/reload", dependencies=[Depends(require_auth)])
+async def api_tts_reload():
+    """TTS エンジンを再初期化（アンロード → プリロード）。"""
+    await api_tts_unload()
+    return await api_tts_preload()
 
 
 async def _tts_edge(text: str, key: str) -> dict:
@@ -1738,14 +2374,15 @@ async def api_whisper_start():
     proc = await asyncio.to_thread(find_whisper_process)
     if proc:
         return {"success": True, "message": "Whisper already running", "pid": proc["pid"]}
-    p = start_whisper_process()
+    p = await asyncio.to_thread(start_whisper_process)
     return {"success": True, "message": "Whisper started", "pid": p.pid}
 
 
 @app.post("/api/v1/whisper/stop", dependencies=[Depends(require_auth)])
 async def api_whisper_stop():
     await reset_conversion_state()
-    stop_whisper_process()
+    # stop_whisper_process は最大 ~8 秒ブロックするためイベントループを塞がない
+    await asyncio.to_thread(stop_whisper_process)
     return {"success": True, "message": "Whisper stop requested"}
 
 
@@ -1753,10 +2390,146 @@ async def api_whisper_stop():
 async def api_whisper_restart():
     # 重启会中断当前转换：先清除卡死的"转换中"状态，避免 UI 一直显示转换中
     await reset_conversion_state()
-    stop_whisper_process()
+    await asyncio.to_thread(stop_whisper_process)
     await asyncio.sleep(1)
-    p = start_whisper_process()
+    p = await asyncio.to_thread(start_whisper_process)
     return {"success": True, "message": "Whisper restarted", "pid": p.pid}
+
+
+# ---------------------------------------------------------------------------
+# PaddleOCR 控制
+# ---------------------------------------------------------------------------
+@app.post("/api/v1/ocr/start", dependencies=[Depends(require_auth)])
+async def api_ocr_start():
+    proc = await asyncio.to_thread(find_ocr_process)
+    if proc:
+        return {"success": True, "message": "OCR already running", "pid": proc["pid"]}
+    p = await asyncio.to_thread(start_ocr_process)
+    return {"success": True, "message": "OCR started", "pid": p.pid}
+
+
+@app.post("/api/v1/ocr/stop", dependencies=[Depends(require_auth)])
+async def api_ocr_stop():
+    # stop_ocr_process は最大 ~8 秒ブロックするためイベントループを塞がない
+    await asyncio.to_thread(stop_ocr_process)
+    return {"success": True, "message": "OCR stop requested"}
+
+
+@app.post("/api/v1/ocr/restart", dependencies=[Depends(require_auth)])
+async def api_ocr_restart():
+    await asyncio.to_thread(stop_ocr_process)
+    await asyncio.sleep(1)
+    p = await asyncio.to_thread(start_ocr_process)
+    return {"success": True, "message": "OCR restarted", "pid": p.pid}
+
+
+@app.get("/api/v1/ocr/status", dependencies=[Depends(require_auth)])
+async def api_ocr_status():
+    health = await ocr_health()
+    proc_info = find_ocr_process()
+    return {
+        "running": health is not None,
+        "managed": True,  # Dashboard が管理するサービス（autostart は個別設定）
+        "health": health,
+        "process": proc_info,
+    }
+
+
+@app.post("/api/v1/ocr/run", dependencies=[Depends(require_auth)])
+async def api_ocr_run(file: UploadFile = File(...), lang: Optional[str] = Form(None)):
+    """画像 OCR（PP-OCRv5）を OCR サービスへフォワード。"""
+    return await _proxy_ocr("/ocr", file, lang)
+
+
+@app.post("/api/v1/ocr/pdf", dependencies=[Depends(require_auth)])
+async def api_ocr_pdf(file: UploadFile = File(...), lang: Optional[str] = Form(None)):
+    """PDF/画像 → Markdown（PP-StructureV3）を OCR サービスへフォワード。"""
+    return await _proxy_ocr("/pdf", file, lang)
+
+
+@app.post("/api/v1/ocr/convert", dependencies=[Depends(require_auth)])
+async def api_ocr_convert(
+    file: UploadFile = File(...),
+    lang: Optional[str] = Form(None),
+    format: str = Form("md"),       # md | txt
+    ai_correct: str = Form("off"),  # on | off
+):
+    """OCR 実行（自動判定・出力形式・AI校正・履歴記録）。
+
+    ファイル拡張子で画像/PDF を自動判定し、MD/TXT 出力、AI 校正（whisper_server /correct）
+    に対応。完了後は変換履歴（records）へ記録する。音声時間=0（UI で「-」表示）、
+    変換速度=変換時間/ページ数の平均値を返す。
+    """
+    filename = (file.filename or "upload").lower()
+    is_pdf = filename.endswith(".pdf")
+    t0 = time.time()
+    if is_pdf:
+        data = await _proxy_ocr_json("/pdf", file, lang)
+        raw_text = data.get("markdown") or ""
+        pages = int(data.get("pages") or 1)
+    else:
+        data = await _proxy_ocr_json("/ocr", file, lang)
+        raw_text = data.get("text") or ""
+        pages = 1
+
+    fmt = (format or "md").strip().lower()
+    result_text = raw_text if fmt != "txt" else _markdown_to_text(raw_text)
+
+    # AI 校正（whisper_server /correct。未設定時は原文のまま・エラー時も続行）
+    correct_elapsed = 0.0
+    llm_model = None
+    if ai_correct == "on":
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{WHISPER_URL}/correct",
+                    json={"text": result_text},
+                    timeout=aiohttp.ClientTimeout(total=180),
+                ) as resp:
+                    if resp.status == 200:
+                        cdata = await resp.json()
+                        corrected = cdata.get("result")
+                        if corrected and corrected != result_text:
+                            result_text = corrected
+                        llm_model = cdata.get("llm_model")
+                        correct_elapsed = round(float(cdata.get("correct_elapsed") or 0), 2)
+        except Exception as e:
+            print(f"[ocr] AI correction failed: {e}")
+
+    elapsed = round(time.time() - t0, 2)
+    speed = round(elapsed / pages, 2) if pages > 0 else None
+
+    try:
+        await add_record({
+            "filename": file.filename or filename,
+            "duration": 0.0,
+            "language": lang or "auto",
+            "output_format": fmt,
+            "summary": " ".join(result_text.split())[:200],
+            "result": result_text,
+            "raw_result": raw_text,
+            "timestamp": datetime.now().isoformat(),
+            "elapsed_seconds": elapsed,
+            "model": "paddleocr",
+            "source": "ocr",
+            "pages": pages,
+            "llm_model": llm_model,
+            "correct_elapsed": correct_elapsed,
+        })
+        await broadcast({"type": "record_added"})
+    except Exception as e:
+        print(f"[ocr] record save failed: {e}")
+
+    return {
+        "success": True,
+        "text": result_text,
+        "format": fmt,
+        "pages": pages,
+        "elapsed": elapsed,
+        "speed": speed,
+        "corrected": correct_elapsed > 0,
+        "llm_model": llm_model,
+    }
 
 
 # faster-whisper 1.2.1 対応モデルカタログ（Qiita: https://qiita.com/taiki_i/items/3d2d0d0b2dd79059f30e を参考）
@@ -1812,6 +2585,28 @@ _VIBEVOICE_ALLOW_PATTERNS = ["model*", "config.json", "preprocessor_config.json"
 KOKORO_MODEL_REPO = "hexgrad/Kokoro-82M"
 # モデル管理で DL 対象とする日本語音声（女声4 + 男声1）
 KOKORO_VOICES = ["jf_alpha", "jf_gongitsune", "jf_nezumi", "jf_tebukuro", "jm_kumo"]
+
+# PaddleOCR モデル（PaddleX 経由・HF リポジトリ PaddlePaddle/<name>）。
+# 保存先は models/paddlex/official_models/<name>/（PADDLE_PDX_CACHE_HOME で制御）。
+# disk_gb は現環境の実測値（~/.paddlex/official_models を移行した際の容量）。
+PADDLEOCR_MODEL_CATALOG = {
+    "PP-OCRv5_server_det": {"disk_gb": 0.08, "desc": "文字検出（OCR）"},
+    "PP-OCRv5_server_rec": {"disk_gb": 0.08, "desc": "文字認識（OCR）"},
+    "PP-OCRv6_medium_det": {"disk_gb": 0.06, "desc": "文字検出（構造解析用）"},
+    "PP-OCRv6_medium_rec": {"disk_gb": 0.07, "desc": "文字認識（構造解析用）"},
+    "PP-DocLayout_plus-L": {"disk_gb": 0.12, "desc": "文書レイアウト解析"},
+    "PP-DocBlockLayout": {"disk_gb": 0.12, "desc": "文書ブロックレイアウト"},
+    "PP-LCNet_x1_0_doc_ori": {"disk_gb": 0.01, "desc": "文書向き判定"},
+    "PP-LCNet_x1_0_textline_ori": {"disk_gb": 0.01, "desc": "行向き判定"},
+    "PP-LCNet_x1_0_table_cls": {"disk_gb": 0.01, "desc": "表分類"},
+    "RT-DETR-L_wired_table_cell_det": {"disk_gb": 0.12, "desc": "表セル検出（罫線あり）"},
+    "RT-DETR-L_wireless_table_cell_det": {"disk_gb": 0.12, "desc": "表セル検出（罫線なし）"},
+    "SLANeXt_wired": {"disk_gb": 0.34, "desc": "表構造解析（罫線あり）"},
+    "SLANet_plus": {"disk_gb": 0.01, "desc": "表構造解析"},
+    "PP-FormulaNet_plus-L": {"disk_gb": 0.68, "desc": "数式認識"},
+    "UVDoc": {"disk_gb": 0.03, "desc": "UV 文書補正"},
+}
+PADDLEOCR_MODEL_MARKER = "inference.pdiparams"
 
 
 def _resolve_model_dir(raw: str) -> Path:
@@ -2086,6 +2881,169 @@ async def _kokoro_download_task():
         traceback.print_exc()
 
 
+# ---------------------------------------------------------------------------
+# PaddleOCR モデル管理（DL・状態・削除。保存先は <model_dir>/paddlex/official_models）
+# ---------------------------------------------------------------------------
+def _paddleocr_cache_dir() -> Path:
+    """PaddleOCR モデルの PaddleX キャッシュディレクトリ（models/paddlex）。"""
+    return get_model_dir_sync() / "paddlex"
+
+
+def _paddleocr_model_dir(name: str) -> Path:
+    """PaddleOCR モデルの official_models 内ディレクトリ。"""
+    return _paddleocr_cache_dir() / "official_models" / name
+
+
+def _paddleocr_model_downloaded(name: str) -> bool:
+    """official_models/<name>/inference.pdiparams の存在で DL 済み判定。"""
+    return (_paddleocr_model_dir(name) / PADDLEOCR_MODEL_MARKER).is_file()
+
+
+def _download_paddleocr_sync(name: str):
+    """PaddlePaddle/<name> を PaddleX と同じ保存先（official_models/<name>）へ DL。
+
+    PaddleX は HF の snapshot_download(local_dir=...) で平置きするため、同じファイル
+    群を hf_hub_download(filename=..., local_dir=...) で順に DL すれば同じ配置になる。
+    進捗は huggingface_hub の tqdm をパッチし、ファイル毎の完了分を累積して
+    単調増加で _download_progress へ書き込む（_download_kokoro_sync と同手法）。
+    """
+    import importlib
+    from huggingface_hub import HfApi, hf_hub_download
+    _tqdm_mod = importlib.import_module("huggingface_hub.utils.tqdm")
+    key = f"paddleocr/{name}"
+    repo = f"PaddlePaddle/{name}"
+    out_dir = _paddleocr_model_dir(name)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # 対象ファイルの一覧と合計サイズを取得（進捗計算用）
+    sizes = {}
+    try:
+        for f in HfApi().list_repo_tree(repo, recursive=True):
+            if getattr(f, "size", None) is not None:
+                sizes[getattr(f, "path", "")] = f.size
+    except Exception:
+        pass
+    files = list(sizes.keys())
+    if not files:
+        # サイズ取得に失敗した場合のフォールバック（snapshot_download 相当）
+        from huggingface_hub import snapshot_download
+        snapshot_download(repo_id=repo, local_dir=str(out_dir))
+        _download_progress[key] = 100.0
+        return
+    grand_total = sum(sizes.values()) or 1
+
+    real_tqdm = _tqdm_mod.tqdm
+    done = [0.0]
+
+    class _ByteBar(real_tqdm):
+        def __init__(self, *args, **kwargs):
+            kwargs["disable"] = False
+            super().__init__(*args, **kwargs)
+
+        def display(self, *a, **k):
+            pass  # 進捗捕捉のみ（ログを汚さない）
+
+        def update(self, n=1):
+            super().update(n)
+            total = self.total or 0
+            if total and grand_total:
+                pct = min(99.0, (done[0] + self.n) / grand_total * 100)
+                _download_progress[key] = round(pct, 1)
+
+    _tqdm_mod.tqdm = _ByteBar
+    try:
+        _download_progress[key] = 0.0
+        for f in files:
+            hf_hub_download(repo, filename=f, local_dir=str(out_dir))
+            done[0] += sizes.get(f, 0)
+    finally:
+        _tqdm_mod.tqdm = real_tqdm
+    _download_progress[key] = 100.0
+
+
+async def _paddleocr_download_task(name: str):
+    """PaddleOCR モデルをバックグラウンドで official_models へダウンロードする。"""
+    key = f"paddleocr/{name}"
+    _download_state[key] = "downloading"
+    _download_progress[key] = 0.0
+    try:
+        print(f"[model] ダウンロード開始: paddleocr {name} (PaddlePaddle/{name})")
+        await asyncio.to_thread(_download_paddleocr_sync, name)
+        _download_state[key] = "done"
+        print(f"[model] ダウンロード完了: paddleocr {name}")
+    except Exception as e:
+        _download_state[key] = "error"
+        print(f"[model] ダウンロード失敗 paddleocr {name}: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+@app.get("/api/v1/paddleocr/models")
+async def api_paddleocr_models():
+    """PaddleOCR 対応モデル一覧（DL サイズ・説明・DL状態）を返す。"""
+    cache_dir = _paddleocr_cache_dir()
+    catalog = {}
+    for name, info in PADDLEOCR_MODEL_CATALOG.items():
+        downloaded = _paddleocr_model_downloaded(name)
+        state = _download_state.get(f"paddleocr/{name}")
+        if state in (None, "none") and downloaded:
+            state = "done"
+        if state in (None, "none"):
+            state = "none"
+        catalog[name] = {
+            **info,
+            "downloaded": downloaded,
+            "download_state": state,
+            "download_progress": round(_download_progress.get(f"paddleocr/{name}", 0.0), 1),
+            "path": str(_paddleocr_model_dir(name)) if downloaded else "",
+        }
+    # 合計サイズ（DL 済みモデルの実測）
+    total = 0.0
+    if (cache_dir / "official_models").is_dir():
+        for d in (cache_dir / "official_models").iterdir():
+            if d.is_dir():
+                for f in d.rglob("*"):
+                    try:
+                        if f.is_file():
+                            total += f.stat().st_size
+                    except OSError:
+                        pass
+    return {
+        "models": catalog,
+        "cache_dir": str(cache_dir),
+        "total_mb": round(total / 1048576, 1),
+    }
+
+
+@app.post("/api/v1/paddleocr/models/{name}/download", dependencies=[Depends(require_auth)])
+async def api_paddleocr_download(name: str):
+    """PaddleOCR モデルをバックグラウンドで official_models へダウンロードする。"""
+    if name not in PADDLEOCR_MODEL_CATALOG:
+        return {"success": False, "message": f"unknown paddleocr model: {name}"}
+    if _paddleocr_model_downloaded(name):
+        return {"success": False, "message": f"already downloaded: {name}"}
+    if _download_state.get(f"paddleocr/{name}") == "downloading":
+        return {"success": False, "message": f"already downloading: {name}"}
+    asyncio.create_task(_paddleocr_download_task(name))
+    return {"success": True, "message": f"downloading {name} (PaddlePaddle/{name})"}
+
+
+@app.delete("/api/v1/paddleocr/models/{name}", dependencies=[Depends(require_auth)])
+async def api_paddleocr_delete(name: str):
+    """PaddleOCR モデルディレクトリ（official_models/<name>）を削除する。"""
+    if name not in PADDLEOCR_MODEL_CATALOG:
+        return {"success": False, "message": f"unknown paddleocr model: {name}"}
+    if _download_state.get(f"paddleocr/{name}") == "downloading":
+        return {"success": False, "message": "ダウンロード中のため削除できません"}
+    d = _paddleocr_model_dir(name)
+    if d.is_dir():
+        shutil.rmtree(d, ignore_errors=True)
+        _download_state[f"paddleocr/{name}"] = "none"
+        _download_progress[f"paddleocr/{name}"] = 0.0
+        return {"success": True, "message": f"deleted: {name}"}
+    return {"success": False, "message": "not found"}
+
+
 @app.get("/api/v1/whisper/models")
 async def api_whisper_models():
     """FasterWhisper 対応モデル一覧（VRAM 目安・DL サイズ・説明・DL状態）を返す。"""
@@ -2262,9 +3220,9 @@ async def api_whisper_model(data: dict):
         return {"success": False, "message": f"unsupported model: {model}"}
     prev_model = str(await get_config("whisper_model") or "medium")
     await set_config("whisper_model", model)
-    stop_whisper_process()
+    await asyncio.to_thread(stop_whisper_process)
     await asyncio.sleep(1)
-    p = start_whisper_process()
+    p = await asyncio.to_thread(start_whisper_process)
     # モデル読込完了（uvicorn 起動）まで 1 秒間隔でヘルスチェック
     for _ in range(40):
         await asyncio.sleep(1)
@@ -2274,9 +3232,9 @@ async def api_whisper_model(data: dict):
     # 読込失敗：旧モデルへ復元して再起動（whisper を止めたままにしない）
     print(f"[model-switch] {model} failed to load, reverting to {prev_model}")
     await set_config("whisper_model", prev_model)
-    stop_whisper_process()
+    await asyncio.to_thread(stop_whisper_process)
     await asyncio.sleep(1)
-    p2 = start_whisper_process()
+    p2 = await asyncio.to_thread(start_whisper_process)
     return {
         "success": False,
         "message": f"{model} の読込に失敗しました。{prev_model} に復元して再起動しています（VRAM 不足・モデル破損の可能性）",
@@ -2298,6 +3256,10 @@ class RecordPayload(BaseModel):
     elapsed_seconds: Optional[float] = None
     llm_model: Optional[str] = None
     correct_elapsed: Optional[float] = None
+
+
+class BatchDeletePayload(BaseModel):
+    ids: List[int]
 
 
 @app.post("/api/v1/records", dependencies=[Depends(require_auth)])
@@ -2328,6 +3290,23 @@ async def api_delete_record(record_id: int):
             deleted = row[0] if row else 0
     if deleted:
         await broadcast({"type": "record_deleted", "id": record_id})
+    return {"success": True, "deleted": deleted}
+
+
+@app.post("/api/v1/records/batch-delete", dependencies=[Depends(require_auth)])
+async def api_batch_delete_records(payload: BatchDeletePayload):
+    """複数レコードを一括削除（{ids: [...]}）。id の重複は除去してから削除する。"""
+    import aiosqlite
+    ids = list(dict.fromkeys(payload.ids))
+    if not ids:
+        return {"success": True, "deleted": 0}
+    placeholders = ",".join("?" * len(ids))
+    async with aiosqlite.connect(str(DB_PATH)) as db:
+        async with db.execute(f"DELETE FROM records WHERE id IN ({placeholders})", ids) as cursor:
+            deleted = cursor.rowcount
+        await db.commit()
+    for rid in ids:
+        await broadcast({"type": "record_deleted", "id": rid})
     return {"success": True, "deleted": deleted}
 
 
@@ -2420,6 +3399,9 @@ async def api_get_config(request: Request):
         "whisper_temperature", "whisper_vad_min_silence_ms",
         "tts_engine", "tts_device", "tts_vibevoice_model",
         "tts_kokoro_voice", "tts_preload",
+        "ocr_device", "ocr_lang", "ocr_autostart", "ocr_format", "ocr_ai_correct",
+        "auth_enabled",
+        "rtl_auto_start",
     ]
     result = {}
     for k in keys:
@@ -2451,10 +3433,29 @@ async def api_regenerate_auth_token():
         return {"success": False, "error": "DASHBOARD_TOKEN 環境変数が設定されているため再生成できません（env 優先）"}
     generated = secrets.token_urlsafe(24)
     with _dashboard_token_lock:
-        await set_config("dashboard_token", generated)
+        set_config_sync("dashboard_token", generated)
         _dashboard_token = generated
     print(f"[auth] Dashboard 接続トークンを再生成: {generated}")
     return {"success": True, "token": generated}
+
+
+@app.post("/api/v1/auth/token", dependencies=[Depends(require_auth)])
+async def api_set_auth_token(data: dict):
+    """接続トークンの手動設定（設定画面から入力）。"""
+    global _dashboard_token
+    env_token = os.environ.get("DASHBOARD_TOKEN", "").strip()
+    if env_token:
+        return {"success": False, "error": "DASHBOARD_TOKEN 環境変数が設定されているため変更できません（env 優先）"}
+    token = str(data.get("token") or "").strip()
+    if len(token) < 8:
+        return {"success": False, "error": "トークンは 8 文字以上で入力してください"}
+    if len(token) > 128:
+        return {"success": False, "error": "トークンは 128 文字以内で入力してください"}
+    with _dashboard_token_lock:
+        set_config_sync("dashboard_token", token)
+        _dashboard_token = token
+    print("[auth] Dashboard 接続トークンを手動設定")
+    return {"success": True, "token": token}
 
 
 @app.post("/api/v1/config", dependencies=[Depends(require_auth)])
@@ -2481,6 +3482,20 @@ async def api_set_config(data: dict):
             return {"success": False, "error": f"invalid tts_kokoro_voice: {v}"}
         if k == "tts_preload" and v not in ("on", "off"):
             return {"success": False, "error": f"invalid tts_preload: {v}"}
+        if k == "ocr_device" and v not in ("cuda", "cpu"):
+            return {"success": False, "error": f"invalid ocr_device: {v}"}
+        if k == "ocr_lang" and v not in ("japan", "en", "ch", "ko"):
+            return {"success": False, "error": f"invalid ocr_lang: {v}"}
+        if k == "ocr_autostart" and v not in ("on", "off"):
+            return {"success": False, "error": f"invalid ocr_autostart: {v}"}
+        if k == "whisper_model" and v not in ALLOWED_MODELS:
+            return {"success": False, "error": f"invalid whisper_model: {v}"}
+        if k == "whisper_compute_type" and v not in ("default", "int8", "int8_float16", "float16"):
+            return {"success": False, "error": f"invalid whisper_compute_type: {v}"}
+        if k == "auth_enabled" and v not in ("on", "off"):
+            return {"success": False, "error": f"invalid auth_enabled: {v}"}
+        if k == "rtl_auto_start" and v not in ("on", "off"):
+            return {"success": False, "error": f"invalid rtl_auto_start: {v}"}
         await set_config(k, str(v))
     return {"success": True}
 
@@ -2536,12 +3551,14 @@ X-GNOME-Autostart-enabled=true
 # ---------------------------------------------------------------------------
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    # 认证：ループバック以外は ?token= を要求（不一致なら 4401 で切断）
+    # 认证：ループバック以外は ?token= を要求（不一致なら 4401 で切断）。
+    # auth_enabled が off の場合はトークン不要で接続可
     if not _is_loopback(websocket.client.host if websocket.client else ""):
-        token = await get_dashboard_token()
-        if websocket.query_params.get("token", "") != token:
-            await websocket.close(code=4401)
-            return
+        if await auth_enabled():
+            token = await get_dashboard_token()
+            if websocket.query_params.get("token", "") != token:
+                await websocket.close(code=4401)
+                return
     await websocket.accept()
     connected_websockets.append(websocket)
     try:

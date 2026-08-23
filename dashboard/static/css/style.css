@@ -566,3 +566,79 @@ input:focus, select:focus {
         transition: none !important;
     }
 }
+
+/* 履历表列排序（ヘッダクリックでソート） */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+.sortable:hover {
+    color: #d6d3d1; /* stone-300 */
+}
+.sort-active {
+    color: #fbbf24; /* amber-400 */
+}
+.sort-asc::after {
+    content: ' ▲';
+    font-size: 0.7em;
+}
+.sort-desc::after {
+    content: ' ▼';
+    font-size: 0.7em;
+}
+
+/* Markdown レンダリング表示（AI校正結果が MD 形式のとき） */
+.md-rendered {
+    line-height: 1.75;
+    word-break: break-word;
+}
+.md-rendered p { margin: 0.35rem 0; }
+.md-rendered h1, .md-rendered h2, .md-rendered h3,
+.md-rendered h4, .md-rendered h5, .md-rendered h6 { margin: 0.6rem 0 0.3rem; color: #e7e5e4; }
+.md-rendered ul, .md-rendered ol { margin: 0.35rem 0; }
+.md-rendered blockquote { font-style: italic; }
+.md-rendered table th { color: #e7e5e4; font-weight: 600; }
+.md-rendered a { text-decoration: underline; }
+
+/* リアルタイム推移カード：自動記録トグル（スイッチ） */
+/* Tailwind の peer-checked がこの環境では効かないため、プレーン CSS で実装 */
+.rtl-switch-input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+.rtl-switch-track {
+    position: relative;
+    display: inline-block;
+    width: 42px;
+    height: 24px;
+    flex-shrink: 0;
+    background: #44403c;                 /* stone-700 */
+    border-radius: 9999px;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+.rtl-switch-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    background: #ffffff;
+    border-radius: 9999px;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+.rtl-switch-input:checked ~ .rtl-switch-track { background: #f59e0b; }        /* amber-500 */
+.rtl-switch-input:checked ~ .rtl-switch-track .rtl-switch-thumb { transform: translateX(18px); }
+
+/* 変換履歴の複数選択チェックボックス（amber アクセント） */
+input.record-check, input.record-select-all {
+    accent-color: #f59e0b;
+    cursor: pointer;
+}
+input.record-check { width: 15px; height: 15px; }

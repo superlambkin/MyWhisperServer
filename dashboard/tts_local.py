@@ -71,6 +71,26 @@ VIBEVOICE_SAMPLE_RATE = 24000
 # ---------------------------------------------------------------------------
 _engines = {}          # engine_name -> context dict（エンジンごとの保持オブジェクト）
 _engines_lock = threading.Lock()
+# ローカル合成は GPU 推論を共有するため 1 スレッドで直列化する
+# （同時合成 → 同一モデルの並行推論で CUDA エラー / 音声破損を防ぐ）
+_synth_lock = threading.Lock()
+# 合成処理中カウンタ（Dashboard が自動記録の開始トリガーに使用）
+_synth_busy_lock = threading.Lock()
+_synth_busy_count = 0
+
+
+def _set_synth_busy(busy: bool):
+    global _synth_busy_count
+    with _synth_busy_lock:
+        _synth_busy_count += 1 if busy else -1
+        if _synth_busy_count < 0:
+            _synth_busy_count = 0
+
+
+def busy() -> bool:
+    """現在 TTS 合成処理中かどうか。"""
+    with _synth_busy_lock:
+        return _synth_busy_count > 0
 
 
 # ---------------------------------------------------------------------------
@@ -139,19 +159,27 @@ def synthesize(engine: str, text: str, lang: str, device: str = "auto", model_pa
         }
     """
     engine = (engine or "").lower()
-    if engine == "kokoro":
-        return _sync_kokoro(text, lang, device, model_path=model_path, voice=voice)
-    if engine == "vibevoice":
-        return _sync_vibevoice(text, lang, device, model_path=model_path)
-    raise ValueError(f"未対応の TTS エンジン: {engine}")
+    if engine == "edge":
+        raise ValueError("edge はクラウド TTS のため synthesize 不要")
+    _set_synth_busy(True)
+    try:
+        with _synth_lock:
+            if engine == "kokoro":
+                return _sync_kokoro(text, lang, device, model_path=model_path, voice=voice)
+            if engine == "vibevoice":
+                return _sync_vibevoice(text, lang, device, model_path=model_path)
+        raise ValueError(f"未対応の TTS エンジン: {engine}")
+    finally:
+        _set_synth_busy(False)
 
 
 def load(engine: str, device: str = "auto", model_path: str | None = None) -> None:
     """エンジンを合成なしで強制ロードし、VRAM/メモリに常駐させる（起動時プリロード用）。"""
     engine = (engine or "").lower()
     if engine == "kokoro":
-        # 既定言語（日本語）のパイプラインを作るだけでモデル＋音声が VRAM に載る
-        _make_kokoro_pipeline("j", device, model_path=model_path)
+        # 既定言語（日本語）のパイプラインを作るだけでモデル＋音声が VRAM に載る。
+        # 戻り値を ctx["pipelines"] に保存しないと破棄されて常駐しない（#137 レビュー指摘）
+        _get_kokoro_ctx()["pipelines"]["j"] = _make_kokoro_pipeline("j", device, model_path=model_path)
         print(f"[tts] Kokoro preloaded on {device}")
     elif engine == "vibevoice":
         _vibevoice_load_model(model_path, device)
@@ -179,6 +207,8 @@ def _make_kokoro_pipeline(lang_code: str, device: str, model_path: str | None = 
     直接ロードする（hf_hub_download を呼ばないためオフラインで動作する）。
     """
     from kokoro import KPipeline
+    # loaded_device() が読めるよう、パイプライン作成時に実行デバイスを ctx に記録
+    _get_kokoro_ctx()["device"] = device
     kwargs = {"lang_code": lang_code, "repo_id": "hexgrad/Kokoro-82M"}
     if device in ("cuda", "cpu"):
         kwargs["device"] = device
