@@ -426,6 +426,17 @@ async def health():
 
 if __name__ == "__main__":
     import uvicorn
+    import logging
+
+    # uvicorn の例外ログ（traceback）をファイルにも記録（オフライン版の診断用）
+    try:
+        _fh = logging.FileHandler("uvicorn.log", encoding="utf-8")
+        _fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
+        logging.getLogger("uvicorn").addHandler(_fh)
+        logging.getLogger("uvicorn.error").addHandler(_fh)
+        logging.getLogger("uvicorn.access").addHandler(_fh)
+    except Exception:
+        pass
 
     PORT = int(os.environ.get("OCR_PORT", "9100"))
     print(f"Starting PaddleOCR API server on http://0.0.0.0:{PORT} (device={OCR_DEVICE}, lang={OCR_LANG})")

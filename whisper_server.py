@@ -522,6 +522,17 @@ async def correct_text(data: dict):
 
 if __name__ == "__main__":
     import uvicorn
+    import logging
+
+    # uvicorn の例外ログ（traceback）をファイルにも記録（オフライン版の診断用）
+    try:
+        _fh = logging.FileHandler("uvicorn.log", encoding="utf-8")
+        _fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
+        logging.getLogger("uvicorn").addHandler(_fh)
+        logging.getLogger("uvicorn.error").addHandler(_fh)
+        logging.getLogger("uvicorn.access").addHandler(_fh)
+    except Exception:
+        pass
 
     # WHISPER_PORT 設定時は Dashboard のポート管理と一致させる（既定 9000）
     WHISPER_PORT = int(os.environ.get("WHISPER_PORT", "9000"))
