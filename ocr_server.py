@@ -8,8 +8,23 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import JSONResponse
+import traceback
+from datetime import datetime
 
 app = FastAPI(title="PaddleOCR Server")
+
+
+@app.exception_handler(Exception)
+async def _exception_handler(request, exc):
+    """未捕捉例外を error.log に記録して 500 を返す（オフライン版の診断用）。"""
+    try:
+        with open("error.log", "a", encoding="utf-8") as f:
+            f.write(f"\n[{datetime.now().isoformat()}] {request.method} {request.url.path}\n")
+            traceback.print_exc(file=f)
+    except Exception:
+        pass
+    return JSONResponse(status_code=500, content={"detail": str(exc)})
 
 # プロジェクトルート（モデル保存先の既定を <プロジェクト>/models/paddlex にするため）
 if getattr(sys, "frozen", False):

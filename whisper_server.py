@@ -10,8 +10,24 @@ from typing import Optional
 
 import aiohttp
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import PlainTextResponse, Response, StreamingResponse
+from fastapi.responses import PlainTextResponse, Response, StreamingResponse, JSONResponse
 from faster_whisper import WhisperModel
+import traceback
+from datetime import datetime
+
+app = FastAPI(title="Whisper API Server")
+
+
+@app.exception_handler(Exception)
+async def _exception_handler(request, exc):
+    """未捕捉例外を error.log に記録して 500 を返す（オフライン版の診断用）。"""
+    try:
+        with open("error.log", "a", encoding="utf-8") as f:
+            f.write(f"\n[{datetime.now().isoformat()}] {request.method} {request.url.path}\n")
+            traceback.print_exc(file=f)
+    except Exception:
+        pass
+    return JSONResponse(status_code=500, content={"detail": str(exc)})
 
 app = FastAPI(title="Local Whisper Server")
 
