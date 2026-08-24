@@ -38,7 +38,11 @@ else:
     AUTOSTART_TARGET = STARTUP_DIR / "MyWhisperServer.desktop"
 
 # 项目路径
-BASE_DIR = Path(__file__).parent.parent.resolve()
+if getattr(sys, "frozen", False):
+    # PyInstaller 単体 exe ビルド時: exe が置かれているフォルダをルートにする
+    BASE_DIR = Path(sys.executable).resolve().parent
+else:
+    BASE_DIR = Path(__file__).parent.parent.resolve()
 DASHBOARD_DIR = BASE_DIR / "dashboard"
 DATA_DIR = DASHBOARD_DIR / "data"
 LOGS_DIR = DASHBOARD_DIR / "logs"
@@ -48,7 +52,16 @@ LOGS_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA_DIR / "records.db"
 WHISPER_LOG = BASE_DIR / "server.log"
 DASHBOARD_LOG = LOGS_DIR / "dashboard.log"
-WHISPER_SCRIPT = BASE_DIR / "whisper_server.py"
+if getattr(sys, "frozen", False):
+    WHISPER_SCRIPT = BASE_DIR / "whisper_server.exe"
+    OCR_SCRIPT = BASE_DIR / "ocr_server.exe"
+    WHISPER_PROC_NAME = "whisper_server.exe"
+    OCR_PROC_NAME = "ocr_server.exe"
+else:
+    WHISPER_SCRIPT = BASE_DIR / "whisper_server.py"
+    OCR_SCRIPT = BASE_DIR / "ocr_server.py"
+    WHISPER_PROC_NAME = "whisper_server.py"
+    OCR_PROC_NAME = "ocr_server.py"
 START_ALL_SCRIPT = BASE_DIR / ("start_all.bat" if IS_WINDOWS else "start_all.sh")
 
 # 配置
@@ -62,7 +75,6 @@ WHISPER_URL = f"http://{WHISPER_HOST}:{WHISPER_PORT}"
 OCR_HOST = os.environ.get("OCR_HOST", "127.0.0.1")
 OCR_PORT = int(os.environ.get("OCR_PORT", "9100"))
 OCR_URL = f"http://{OCR_HOST}:{OCR_PORT}"
-OCR_SCRIPT = BASE_DIR / "ocr_server.py"
 OCR_LOG = BASE_DIR / "ocr.log"
 
 # 全局状态
@@ -704,7 +716,7 @@ def find_whisper_process() -> Optional[dict]:
         if whisper_process.poll() is None:
             return {
                 "pid": whisper_process.pid,
-                "cmdline": "python whisper_server.py",
+                "cmdline": WHISPER_PROC_NAME,
                 "start_time": datetime.fromtimestamp(whisper_start_time or time.time()).isoformat(),
                 "managed": True,
             }
@@ -718,7 +730,7 @@ def find_whisper_process() -> Optional[dict]:
                     start = datetime.now().isoformat()
                 return {
                     "pid": conn.pid,
-                    "cmdline": "python whisper_server.py",
+                    "cmdline": WHISPER_PROC_NAME,
                     "start_time": start,
                     "managed": False,  # 外部起動（Dashboard 管理外）
                 }
@@ -766,8 +778,12 @@ def start_whisper_process() -> subprocess.Popen:
         except Exception:
             pass
     whisper_log_handle = open(WHISPER_LOG, "a", encoding="utf-8", buffering=1)
+    if getattr(sys, "frozen", False):
+        proc_cmd = [str(WHISPER_SCRIPT)]
+    else:
+        proc_cmd = [sys.executable, "-u", str(WHISPER_SCRIPT)]
     whisper_process = subprocess.Popen(
-        [sys.executable, "-u", str(WHISPER_SCRIPT)],
+        proc_cmd,
         cwd=str(BASE_DIR),
         env=env,
         stdout=whisper_log_handle,
@@ -852,7 +868,7 @@ def find_ocr_process() -> Optional[dict]:
         if ocr_process.poll() is None:
             return {
                 "pid": ocr_process.pid,
-                "cmdline": "python ocr_server.py",
+                "cmdline": OCR_PROC_NAME,
                 "start_time": datetime.fromtimestamp(ocr_start_time or time.time()).isoformat(),
             }
         ocr_process = None
@@ -865,7 +881,7 @@ def find_ocr_process() -> Optional[dict]:
                     start = datetime.now().isoformat()
                 return {
                     "pid": conn.pid,
-                    "cmdline": "python ocr_server.py",
+                    "cmdline": OCR_PROC_NAME,
                     "start_time": start,
                 }
     except (psutil.AccessDenied, OSError, ValueError):
@@ -902,8 +918,12 @@ def start_ocr_process() -> subprocess.Popen:
         except Exception:
             pass
     ocr_log_handle = open(OCR_LOG, "a", encoding="utf-8", buffering=1)
+    if getattr(sys, "frozen", False):
+        proc_cmd = [str(OCR_SCRIPT)]
+    else:
+        proc_cmd = [sys.executable, "-u", str(OCR_SCRIPT)]
     ocr_process = subprocess.Popen(
-        [sys.executable, "-u", str(OCR_SCRIPT)],
+        proc_cmd,
         cwd=str(BASE_DIR),
         env=env,
         stdout=ocr_log_handle,

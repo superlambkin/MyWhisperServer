@@ -1,4 +1,5 @@
 import os
+import sys
 import tempfile
 import asyncio
 import time
@@ -11,7 +12,11 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 app = FastAPI(title="PaddleOCR Server")
 
 # プロジェクトルート（モデル保存先の既定を <プロジェクト>/models/paddlex にするため）
-BASE_DIR = Path(__file__).resolve().parent
+if getattr(sys, "frozen", False):
+    # PyInstaller 単体 exe ビルド時: exe が置かれているフォルダをルートにする
+    BASE_DIR = Path(sys.executable).resolve().parent
+else:
+    BASE_DIR = Path(__file__).resolve().parent
 
 # PaddleOCR 3.x のモデル保存先（PaddleX の CACHE_DIR）をプロジェクト内に固定。
 # Dashboard が子プロセス起動時に PADDLE_PDX_CACHE_HOME を注入する。
