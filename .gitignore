@@ -29,3 +29,10 @@ _*.py
 _*.ps1
 *_result.json
 ocr_test.*
+
+# オフラインビルド作業領域（venv・PyInstaller の中間物・payload）
+.offline_build/
+Release/Windows/Offline/build/
+Release/Windows/Offline/dist/
+Release/Windows/Offline/payload/
+Release/Windows/Offline/tools/
