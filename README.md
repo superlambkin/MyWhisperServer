@@ -534,7 +534,7 @@ PaddleOCR モデルは **プロジェクト内 `models/paddlex/official_models/`
 - `GET http://127.0.0.1:9100/health` — 状態確認
   - `{"status":"ok","device":"gpu","ocr_ready":true,"structure_ready":false}`
 - `POST /ocr`（multipart: `file`, `lang`）— 画像 OCR
-- `POST /pdf`（multipart: `file`, `lang`）— PDF → Markdown
+- `POST /pdf`（multipart: `file`, `lang`）— PDF → Markdown（v1.8.12 以降、図版画像を base64 で `images`（`{"<basename>": "<base64>"}`）に同梱。クライアント側で保存・参照書換え）
 
 ```bash
 # 画像 OCR（日本語）
