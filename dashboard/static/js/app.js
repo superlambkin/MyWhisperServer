@@ -4317,7 +4317,7 @@ async function deleteRealtimeLog() {
 // ---------------------------------------------------------------------------
 // Readme（サイドバー「Readme」表示内容）
 // ---------------------------------------------------------------------------
-const APP_VERSION = '1.8.11';
+const APP_VERSION = '1.8.12';
 
 // モデル別 60分音声ベンチマーク目安（GTX 1660 Ti 6GB・int8_float16・beam=3）
 const MODEL_BENCH = {
@@ -4378,6 +4378,12 @@ const README_CONTENT = {
         current_version: '当前版本',
         changelog_title: '功能追加履历',
         changelog: [
+            {
+                ver: 'v1.8.12', date: '2026-08-31',
+                items: [
+                    'OCR: PaddleOCR 服务 /pdf 响应新增图版图像（base64）输出。Obsidian 插件将其保存到 {name}_assets 并自动改写 markdown 引用（对应插件 v0.4.2）',
+                ],
+            },
             {
                 ver: 'v1.8.11', date: '2026-08-23',
                 items: [
@@ -4618,6 +4624,12 @@ const README_CONTENT = {
         changelog_title: '機能追加履歴',
         changelog: [
             {
+                ver: 'v1.8.12', date: '2026-08-31',
+                items: [
+                    'OCR: PaddleOCR サーバ /pdf 応答に図版画像（base64）を追加。Obsidian プラグインが {name}_assets に保存し markdown 参照を自動書き換え（プラグイン v0.4.2 相当）',
+                ],
+            },
+            {
                 ver: 'v1.8.11', date: '2026-08-23',
                 items: [
                     'モデル: 設定ページ「音声モデル管理」に PaddleOCR モデル管理（DL/削除/進捗）を追加。PaddleOCR モデルはプロジェクト内 models/paddlex に保存され、プロジェクトごと移植可能',
@@ -4856,6 +4868,12 @@ const README_CONTENT = {
         current_version: 'Current version',
         changelog_title: 'Changelog',
         changelog: [
+            {
+                ver: 'v1.8.12', date: '2026-08-31',
+                items: [
+                    'OCR: PaddleOCR /pdf now returns figure images (base64). The Obsidian plugin saves them to {name}_assets and rewrites the markdown references (plugin v0.4.2)',
+                ],
+            },
             {
                 ver: 'v1.8.11', date: '2026-08-23',
                 items: [

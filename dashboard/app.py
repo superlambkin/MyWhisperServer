@@ -12,6 +12,7 @@ import threading
 import subprocess
 import platform
 import socket
+import ipaddress
 from pathlib import Path
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
@@ -124,11 +125,25 @@ RT_LOG_DIR = LOGS_DIR / "realtime"
 # --- 认证（写入・制御系のみ） ---
 _dashboard_token: Optional[str] = None
 _dashboard_token_lock = threading.Lock()
-LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
-
-
 def _is_loopback(host: str) -> bool:
-    return host in LOOPBACK_HOSTS
+    """ループバック判定を ipaddress ベースで行う。
+
+    旧実装（LOOPBACK_HOSTS 完全一致）は 127.x.x.x の他ホスト・IPv6 短縮形・
+    IPv4射影IPv6（::ffff:127.0.0.1）を取りこぼすため、ipaddress で判定する。
+    注意: IPv6Address.is_loopback は ::1 のみを対象とするため、IPv4 射影
+    （::ffff:127.0.0.1）は ipv4_mapped 側の is_loopback で判定する。
+    """
+    if not host:
+        return False
+    # スコープ ID（fe80::1%eth0 等）を除去してから判定
+    host = host.split("%")[0]
+    try:
+        addr = ipaddress.ip_address(host)
+    except ValueError:
+        return host == "localhost"
+    if isinstance(addr, ipaddress.IPv6Address) and addr.ipv4_mapped is not None:
+        return addr.ipv4_mapped.is_loopback
+    return addr.is_loopback
 
 
 async def get_dashboard_token() -> str:
@@ -177,6 +192,17 @@ async def require_auth(request: Request):
     supplied = header[7:].strip() if header.startswith("Bearer ") else request.headers.get("X-Auth-Token", "").strip()
     if not token or supplied != token:
         raise HTTPException(status_code=401, detail="unauthorized")
+
+
+async def require_loopback(request: Request):
+    """内部ステータス通知エンドポイントをループバックのみに制限する依存関数。
+
+    whisper_server / ocr_server のサブプロセスは 127.0.0.1 経由でこれらの
+    エンドポイントを呼ぶ。トークン保持者（または auth_enabled=off）による
+    LAN からのステータス偽装・進行状況改ざんを防ぐため、ループバック以外は 403。
+    """
+    if not _is_loopback(request.client.host if request.client else ""):
+        raise HTTPException(status_code=403, detail="loopback only")
 
 
 def mask_api_key(secret: str) -> Dict[str, Any]:
@@ -320,7 +346,7 @@ def init_db():
             "refresh_interval": "1000",
             "gpu_temp_threshold": "80",
             "theme": "dark",
-            "ui_language": "zh",
+            "ui_language": "ja",
             "whisper_model": "medium",
             "ai_correct_enabled": "false",
             "deepseek_api_key": "",
@@ -530,57 +556,124 @@ async def get_stats() -> dict:
 _GPU_ENGINE_UTIL_CACHE: dict = {}
 _GPU_ENGINE_UTIL_TS: float = 0.0
 _GPU_ENGINE_SAMPLER_STOP = threading.Event()
+# NVIDIA 以外の GPU（Intel/AMD など）向けフォールバック用キャッシュ
+_GPU_ENGINE_UTIL_TOTAL: float = 0.0   # 全エンジン合計利用率（%、100 でクランプ）
+_GPU_ADAPTER_USED_BYTES: int = 0      # 専用 VRAM 使用量（bytes、複数インスタンスの最大値）
+_GPU_COUNTER_PATHS: Optional[tuple] = None  # (engine利用率パス, adapter専用メモリパス) 検出済みキャッシュ
 
 
-def _run_gpu_engine_counter() -> dict:
-    """GPU Engine カウンタを 1 回サンプリングし、PID 別 GPU 使用率（全エンジン合計）を返す。
+def _discover_gpu_counter_paths() -> tuple:
+    """GPU 関連パフォーマンスカウンタのパスを 1 回だけ検出してキャッシュする。
 
-    Get-Counter は 1 回で ~5 秒かかるため、スナップショット（monitor_loop）からは
-    直接呼ばず、専用サンプラースレッドからのみ実行する。
-    非 Windows / カウンタなし / タイムアウトなど失敗時は空 dict（呼び出し側は
-    「その他」に丸め込み、表示はグレースフルに劣化する）。
+    カウンタ名は OS 言語でローカライズされる（日本語 Windows では
+    「GPU エンジン」等）ため、ListSet を列挙して実在するパスを解決する。
+    検出できない場合は英語名へフォールバックする。
+    戻り値: (engine_util_path, adapter_dedicated_path) / 失敗時は ()
     """
     ps_cmd = (
-        "powershell -NoProfile -Command \"Get-Counter '\\GPU Engine(*)\\Utilization Percentage' "
-        "-ErrorAction SilentlyContinue | Select-Object -ExpandProperty CounterSamples | "
-        "ForEach-Object { $_.InstanceName + '|' + $_.CookedValue }\""
+        "powershell -NoProfile -Command \"Get-Counter -ListSet * -ErrorAction SilentlyContinue | "
+        "Where-Object { $_.CounterSetName -like 'GPU*' } | "
+        "ForEach-Object { $_.CounterSetName + '::' + ($_.Paths -join ';;') }\""
     )
-    out = subprocess.run(ps_cmd, capture_output=True, text=True, timeout=8, shell=True).stdout
-    res: dict = {}
+    engine_path = ""
+    adapter_path = ""
+    try:
+        out = subprocess.run(ps_cmd, capture_output=True, text=True, timeout=30, shell=True).stdout
+    except Exception:
+        out = ""
     for line in out.splitlines():
         line = line.strip()
-        if not line:
+        if "::" not in line:
+            continue
+        set_name, paths = line.split("::", 1)
+        low = set_name.lower()
+        plist = [p for p in paths.split(";;") if p]
+        is_engine = low.startswith("gpu engine") or low.startswith("gpu エンジン")
+        is_adapter = low.startswith("gpu adapter") or low.startswith("gpu アダプター") or low.startswith("gpu アダプタ")
+        if is_engine and not engine_path:
+            for p in plist:
+                pl = p.lower()
+                if "utilization" in pl or "使用率" in p:
+                    engine_path = p
+                    break
+        elif is_adapter and not adapter_path:
+            for p in plist:
+                pl = p.lower()
+                if "dedicated" in pl or "専用" in p:
+                    adapter_path = p
+                    break
+    if not engine_path:
+        # 検出失敗時は英語名フォールバック（多くの環境でそのまま有効）
+        engine_path = "\\GPU Engine(*)\\Utilization Percentage"
+        adapter_path = "\\GPU Adapter Memory(*)\\Dedicated Usage"
+    return (engine_path, adapter_path)
+
+
+def _run_gpu_counters() -> tuple:
+    """GPU Engine 利用率 + Adapter Memory 専用メモリを 1 回サンプリングする。
+
+    戻り値: (PID 別利用率 dict, 全エンジン合計利用率 %, 専用メモリ使用量 bytes)
+    非 Windows / カウンタなし / タイムアウトなど失敗時は空の初期値を返す
+    （呼び出し側は「その他」に丸め込み、表示はグレースフルに劣化する）。
+    """
+    if not _GPU_COUNTER_PATHS:
+        return {}, 0.0, 0
+    engine_path, adapter_path = _GPU_COUNTER_PATHS
+    quoted = ",".join(f"'{p}'" for p in (engine_path, adapter_path))
+    ps_cmd = (
+        "powershell -NoProfile -Command \"Get-Counter " + quoted + " "
+        "-ErrorAction SilentlyContinue | Select-Object -ExpandProperty CounterSamples | "
+        "ForEach-Object { $_.Path + '|' + $_.CookedValue }\""
+    )
+    out = subprocess.run(ps_cmd, capture_output=True, text=True, timeout=20, shell=True).stdout
+    res: dict = {}
+    total = 0.0
+    used_bytes = 0
+    for line in out.splitlines():
+        line = line.strip()
+        if "|" not in line:
             continue
         try:
-            name, val = line.rsplit("|", 1)
+            path, val = line.rsplit("|", 1)
             v = float(val)
         except Exception:
             continue
-        m = re.match(r"pid_(\d+)_", name)
-        if m:
-            pid = int(m.group(1))
-            res[pid] = res.get(pid, 0.0) + v
-    return res
+        pl = path.lower()
+        if "engine(" in pl or "エンジン(" in path:
+            m = re.search(r"pid_(\d+)_", path)
+            if m:
+                pid = int(m.group(1))
+                res[pid] = res.get(pid, 0.0) + v
+            total += v
+        elif "adapter memory(" in pl or "アダプター メモリ(" in path or "アダプタ メモリ(" in path:
+            # 同一アダプタが luid_*/phys_* 複数インスタンスで現れるため最大値を採用
+            if v > used_bytes:
+                used_bytes = int(v)
+    return res, min(total, 100.0), used_bytes
 
 
 def _gpu_engine_sampler_loop():
-    """GPU Engine カウンタをバックグラウンドで継続的にサンプリングする daemon スレッド。
+    """GPU カウンタをバックグラウンドで継続的にサンプリングする daemon スレッド。
 
     Get-Counter は ~5 秒かかるため、monitor_loop から同期的に呼ぶとスナップショット
     全体が 5 秒以上ブロックされ、更新周期（refresh_interval）と乖離してしまう。
-    ここでキャッシュを常時更新し続けることで、_gpu_engine_util_by_pid は即時返す。
+    ここでキャッシュを常時更新し続けることで、get_gpu_info は即時返す。
     """
     if platform.system() != "Windows":
         return  # 非 Windows ではカウンタ自体が存在しないため何もしない
-    global _GPU_ENGINE_UTIL_TS
+    global _GPU_ENGINE_UTIL_TS, _GPU_COUNTER_PATHS, _GPU_ENGINE_UTIL_TOTAL, _GPU_ADAPTER_USED_BYTES
+    if _GPU_COUNTER_PATHS is None:
+        _GPU_COUNTER_PATHS = _discover_gpu_counter_paths()
     while not _GPU_ENGINE_SAMPLER_STOP.is_set():
         try:
-            res = _run_gpu_engine_counter()
+            res, total_util, used_bytes = _run_gpu_counters()
         except Exception:
-            res = {}
+            res, total_util, used_bytes = {}, 0.0, 0
         if not _GPU_ENGINE_SAMPLER_STOP.is_set():
             _GPU_ENGINE_UTIL_CACHE.clear()
             _GPU_ENGINE_UTIL_CACHE.update(res)
+            _GPU_ENGINE_UTIL_TOTAL = total_util
+            _GPU_ADAPTER_USED_BYTES = used_bytes
             _GPU_ENGINE_UTIL_TS = time.monotonic()
         time.sleep(0.5)
 
@@ -596,53 +689,159 @@ def _gpu_engine_util_by_pid() -> dict:
     return dict(_GPU_ENGINE_UTIL_CACHE)
 
 
-def get_gpu_info() -> Optional[dict]:
-    if not nvml_available:
+_wddm_gpu_identity: Optional[dict] = None  # {"name": str, "total_mb": int} の 1 回限りキャッシュ
+
+
+def _wddm_gpu_identify() -> dict:
+    """レジストリから GPU 名と専用メモリ容量を取得する（NVIDIA 以外の GPU 用・1 回のみ）。
+
+    表示クラス {4d36e968-e325-11ce-bfc1-08002be10318} 配下のドライバーキーから
+    DriverDesc と HardwareInformation.qwMemorySize / MemorySize を読む。
+    qwMemorySize が無い GPU（Intel 等）は MemorySize（32bit 表記の可能性あり）を採用。
+    """
+    global _wddm_gpu_identity
+    if _wddm_gpu_identity is not None:
+        return _wddm_gpu_identity
+    name = ""
+    total_mb = 0
+    if platform.system() == "Windows":
+        try:
+            import winreg
+            base = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, base) as root:
+                i = 0
+                while True:
+                    try:
+                        sub = winreg.EnumKey(root, i)
+                    except OSError:
+                        break
+                    i += 1
+                    if not sub.isdigit():
+                        continue
+                    try:
+                        with winreg.OpenKey(root, sub) as key:
+                            try:
+                                desc, _ = winreg.QueryValueEx(key, "DriverDesc")
+                            except OSError:
+                                continue
+                            desc = str(desc)
+                            if "microsoft basic" in desc.lower():
+                                continue  # ソフトウェアレンダラーは除外
+                            if not name and desc:
+                                name = desc
+                            if total_mb == 0:
+                                mem = 0
+                                for vname in ("HardwareInformation.qwMemorySize", "HardwareInformation.MemorySize"):
+                                    try:
+                                        val, _ = winreg.QueryValueEx(key, vname)
+                                    except OSError:
+                                        continue
+                                    if isinstance(val, bytes):
+                                        val = int.from_bytes(val[:8], "little")
+                                    try:
+                                        mem = int(val) if val else 0
+                                    except Exception:
+                                        mem = 0
+                                    if mem > 0:
+                                        break
+                                if mem > 0:
+                                    total_mb = mem // (1024 * 1024)
+                    except OSError:
+                        continue
+        except Exception:
+            pass
+    _wddm_gpu_identity = {"name": name, "total_mb": total_mb}
+    return _wddm_gpu_identity
+
+
+def _get_gpu_info_wddm() -> Optional[dict]:
+    """NVML 非対応 GPU（Intel/AMD 等・Windows）向けフォールバック。
+
+    Windows GPU パフォーマンスカウンタ（WDDM）とレジストリから情報を組み立てる。
+    カウンタも取得できない場合は従来通り None を返す。
+    """
+    ident = _wddm_gpu_identify()
+    total_util = float(_GPU_ENGINE_UTIL_TOTAL)
+    used_mb = _GPU_ADAPTER_USED_BYTES // (1024 * 1024)
+    if not ident.get("name") and used_mb <= 0 and total_util <= 0:
         return None
-    try:
-        handle = nvmlDeviceGetHandleByIndex(0)
-        name = nvmlDeviceGetName(handle)
-        if isinstance(name, bytes):
-            name = name.decode("utf-8")
-        mem = nvmlDeviceGetMemoryInfo(handle)
-        util = nvmlDeviceGetUtilizationRates(handle)
-        temp = nvmlDeviceGetTemperature(handle, NVML_TEMPERATURE_GPU)
-        # 補足情報：GPU クロック / 消費電力（GPU により未サポートの場合は既定値）
-        clock_mhz = 0
-        try:
-            clock_mhz = nvmlDeviceGetClockInfo(handle, NVML_CLOCK_GRAPHICS)
-        except Exception:
-            pass
-        power_w = 0.0
-        try:
-            power_w = round(nvmlDeviceGetPowerUsage(handle) / 1000.0, 1)
-        except Exception:
-            pass
+    total_mb = int(ident.get("total_mb") or 0)
+    if total_mb < used_mb:
+        total_mb = used_mb  # 容量不明・使用量超過時は % が 100 を超えないよう下駄合わせ
+    # 使用率の PID 別内訳: NVML パスと同じ割り付けロジック
+    pids = _gpu_engine_util_by_pid()
+    w_pid = whisper_process.pid if whisper_process is not None and whisper_process.poll() is None else None
+    o_pid = ocr_process.pid if ocr_process is not None and ocr_process.poll() is None else None
+    t_pid = os.getpid()
+    w_util = round(pids.get(w_pid, 0.0), 1) if w_pid else 0.0
+    t_util = round(pids.get(t_pid, 0.0), 1) if t_pid else 0.0
+    o_util = round(pids.get(o_pid, 0.0), 1) if o_pid else 0.0
+    other_util = round(max(0.0, total_util - (w_util + t_util + o_util)), 1)
+    return {
+        "name": ident.get("name") or "GPU (WDDM)",
+        "memory_total_mb": total_mb,
+        "memory_used_mb": used_mb,
+        "memory_free_mb": max(0, total_mb - used_mb),
+        "utilization": round(total_util, 1),
+        "util_breakdown": {"whisper": w_util, "tts": t_util, "ocr": o_util, "other": other_util},
+        "temperature": None,  # WDDM カウンタでは温度を取得できない
+        "clock_mhz": 0,
+        "power_w": 0.0,
+        "cuda_available": False,  # CUDA 稼働判断には使えない（TTS device=auto は CPU 選択）
+    }
 
-        # 使用率の PID 別内訳: whisper=whisper_process / tts=ダッシュボード自身（TTS 合成を内蔵）/ ocr=ocr_process
-        pids = _gpu_engine_util_by_pid()
-        w_pid = whisper_process.pid if whisper_process is not None and whisper_process.poll() is None else None
-        o_pid = ocr_process.pid if ocr_process is not None and ocr_process.poll() is None else None
-        t_pid = os.getpid()
-        w_util = round(pids.get(w_pid, 0.0), 1) if w_pid else 0.0
-        t_util = round(pids.get(t_pid, 0.0), 1) if t_pid else 0.0
-        o_util = round(pids.get(o_pid, 0.0), 1) if o_pid else 0.0
-        other_util = round(max(0.0, util.gpu - (w_util + t_util + o_util)), 1)
-        util_breakdown = {"whisper": w_util, "tts": t_util, "ocr": o_util, "other": other_util}
 
-        return {
-            "name": name,
-            "memory_total_mb": mem.total // 1024 // 1024,
-            "memory_used_mb": mem.used // 1024 // 1024,
-            "memory_free_mb": mem.free // 1024 // 1024,
-            "utilization": util.gpu,
-            "util_breakdown": util_breakdown,
-            "temperature": temp,
-            "clock_mhz": clock_mhz,
-            "power_w": power_w,
-        }
-    except Exception as e:
-        return {"error": str(e)}
+def get_gpu_info() -> Optional[dict]:
+    if nvml_available:
+        try:
+            handle = nvmlDeviceGetHandleByIndex(0)
+            name = nvmlDeviceGetName(handle)
+            if isinstance(name, bytes):
+                name = name.decode("utf-8")
+            mem = nvmlDeviceGetMemoryInfo(handle)
+            util = nvmlDeviceGetUtilizationRates(handle)
+            temp = nvmlDeviceGetTemperature(handle, NVML_TEMPERATURE_GPU)
+            # 補足情報：GPU クロック / 消費電力（GPU により未サポートの場合は既定値）
+            clock_mhz = 0
+            try:
+                clock_mhz = nvmlDeviceGetClockInfo(handle, NVML_CLOCK_GRAPHICS)
+            except Exception:
+                pass
+            power_w = 0.0
+            try:
+                power_w = round(nvmlDeviceGetPowerUsage(handle) / 1000.0, 1)
+            except Exception:
+                pass
+
+            # 使用率の PID 別内訳: whisper=whisper_process / tts=ダッシュボード自身（TTS 合成を内蔵）/ ocr=ocr_process
+            pids = _gpu_engine_util_by_pid()
+            w_pid = whisper_process.pid if whisper_process is not None and whisper_process.poll() is None else None
+            o_pid = ocr_process.pid if ocr_process is not None and ocr_process.poll() is None else None
+            t_pid = os.getpid()
+            w_util = round(pids.get(w_pid, 0.0), 1) if w_pid else 0.0
+            t_util = round(pids.get(t_pid, 0.0), 1) if t_pid else 0.0
+            o_util = round(pids.get(o_pid, 0.0), 1) if o_pid else 0.0
+            other_util = round(max(0.0, util.gpu - (w_util + t_util + o_util)), 1)
+            util_breakdown = {"whisper": w_util, "tts": t_util, "ocr": o_util, "other": other_util}
+
+            return {
+                "name": name,
+                "memory_total_mb": mem.total // 1024 // 1024,
+                "memory_used_mb": mem.used // 1024 // 1024,
+                "memory_free_mb": mem.free // 1024 // 1024,
+                "utilization": util.gpu,
+                "util_breakdown": util_breakdown,
+                "temperature": temp,
+                "clock_mhz": clock_mhz,
+                "power_w": power_w,
+                "cuda_available": True,
+            }
+        except Exception as e:
+            return {"error": str(e), "cuda_available": True}
+    # NVIDIA NVML が使えない環境（Intel/AMD GPU など）は WDDM カウンタへフォールバック
+    if platform.system() == "Windows":
+        return _get_gpu_info_wddm()
+    return None
 
 
 _cpu_name_cache: Optional[str] = None
@@ -781,7 +980,10 @@ def start_whisper_process() -> subprocess.Popen:
     if getattr(sys, "frozen", False):
         proc_cmd = [str(WHISPER_SCRIPT)]
     else:
-        proc_cmd = [sys.executable, "-u", str(WHISPER_SCRIPT)]
+        # WHISPER_PYTHON 環境変数があれば優先（whisper 用に別 Python を使う場合。
+        # 例: faster-whisper は Python 3.14、Dashboard は 3.10 という環境分離）
+        whisper_python = os.environ.get("WHISPER_PYTHON", "").strip() or sys.executable
+        proc_cmd = [whisper_python, "-u", str(WHISPER_SCRIPT)]
     whisper_process = subprocess.Popen(
         proc_cmd,
         cwd=str(BASE_DIR),
@@ -965,11 +1167,59 @@ def stop_ocr_process():
         ocr_log_handle = None
 
 
-async def _proxy_ocr(path: str, file: UploadFile, lang: Optional[str]):
-    """OCR サービスへ multipart をフォワード（ループバック制御）。未起動なら 503。"""
+# OCR 自動起動の同時実行ガード（複数変換要求が同時に来ても二重起動しない）
+_OCR_ENSURE_LOCK = asyncio.Lock()
+
+
+async def _ensure_ocr_running(timeout: float = 240.0) -> Optional[dict]:
+    """OCR 変換要求時に OCR サービスの稼働を保証する（未起動なら自動起動して待機）。
+
+    ocr_autostart=off でも「変換を実行した瞬間」にはサービスが必要になるため、
+    その場で起動し healthy になるまで待つ（モデル初回ロードを考慮し最大 timeout 秒）。
+    戻り値は health。起動できなかった場合は None。
+    """
     health = await ocr_health()
+    if health is not None:
+        return health
+    async with _OCR_ENSURE_LOCK:
+        # ロック取得中に他リクエストが起動を完了したケースの再確認
+        health = await ocr_health()
+        if health is not None:
+            return health
+        print("[ocr] service not running - auto-starting on conversion request")
+        try:
+            start_ocr_process()
+        except Exception as e:
+            print(f"[ocr] auto-start failed: {e}")
+            return None
+        await broadcast({
+            "type": "ocr_status",
+            "data": {"running": False, "health": None, "process": None},
+        })
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            await asyncio.sleep(2)
+            health = await ocr_health()
+            if health is not None and health.get("status") == "ok":
+                print(f"[ocr] auto-started, health={health}")
+                await broadcast({
+                    "type": "ocr_status",
+                    "data": {
+                        "running": True,
+                        "health": health,
+                        "process": find_ocr_process(),
+                    },
+                })
+                return health
+    print("[ocr] auto-start timed out")
+    return None
+
+
+async def _proxy_ocr(path: str, file: UploadFile, lang: Optional[str]):
+    """OCR サービスへ multipart をフォワード（ループバック制御）。未起動なら自動起動。"""
+    health = await _ensure_ocr_running()
     if health is None:
-        raise HTTPException(status_code=503, detail="OCR service is not running")
+        raise HTTPException(status_code=503, detail="OCR service could not be started")
     data = aiohttp.FormData()
     # UploadFile.file は SpooledTemporaryFile で aiohttp が直接シリアライズ不可
     # → バイト列に読み替えて (filename, content, content_type) 形式で送る
@@ -993,10 +1243,10 @@ async def _proxy_ocr(path: str, file: UploadFile, lang: Optional[str]):
 
 
 async def _proxy_ocr_json(path: str, file: UploadFile, lang: Optional[str]) -> dict:
-    """OCR サービスへ multipart をフォワードし、JSON 結果を dict で返す（/ocr/convert 用）。"""
-    health = await ocr_health()
+    """OCR サービスへ multipart をフォワードし、JSON 結果を dict で返す（/ocr/convert 用）。未起動なら自動起動。"""
+    health = await _ensure_ocr_running()
     if health is None:
-        raise HTTPException(status_code=503, detail="OCR service is not running")
+        raise HTTPException(status_code=503, detail="OCR service could not be started")
     data = aiohttp.FormData()
     content = await file.read()
     data.add_field(
@@ -1367,7 +1617,7 @@ async def api_whisper_status():
     }
 
 
-@app.post("/api/v1/whisper/status_event", dependencies=[Depends(require_auth)])
+@app.post("/api/v1/whisper/status_event", dependencies=[Depends(require_auth), Depends(require_loopback)])
 async def api_whisper_status_event(data: dict):
     """接收 whisper_server 上报的转换状态（converting/idle）。
     converting 時に start_ts / filename を透過し、フロントでリアルタイム監視に利用する。"""
@@ -1396,7 +1646,7 @@ async def api_whisper_status_event(data: dict):
     return {"success": True}
 
 
-@app.post("/api/v1/whisper/progress", dependencies=[Depends(require_auth)])
+@app.post("/api/v1/whisper/progress", dependencies=[Depends(require_auth), Depends(require_loopback)])
 async def api_whisper_progress(data: dict):
     """接收 whisper_server 上报的转换进度（percent: 0-100）。
     phase（transcribe/correct）と duration（音声時間）を透過し、フロントのリアルタイム監視に利用する。"""
@@ -1418,7 +1668,7 @@ async def api_whisper_progress(data: dict):
     return {"success": True}
 
 
-@app.post("/api/v1/whisper/llm_status", dependencies=[Depends(require_auth)])
+@app.post("/api/v1/whisper/llm_status", dependencies=[Depends(require_auth), Depends(require_loopback)])
 async def api_whisper_llm_status(data: dict):
     """whisper_server から LLM（AI 校正）実行状態を受信し、フロントへブロードキャスト。
 
@@ -2145,7 +2395,10 @@ def _pick_tts_device(engine: str, pref: str) -> str:
     loaded = loaded_device(engine)
     if loaded:
         return loaded
-    # auto: 空き VRAM で判断。NVML が無い/空き不明なら CPU（安全側）
+    # auto: 空き VRAM で判断。CUDA (NVML) が無いなら CPU（安全側）。
+    # Intel/AMD GPU の WDDM フォールバック情報は CUDA 設定の判断に使えない
+    if not nvml_available:
+        return "cpu"
     info = get_gpu_info()
     if not info or "memory_free_mb" not in info:
         return "cpu"
