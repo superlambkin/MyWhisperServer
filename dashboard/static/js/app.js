@@ -1194,7 +1194,7 @@ const I18N = {
     }
 };
 
-let uiLanguage = localStorage.getItem('ui_language') || 'zh';
+let uiLanguage = localStorage.getItem('ui_language') || 'ja';
 
 function t(key, fallback = '') {
     const dict = I18N[uiLanguage] || I18N['zh'];
@@ -1269,7 +1269,7 @@ let config = {
     default_output: 'txt',
     refresh_interval: 1000,
     gpu_temp_threshold: 80,
-    ui_language: 'zh',
+    ui_language: 'ja',
     whisper_model: 'medium',
     whisper_mode: 'balanced',
     whisper_compute_type: 'int8_float16',
@@ -1973,6 +1973,8 @@ function updateSystemDisplay(data, history) {
     // GPU
     const gpu = data.gpu;
     gpuAvailable = !!(gpu && !gpu.error);
+    // CUDA が真に使えるのは NVML 由来のときのみ（WDDM フォールバックは cuda_available=false）
+    cudaAvailable = !!(gpu && !gpu.error && gpu.cuda_available !== false);
     gpuUsedMb = gpu && !gpu.error ? (gpu.memory_used_mb || 0) : 0;
     gpuTotalMb = gpu && !gpu.error ? (gpu.memory_total_mb || 1) : 1;
     if (gpu && !gpu.error) {
@@ -2009,6 +2011,7 @@ function updateSystemDisplay(data, history) {
         $('#gpu-mem-value').textContent = '0%';
         gpuUtil = 0;
         gpuUtilBreakdown = {};
+        cudaAvailable = false;
         renderGpuUtilBreakdown(); // セグメントは全消去
         renderGpuVramBreakdown(); // セグメントは全消去
         $('#gpu-temp-ring-value').textContent = '0°C';
@@ -2038,7 +2041,8 @@ function sameModel(a, b) {
 }
 
 // GPU モニタ「显存」: リング 4 セグメント（Whisper / TTS / OCR / その他）と各モデル詳細
-let gpuAvailable = false;   // updateSystemDisplay で NVIDIA GPU 情報が取得できたか（TTS の device 判定に使用）
+let gpuAvailable = false;   // updateSystemDisplay で GPU 情報（NVML or WDDM フォールバック）が取得できたか
+let cudaAvailable = false;  // CUDA (NVIDIA) が利用可能か（TTS の device=auto 判定に使用。WDDM フォールバックでは false）
 let gpuWhisperVram = 0;     // Whisper VRAM 目安（GB）
 let gpuOcrVram = 0;         // OCR モデル VRAM 目安（GB）
 let gpuUsedMb = 0;          // NVML 実測: 使用中 VRAM（MB）
@@ -2071,7 +2075,7 @@ function ttsVramEstimate() {
     const engine = (config.tts_engine || 'edge').toLowerCase();
     if (engine === 'edge') return { label: 'Edge TTS', mode: 'cloud', vram: 0 };
     const dev = (config.tts_device || 'auto').toLowerCase();
-    const gpu = dev === 'cuda' || (dev === 'auto' && gpuAvailable);
+    const gpu = dev === 'cuda' || (dev === 'auto' && cudaAvailable);
     if (engine === 'kokoro') {
         return gpu
             ? { label: 'Kokoro', mode: 'vram', vram: 1.0 }
