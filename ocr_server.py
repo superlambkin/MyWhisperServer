@@ -4,6 +4,8 @@ import tempfile
 import asyncio
 import time
 import threading
+import io
+import base64
 from pathlib import Path
 from typing import Optional
 
@@ -129,9 +131,9 @@ def get_pipeline(force_cpu: bool = False):
             from paddleocr import PaddleOCR
             print(f"[ocr] loading CPU PP-OCRv5 pipeline (lang={OCR_LANG})...")
             try:
-                _pipeline_cpu = PaddleOCR(lang=OCR_LANG, device="cpu")
+                _pipeline_cpu = PaddleOCR(lang=OCR_LANG, device="cpu", enable_mkldnn=False)
             except TypeError:
-                _pipeline_cpu = PaddleOCR(lang=OCR_LANG, use_gpu=False)
+                _pipeline_cpu = PaddleOCR(lang=OCR_LANG, use_gpu=False, enable_mkldnn=False)
             _pipeline_cpu_fallback = True
             _pipeline_ready = True
             return _pipeline_cpu
@@ -144,14 +146,14 @@ def get_pipeline(force_cpu: bool = False):
         device = OCR_DEVICE
         print(f"[ocr] loading PP-OCRv5 pipeline (lang={OCR_LANG}, device={device})...")
         try:
-            _pipeline = PaddleOCR(lang=OCR_LANG, device=device)
+            _pipeline = PaddleOCR(lang=OCR_LANG, device=device, enable_mkldnn=False)
         except TypeError:
             # 2.x 系 API フォールバック
-            _pipeline = PaddleOCR(lang=OCR_LANG, use_gpu=(device == "gpu"))
+            _pipeline = PaddleOCR(lang=OCR_LANG, use_gpu=(device == "gpu"), enable_mkldnn=False)
         except Exception as e:
             if device != "cpu":
                 print(f"[ocr] GPU load failed ({e}); falling back to CPU")
-                _pipeline = PaddleOCR(lang=OCR_LANG, device="cpu")
+                _pipeline = PaddleOCR(lang=OCR_LANG, device="cpu", enable_mkldnn=False)
                 _pipeline_cpu_fallback = True
                 _pipeline_device = "cpu"
             else:
@@ -183,6 +185,7 @@ def get_structure(force_cpu: bool = False):
                     use_doc_orientation_classify=False,
                     use_doc_unwarping=False,
                     device="cpu",
+                    enable_mkldnn=False,  # oneDNN バグ回避（paddlepaddle 3.3.1）
                     lang=OCR_LANG,
                 )
             except TypeError:
@@ -190,6 +193,7 @@ def get_structure(force_cpu: bool = False):
                     use_doc_orientation_classify=False,
                     use_doc_unwarping=False,
                     use_gpu=False,
+                    enable_mkldnn=False,  # oneDNN バグ回避
                     lang=OCR_LANG,
                 )
             _structure_cpu_fallback = True
@@ -208,6 +212,7 @@ def get_structure(force_cpu: bool = False):
                 use_doc_orientation_classify=False,
                 use_doc_unwarping=False,
                 device=device,
+                enable_mkldnn=False,  # oneDNN バグ回避
                 lang=OCR_LANG,
             )
         except TypeError:
@@ -215,6 +220,7 @@ def get_structure(force_cpu: bool = False):
                 use_doc_orientation_classify=False,
                 use_doc_unwarping=False,
                 use_gpu=(device == "gpu"),
+                enable_mkldnn=False,  # oneDNN バグ回避
                 lang=OCR_LANG,
             )
         except Exception as e:
@@ -224,6 +230,7 @@ def get_structure(force_cpu: bool = False):
                     use_doc_orientation_classify=False,
                     use_doc_unwarping=False,
                     device="cpu",
+                    enable_mkldnn=False,  # oneDNN バグ回避
                     lang=OCR_LANG,
                 )
                 _structure_cpu_fallback = True
@@ -255,9 +262,104 @@ def _is_oom(exc: Exception) -> bool:
     return "out of memory" in msg or "oom" in msg or "cuda error" in msg
 
 
+# --- /pdf 画像出力 (v0.4.2) ---
+# PP-StructureV3 は図版画像を page_result.markdown["markdown_images"]（dict:
+# "imgs/<file>" → PIL Image）で保持する。ローカル CLI はそれを {name}_assets に
+# 保存するが、サーバは markdown テキストのみ返していたため参照が壊れていた。
+# ここでは画像を base64 に変換して JSON 応答の "images" に載せる（プラグイン側で
+# 保存・参照書き換えする）。
+
+_EXT_TO_PIL = {
+    "jpg": "JPEG", "jpeg": "JPEG", "png": "PNG", "bmp": "BMP",
+    "gif": "GIF", "webp": "WEBP", "tif": "TIFF", "tiff": "TIFF",
+}
+
+
+def _pil_format(name: str) -> str:
+    """ファイル名から PIL 保存フォーマットを推測（不明は PNG）。"""
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    return _EXT_TO_PIL.get(ext, "PNG")
+
+
+def _encode_image(img, name: str) -> Optional[str]:
+    """PIL Image を base64 文字列に変換する（失敗時 None）。
+
+    JPEG はアルファチャネルを持てないため RGBA は RGB に変換してから保存する。
+    """
+    try:
+        if not hasattr(img, "save"):
+            return None
+        if name.lower().endswith((".jpg", ".jpeg")) and getattr(img, "mode", "") == "RGBA":
+            img = img.convert("RGB")
+        buf = io.BytesIO()
+        img.save(buf, format=_pil_format(name))
+        return base64.b64encode(buf.getvalue()).decode("ascii")
+    except Exception:  # noqa: BLE001 - 保存できない画像はスキップ
+        return None
+
+
+def _collect_page_images(page_result) -> dict:
+    """ページ結果から {basename: base64} を返す（converter._save_page_images の移植）。
+
+    ``markdown_images`` が空の場合は表セル画像 ``imgs_in_doc`` を
+    ``image_{i}.png`` としてフォールバックする。
+    """
+    out: dict = {}
+    try:
+        md = _get(page_result, "markdown")
+        images = md.get("markdown_images", {}) if isinstance(md, dict) else {}
+    except Exception:  # noqa: BLE001 - markdown dict 欠落は空扱い
+        images = {}
+    for i, (path, img) in enumerate(images.items()):
+        name = path.rsplit("/", 1)[-1] or f"image_{i}.png"
+        enc = _encode_image(img, name)
+        if enc:
+            out[name] = enc
+    if not out:
+        try:
+            extra = page_result["imgs_in_doc"] or []
+        except Exception:  # noqa: BLE001 - キー欠落は空扱い
+            extra = []
+        for i, img in enumerate(extra):
+            enc = _encode_image(img, f"image_{i}.png")
+            if enc:
+                out[f"image_{i}.png"] = enc
+    return out
+
+
+# S-1: アップロード filename 検証用サフィックスホワイトリスト（画像 + PDF）
+_ALLOWED_OCR_SUFFIXES = {
+    ".pdf", ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".webp",
+}
+
+
+def _validate_upload_filename(filename: Optional[str]) -> str:
+    """アップロード filename を検証して安全な名前を返す。
+
+    ``..`` ``/`` ``\\`` 制御文字（パストラバーサル・ログ/UI 注入）を含む場合は
+    400 で拒否。filename はそのまま表示・記録されるため、ここで検証する。
+    """
+    if not filename:
+        return ""
+    if (
+        ".." in filename
+        or "/" in filename
+        or "\\" in filename
+        or "\x00" in filename
+    ):
+        raise HTTPException(status_code=400, detail="invalid filename")
+    return filename
+
+
 async def _save_upload(file: UploadFile, max_bytes: int) -> str:
     """アップロードを一時ファイルへ保存。上限超過・失敗時は 413 / 例外。"""
-    suffix = Path(file.filename or "").suffix or ".tmp"
+    # S-1: filename を検証（パストラバーサル拒否）し、サフィックスをホワイトリスト照合
+    safe_filename = _validate_upload_filename(file.filename)
+    suffix = Path(safe_filename).suffix.lower() or ".tmp"
+    if suffix not in _ALLOWED_OCR_SUFFIXES:
+        raise HTTPException(
+            status_code=400, detail=f"unsupported file type: {suffix or '(none)'}"
+        )
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     try:
         total = 0
@@ -374,6 +476,7 @@ async def pdf_to_markdown(
             _set_busy(False)
 
         pages = []
+        all_images: dict = {}
         for res in (results or []):
             # 3.7 では to_markdown() は存在せず res.markdown プロパティ（dict）を返す
             md = _call(res, "to_markdown")
@@ -389,9 +492,11 @@ async def pdf_to_markdown(
                         pages.append(str(t))
             elif md:
                 pages.append(str(md))
+            all_images.update(_collect_page_images(res))
         markdown = "\n\n".join(pages)
         return {
             "markdown": markdown,
+            "images": all_images,
             "pages": len(pages),
             "elapsed": round(time.time() - start, 2),
             "device": _device_name("structure"),
