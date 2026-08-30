@@ -265,6 +265,33 @@ def format_srt_time(seconds: float) -> str:
     return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
 
 
+# S-1: アップロード filename 検証用サフィックスホワイトリスト（音声/動画コンテナ）
+_ALLOWED_AUDIO_SUFFIXES = {
+    ".wav", ".mp3", ".m4a", ".ogg", ".oga", ".flac", ".opus",
+    ".webm", ".mp4", ".mpeg", ".mpg", ".aac", ".wma", ".amr",
+    ".wmv", ".mov", ".mkv", ".avi",
+}
+
+
+def _validate_upload_filename(filename: Optional[str]) -> str:
+    """アップロード filename を検証して安全な名前を返す。
+
+    ``..`` ``/`` ``\\`` 制御文字（パストラバーサル・ログ/UI 注入）を含む場合は
+    400 で拒否。filename は report_status / report_record でそのまま保存・
+    表示されるため、ここで検証することで保存パスや UI 表示への悪影響を防ぐ。
+    """
+    if not filename:
+        return ""
+    if (
+        ".." in filename
+        or "/" in filename
+        or "\\" in filename
+        or "\x00" in filename
+    ):
+        raise HTTPException(status_code=400, detail="invalid filename")
+    return filename
+
+
 @app.post("/asr")
 async def asr(
     audio_file: UploadFile = File(...),
@@ -273,8 +300,14 @@ async def asr(
     output: Optional[str] = Form("txt"),
 ):
     start_time = time.time()
+    # S-1: filename を検証（パストラバーサル・制御文字は 400）。安全な値を以降で使用する。
+    safe_filename = _validate_upload_filename(audio_file.filename)
     # filename 未指定（None）でもクラッシュしないよう空文字へフォールバック
-    suffix = Path(audio_file.filename or "").suffix or ".wav"
+    suffix = Path(safe_filename).suffix.lower() or ".wav"
+    if suffix not in _ALLOWED_AUDIO_SUFFIXES:
+        raise HTTPException(
+            status_code=400, detail=f"unsupported file type: {suffix or '(none)'}"
+        )
     # アップロード上限（無制限のディスク使用を防止）
     MAX_UPLOAD_BYTES = 1024 * 1024 * 1024  # 1GB
     tmp_path = None
@@ -300,7 +333,7 @@ async def asr(
 
     await asr_semaphore.acquire()
     try:
-        await report_status("converting", start_ts=start_time, filename=audio_file.filename)
+        await report_status("converting", start_ts=start_time, filename=safe_filename)
         lang = None if language in (None, "auto", "") else language
 
         # 转写是 CPU/GPU 密集型同步操作，必须放到线程池执行，
@@ -383,7 +416,7 @@ async def asr(
 
         # 异步上报到 Dashboard（raw_result に AI 校正前の原文を記録）
         await report_record(
-            filename=audio_file.filename,
+            filename=safe_filename,
             duration=duration,
             language=language,
             output_format=output,
@@ -397,7 +430,12 @@ async def asr(
         return PlainTextResponse(result_text)
 
     finally:
-        os.unlink(tmp_path)
+        # S-2: 一時ファイル削除失敗（Windows ファイルロック等）でセマフォ解放を
+        # スキップしないよう、unlink を try/except でガードする。
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
         await report_status("idle")
         # #6: 並行 /asr 直列化のセマフォを解放
         asr_semaphore.release()
