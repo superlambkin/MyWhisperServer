@@ -37,3 +37,6 @@ Release/Windows/Offline/dist/
 Release/Windows/Offline/payload/
 Release/Windows/Offline/tools/
 SHA256SUMS.txt
+
+# ポータブル版ビルド出力（build_portable.py で再生成可能）
+/dist/

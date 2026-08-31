@@ -4,8 +4,8 @@ rem MyWhisperServer - Stop all services (Windows)
 rem Kills processes LISTENING on 9000 (Whisper) / 9001 (Dashboard) / 9100 (OCR).
 rem No working-directory dependency: netstat/taskkill are global.
 rem LISTENING filter + PID 0 skip avoid TIME_WAIT noise from netstat.
-rem S-3: tasklist で PID のプロセス名が python 系かを確認してから kill する
-rem      （他ソフトが同ポートを一時的に使う場合の誤爆防止）。
+rem S-3: confirm the process name is python-like via tasklist before killing
+rem      (prevents killing another program that temporarily uses the port).
 rem ------------------------------------------------------------------
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr "LISTENING" ^| findstr ":9000"') do (
     if not "%%a"=="0" (
