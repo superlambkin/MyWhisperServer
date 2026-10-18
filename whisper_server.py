@@ -15,7 +15,9 @@ from faster_whisper import WhisperModel
 import traceback
 from datetime import datetime
 
-app = FastAPI(title="Whisper API Server")
+# 例外ハンドラと各ルートの両方がこの 1 つの app に紐づくよう、
+# app の生成はこの 1 回のみ行う（過去に 2 回生成してハンドラが死にコードになっていた）。
+app = FastAPI(title="Local Whisper Server")
 
 
 @app.exception_handler(Exception)
@@ -28,8 +30,6 @@ async def _exception_handler(request, exc):
     except Exception:
         pass
     return JSONResponse(status_code=500, content={"detail": str(exc)})
-
-app = FastAPI(title="Local Whisper Server")
 
 # Dashboard 上报地址（如果 Dashboard 在运行）
 DASHBOARD_URL = os.environ.get("DASHBOARD_URL", "http://127.0.0.1:9001")
