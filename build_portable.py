@@ -25,7 +25,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
 DEFAULT_DIST = REPO / "dist" / "MyWhisperServer-portable"
-VER = "1.8.12"
+VER = "1.8.13"
 PY_MINOR = "3.10"
 
 # パッケージに含めるルートファイル
