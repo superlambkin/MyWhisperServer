@@ -77,6 +77,11 @@ OCR_HOST = os.environ.get("OCR_HOST", "127.0.0.1")
 OCR_PORT = int(os.environ.get("OCR_PORT", "9100"))
 OCR_URL = f"http://{OCR_HOST}:{OCR_PORT}"
 OCR_LOG = BASE_DIR / "ocr.log"
+# v1.8.14: OCR プロキシの入力サイズ上限（ocr_server.py 側の制限と同一値）。
+# これまでは Dashboard が `await file.read()` で上限無しにメモリへ読み込んでいたため、
+# 巨大アップロードで Dashboard プロセスのメモリを圧迫できた。
+OCR_MAX_IMAGE_BYTES = 50 * 1024 * 1024   # /ocr 相当（画像）
+OCR_MAX_PDF_BYTES = 100 * 1024 * 1024    # /pdf 相当（PDF）
 
 # 全局状态
 whisper_process: Optional[subprocess.Popen] = None
@@ -169,7 +174,10 @@ async def get_dashboard_token() -> str:
         generated = secrets.token_urlsafe(24)
         set_config_sync("dashboard_token", generated)
         _dashboard_token = generated
-        print(f"[auth] Dashboard 接続トークンを生成: {generated}")
+        # v1.8.14: トークンを平文でログ出力しない（末尾 4 桁のみ）。
+        # 従来は生成されたトークンがそのまま stdout へ出力され、
+        # ログ閲覧権限を持つ者が誰でもトークンを取得できていた。
+        print(f"[auth] Dashboard 接続トークンを生成: ...{generated[-4:]}")
         return generated
 
 
@@ -190,7 +198,8 @@ async def require_auth(request: Request):
     token = await get_dashboard_token()
     header = request.headers.get("Authorization", "")
     supplied = header[7:].strip() if header.startswith("Bearer ") else request.headers.get("X-Auth-Token", "").strip()
-    if not token or supplied != token:
+    # v1.8.14: 定数時間比較（タイミング攻撃の余地を排除）
+    if not token or not secrets.compare_digest(supplied, token):
         raise HTTPException(status_code=401, detail="unauthorized")
 
 
@@ -1215,6 +1224,30 @@ async def _ensure_ocr_running(timeout: float = 240.0) -> Optional[dict]:
     return None
 
 
+async def _read_upload_limited(file: UploadFile, max_bytes: int) -> bytes:
+    """アップロードを上限付きでメモリへ読み込む（v1.8.14 のメモリ圧迫対策）。
+
+    従来は `await file.read()` で上限無しに読んでいたため、任意サイズのアップロードで
+    Dashboard プロセスのメモリを圧迫できた。ocr_server.py 側と同じ上限で先に弾く。
+    """
+    # SpooledTemporaryFile は threshold を超えると実ファイルへ退避するが、
+    # 超大規模アップロードでディスクを溢れさせないため自分でチャンク読みする。
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = file.file.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large (max {max_bytes // (1024 * 1024)}MB)",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
 async def _proxy_ocr(path: str, file: UploadFile, lang: Optional[str]):
     """OCR サービスへ multipart をフォワード（ループバック制御）。未起動なら自動起動。"""
     health = await _ensure_ocr_running()
@@ -1223,7 +1256,8 @@ async def _proxy_ocr(path: str, file: UploadFile, lang: Optional[str]):
     data = aiohttp.FormData()
     # UploadFile.file は SpooledTemporaryFile で aiohttp が直接シリアライズ不可
     # → バイト列に読み替えて (filename, content, content_type) 形式で送る
-    content = await file.read()
+    max_bytes = OCR_MAX_PDF_BYTES if path.endswith("/pdf") else OCR_MAX_IMAGE_BYTES
+    content = await _read_upload_limited(file, max_bytes)
     data.add_field(
         "file", content, filename=file.filename or "upload",
         content_type=file.content_type or "application/octet-stream",
@@ -1248,7 +1282,8 @@ async def _proxy_ocr_json(path: str, file: UploadFile, lang: Optional[str]) -> d
     if health is None:
         raise HTTPException(status_code=503, detail="OCR service could not be started")
     data = aiohttp.FormData()
-    content = await file.read()
+    max_bytes = OCR_MAX_PDF_BYTES if path.endswith("/pdf") else OCR_MAX_IMAGE_BYTES
+    content = await _read_upload_limited(file, max_bytes)
     data.add_field(
         "file", content, filename=file.filename or "upload",
         content_type=file.content_type or "application/octet-stream",
@@ -1940,7 +1975,10 @@ async def api_ai_test(data: dict):
     api_key = str(data.get("api_key", "")).strip() or str(await get_config("deepseek_api_key") or "").strip()
     model = str(data.get("model", "")).strip() or str(await get_config("deepseek_model") or "") or "deepseek-chat"
     base_url = str(data.get("base_url", "")).strip() or str(await get_config("deepseek_base_url") or "") or "https://api.deepseek.com/v1"
-    base_url = base_url.rstrip("/")
+    # SSRF 対策: ユーザー指定の base_url をそのまま送信すると、任意 URL（例: 192.168.0.1 や
+    # 169.254.169.254）へサーバ側から POST できてしまう。公共 LLM への接続は許可したいので
+    # _assert_private_host は使わず、scheme / netloc / userinfo のみを検証する。
+    base_url = validate_base_url(base_url)
     if not base_url:
         return {"ok": False, "message": "Base URL が未設定です"}
 
@@ -3708,7 +3746,8 @@ async def api_regenerate_auth_token():
     with _dashboard_token_lock:
         set_config_sync("dashboard_token", generated)
         _dashboard_token = generated
-    print(f"[auth] Dashboard 接続トークンを再生成: {generated}")
+    # v1.8.14: トークンを平文でログ出力しない（末尾 4 桁のみ）
+    print(f"[auth] Dashboard 接続トークンを再生成: ...{generated[-4:]}")
     return {"success": True, "token": generated}
 
 
@@ -3829,7 +3868,8 @@ async def websocket_endpoint(websocket: WebSocket):
     if not _is_loopback(websocket.client.host if websocket.client else ""):
         if await auth_enabled():
             token = await get_dashboard_token()
-            if websocket.query_params.get("token", "") != token:
+            # v1.8.14: 定数時間比較（タイミング攻撃の余地を排除）
+            if not secrets.compare_digest(websocket.query_params.get("token", ""), token):
                 await websocket.close(code=4401)
                 return
     await websocket.accept()
