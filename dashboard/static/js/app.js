@@ -4321,7 +4321,7 @@ async function deleteRealtimeLog() {
 // ---------------------------------------------------------------------------
 // Readme（サイドバー「Readme」表示内容）
 // ---------------------------------------------------------------------------
-const APP_VERSION = '1.8.12';
+const APP_VERSION = '1.8.14';
 
 // モデル別 60分音声ベンチマーク目安（GTX 1660 Ti 6GB・int8_float16・beam=3）
 const MODEL_BENCH = {
@@ -4382,6 +4382,18 @@ const README_CONTENT = {
         current_version: '当前版本',
         changelog_title: '功能追加履历',
         changelog: [
+            {
+                ver: 'v1.8.14', date: '2026-10-23',
+                items: [
+                    '安全: 修复 4 项漏洞 — AI 连接测试的 base_url 加入 SSRF 校验（仅 http/https、拒绝 userinfo）、OCR 代理上传大小限制（超限返回 413）、令牌日志脱敏（仅显示末 4 位）、令牌比较改为 secrets.compare_digest（防时序攻击）',
+                ],
+            },
+            {
+                ver: 'v1.8.13', date: '2026-10-19',
+                items: [
+                    '修复: whisper_server.py 存在 app 重复生成，导致异常处理器成为死代码、error.log 未记录。README 补充浏览器访问 URL 说明',
+                ],
+            },
             {
                 ver: 'v1.8.12', date: '2026-08-31',
                 items: [
@@ -4628,6 +4640,18 @@ const README_CONTENT = {
         changelog_title: '機能追加履歴',
         changelog: [
             {
+                ver: 'v1.8.14', date: '2026-10-23',
+                items: [
+                    'セキュリティ: 脆弱性 4 件を修正 — AI 接続テストの base_url に SSRF ガード（http/https のみ・userinfo 拒否）、OCR プロキシのアップロード上限（超過時 413）、トークンのログ出力マスキング（末尾 4 桁のみ）、トークン比較を secrets.compare_digest 化（タイミング攻撃対策）',
+                ],
+            },
+            {
+                ver: 'v1.8.13', date: '2026-10-19',
+                items: [
+                    '修正: whisper_server.py の app 二重生成を廃止（例外ハンドラが死にコード化し error.log に記録されていなかった）。README にブラウザでアクセスする URL の説明を追加',
+                ],
+            },
+            {
                 ver: 'v1.8.12', date: '2026-08-31',
                 items: [
                     'OCR: PaddleOCR サーバ /pdf 応答に図版画像（base64）を追加。Obsidian プラグインが {name}_assets に保存し markdown 参照を自動書き換え（プラグイン v0.4.2 相当）',
@@ -4872,6 +4896,18 @@ const README_CONTENT = {
         current_version: 'Current version',
         changelog_title: 'Changelog',
         changelog: [
+            {
+                ver: 'v1.8.14', date: '2026-10-23',
+                items: [
+                    'Security: Fixed 4 vulnerabilities — SSRF guard on base_url in the AI connection test (http/https only, rejects userinfo), upload size limit for the OCR proxy (413 when exceeded), auth token log masking (last 4 digits only), and constant-time token comparison via secrets.compare_digest',
+                ],
+            },
+            {
+                ver: 'v1.8.13', date: '2026-10-19',
+                items: [
+                    'Fix: Removed the duplicated app instantiation in whisper_server.py that left the exception handler as dead code and prevented error.log from being written. README now documents how to access the server from a browser',
+                ],
+            },
             {
                 ver: 'v1.8.12', date: '2026-08-31',
                 items: [
