@@ -513,8 +513,10 @@ async def chat_completion_stream(data: dict):
     """チャット（SSE ストリーミング・LAN から認証なしで利用可）。ダッシュボードの /api/v1/chat/stream を中継。
 
     body: {"message": "...", "session_id": "..."} — SSE イベントはそのまま透過（
-      {"type":"text"}/{"type":"audio"}/{"type":"audio_skip"}/{"type":"done"}/{"type":"error"}）。
-    リアルタイム音声出力は、受信側で audio_base64 を base64 デコードして再生する。
+      {"type":"text"} / {"type":"audio_start"} / {"type":"audio_chunk"} /
+      {"type":"audio_end"} / {"type":"audio_skip"} / {"type":"done"} / {"type":"error"}）。
+    リアルタイム音声出力は、受信側で audio_chunk の data を連結して base64 デコードし、
+    audio_start の mime に従って再生する。
     """
     message = str(data.get("message", "")).strip()
     if not message:
